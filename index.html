@@ -2075,10 +2075,25 @@ function initStars() {
 
 // ── Auth tab ─────────────────────────────────────────────────
 function authTab(tab) {
-  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
-  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.auth-tab[onclick*="${tab}"]`)?.classList.add('active');
+  // Update tab styles
+  document.getElementById('t-login')?.classList.toggle('on', tab === 'login');
+  document.getElementById('t-signup')?.classList.toggle('on', tab === 'signup');
+
+  const form = document.getElementById('auth-form');
+  if (!form) return;
+
+  if (tab === 'login') {
+    form.innerHTML = `
+      <input id="login-email" class="input" type="email" placeholder="Email address" autocomplete="email">
+      <input id="login-pass"  class="input" type="password" placeholder="Password" autocomplete="current-password">
+      <button class="btn btn-gold btn-full" onclick="login()">Sign In →</button>`;
+  } else {
+    form.innerHTML = `
+      <input id="signup-name"  class="input" type="text"     placeholder="Your name" autocomplete="name">
+      <input id="signup-email" class="input" type="email"    placeholder="Email address" autocomplete="email">
+      <input id="signup-pass"  class="input" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password">
+      <button class="btn btn-gold btn-full" onclick="signup()">Create Account →</button>`;
+  }
 }
 
 // ── Auth: Login ──────────────────────────────────────────────
@@ -2108,13 +2123,12 @@ async function signup() {
   });
   setLoading(false);
   if (error) return toast(error.message, 'error');
-  if (data.user) {
-    // upsert profile
+  if (data.user && data.user.id) {
     await sb.from('profiles').upsert({ id: data.user.id, display_name: name, email });
     A.user = data.user;
     await loadProfile();
   } else {
-    toast('Check your email to confirm your account!', 'success');
+    toast('Account created! Check your email to confirm, then sign in.', 'success');
   }
 }
 
@@ -2949,6 +2963,7 @@ function esc(str) {
 // ============================================================
 async function init() {
   SS('s-splash');
+  authTab('login');
   initStars();
 
   // Restore session
