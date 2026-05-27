@@ -263,7 +263,7 @@ select.input{appearance:none;cursor:pointer}
 <div id="app">
 
 <!-- SPLASH -->
-<div id="s-splash" class="screen">
+<div id="auth-screen" class="screen active">
   <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:20px;position:relative;z-index:1;text-align:center">
     <div class="moon">🌙</div>
     <div><div class="splash-title">NoorQuest</div><div style="font-size:13px;color:rgba(245,240,232,.6);letter-spacing:2px;text-transform:uppercase;margin-top:6px">An Islamic Journey</div></div>
@@ -2920,8 +2920,8 @@ function esc(str) {
 // ============================================================
 async function init() {
   initStars();
-
-  // Restore session
+  SS('auth-screen'); // ADD THIS LINE RIGHT HERE
+  
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     A.user = session.user;
