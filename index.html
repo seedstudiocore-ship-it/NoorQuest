@@ -2056,8 +2056,14 @@ function closeModal(e) {
 
 // ── Stars background ─────────────────────────────────────────
 function initStars() {
-  const canvas = document.getElementById('stars-canvas');
-  if (!canvas) return;
+  // Create canvas dynamically and append to body
+  let canvas = document.getElementById('stars-canvas-el');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'stars-canvas-el';
+    canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.6';
+    document.body.appendChild(canvas);
+  }
   const ctx = canvas.getContext('2d');
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -2164,6 +2170,12 @@ function renderDashboard() {
   const list = document.getElementById('children-list');
   const empty = document.getElementById('no-children');
   if (!list) return;
+  // Update greeting
+  const dname = document.getElementById('d-name');
+  if (dname && A.profile) dname.textContent = 'Hello, ' + (A.profile.display_name || 'Parent') + '!';
+  // Show admin button if admin
+  const adminBtn = document.getElementById('admin-btn');
+  if (adminBtn) adminBtn.style.display = A.profile?.is_admin ? 'inline-flex' : 'none';
   if (!A.children.length) {
     list.innerHTML = '';
     if (empty) empty.style.display = 'block';
@@ -2207,7 +2219,7 @@ function openAddChild() {
 async function addChild() {
   const name   = document.getElementById('child-name-input')?.value.trim();
   const age    = parseInt(document.getElementById('child-age-input')?.value);
-  const avatar = document.getElementById('child-avatar-input')?.value || '🌟';
+  const avatar = document.getElementById('child-avatar-input')?.value.trim() || '🌟';
   if (!name || !age) return toast('Please enter name and age','error');
   setLoading(true);
   const { data, error } = await sb.from('children').insert({
@@ -2216,11 +2228,9 @@ async function addChild() {
   setLoading(false);
   if (error) return toast(error.message, 'error');
   A.children.push(data);
-  closeModal();
-  document.getElementById('child-name-input').value = '';
-  document.getElementById('child-age-input').value = '';
-  renderDashboard();
-  toast(`${name} added!`, 'success');
+  closeModal();           // close modal FIRST
+  renderDashboard();      // then re-render (inputs are gone, that's fine)
+  toast(name + ' added! Tap their card to begin. 🌟', 'success');
 }
 
 // ── Select child → load world map ────────────────────────────
@@ -2254,6 +2264,8 @@ function renderWorldMap() {
   if (kEl) kEl.textContent = A.totalKeys;
   if (document.getElementById('map-cname'))
     document.getElementById('map-cname').textContent = A.child?.name || '';
+  if (document.getElementById('map-ava'))
+    document.getElementById('map-ava').textContent = A.child?.avatar || '🌟';
   if (!grid) return;
   grid.innerHTML = WORLD_META.map((m, i) => {
     const p = A.progress[m.id];
@@ -2278,40 +2290,45 @@ function renderWorldMap() {
 function openWorld(wid) {
   A.world = WORLDS[wid];
   if (!A.world) return;
-  const p   = A.progress[wid] || {};
+  const p    = A.progress[wid] || {};
   const done = p.scenes_done || [];
   const meta = WORLD_META.find(m => m.id === wid);
 
-  document.getElementById('wd-title').textContent  = A.world.title;
-  document.getElementById('wd-sub').textContent    = A.world.sub;
-  document.getElementById('wd-icon').textContent   = meta?.icon || '';
+  // Header
+  const titleEl = document.getElementById('wd-title');
+  if (titleEl) titleEl.textContent = (meta?.icon || '') + ' ' + A.world.title;
 
-  const sl = document.getElementById('wd-scene-list');
-  sl.innerHTML = A.world.scenes.map((sc, i) => {
+  // Hero area
+  const hero = document.getElementById('wd-hero');
+  if (hero) hero.innerHTML = `<div style="font-size:14px;color:rgba(245,240,232,.6);padding:12px 20px">${A.world.sub}</div>`;
+
+  // Scene list
+  const sl = document.getElementById('wd-scenes');
+  if (sl) sl.innerHTML = A.world.scenes.map((sc, i) => {
     const finished = done.includes(sc.id);
-    return `
-      <div class="scene-item ${finished ? 'done' : ''}" onclick="startScene(${sc.id})">
-        <span class="si-num">${i+1}</span>
-        <span class="si-title">${sc.title}</span>
-        ${finished ? '<span class="si-check">✓</span>' : '<span class="si-arr">›</span>'}
-      </div>`;
+    return `<div class="scene-item ${finished?'done':''}" onclick="startScene(${sc.id})">
+      <span class="si-num">${i+1}</span>
+      <span class="si-title">${sc.title}</span>
+      ${finished ? '<span class="si-check">✓</span>' : '<span class="si-arr">›</span>'}
+    </div>`;
   }).join('');
 
-  const qBtn = document.getElementById('wd-quiz-btn');
-  const jBtn = document.getElementById('wd-journal-btn');
-  const scenesAll = A.world.scenes.length;
+  // Action buttons
+  const scenesAll  = A.world.scenes.length;
   const scenesDone = done.length;
-  const quizUnlock = scenesDone >= Math.ceil(scenesAll / 2);
-  const journalUnlock = p.quiz_done;
+  const quizUnlock    = scenesDone >= Math.ceil(scenesAll / 2);
+  const journalUnlock = !!p.quiz_done;
+  const actions = document.getElementById('wd-actions');
+  if (actions) actions.innerHTML = `
+    <button id="wd-quiz-btn-el" class="btn btn-gold btn-full"
+      onclick="startQuiz()" ${quizUnlock ? '' : 'disabled'}>
+      ${p.quiz_done ? '✓ Quiz Done' : (quizUnlock ? '📝 Take the Quiz' : 'Complete '+Math.ceil(scenesAll/2)+' scenes to unlock quiz')}
+    </button>
+    <button id="wd-journal-btn-el" class="btn btn-glass btn-full"
+      onclick="openJournal()" ${journalUnlock ? '' : 'disabled'}>
+      ${p.journal_done ? '✓ Journal Done' : (journalUnlock ? '📖 Open Journal' : 'Complete quiz to unlock journal')}
+    </button>`;
 
-  if (qBtn) {
-    qBtn.disabled = !quizUnlock;
-    qBtn.textContent = p.quiz_done ? '✓ Quiz Done' : (quizUnlock ? 'Take the Quiz' : `Complete ${Math.ceil(scenesAll/2)} scenes to unlock`);
-  }
-  if (jBtn) {
-    jBtn.disabled = !journalUnlock;
-    jBtn.textContent = p.journal_done ? '✓ Journal Done' : (journalUnlock ? 'Open Journal' : 'Complete quiz to unlock');
-  }
   SS('s-wdetail');
 }
 
@@ -2333,16 +2350,14 @@ function renderSceneStep() {
   if (!sc) return;
   const step = STEPS[A.step];
 
-  document.getElementById('sp-world-title').textContent = A.world?.title || '';
-  document.getElementById('sp-scene-title').textContent = sc.title;
-  document.getElementById('sp-step-label').textContent  = getStepLabel(step);
+  const lbl = document.getElementById('plbl');
+  if (lbl) lbl.textContent = (A.world?.title || '') + ' · ' + sc.title + ' · ' + getStepLabel(step);
 
-  const body = document.getElementById('sp-body');
+  const body = document.getElementById('pcontent');
+  if (!body) return;
   body.innerHTML = '';
 
-  const prevBtn = document.getElementById('sp-prev');
-  const nextBtn = document.getElementById('sp-next');
-  if (prevBtn) prevBtn.style.display = A.step > 0 ? 'inline-flex' : 'none';
+  const nextBtn = document.getElementById('pnext');
 
   if (step === 'A' || step === 'B' || step === 'C') {
     body.innerHTML = `<div class="beat-text">${sc[step]}</div>`;
@@ -2369,7 +2384,7 @@ function renderSceneStep() {
 
   // Progress bar
   const pct = ((A.step+1)/STEPS.length)*100;
-  const pb = document.getElementById('sp-progress-fill');
+  const pb = document.getElementById('prog-fill');
   if (pb) pb.style.width = pct + '%';
 }
 
@@ -2422,9 +2437,15 @@ async function completeScene() {
 
 // ── Reward screen ─────────────────────────────────────────────
 function showReward(ha, key) {
-  document.getElementById('reward-ha').textContent   = '+' + ha;
-  document.getElementById('reward-total').textContent = A.totalHasanah;
-  document.getElementById('reward-key').style.display = key ? 'block' : 'none';
+  const wrap = document.getElementById('reward-wrap');
+  if (wrap) wrap.innerHTML = `
+    <div style="text-align:center;z-index:1;padding:40px 24px">
+      <div style="font-size:64px;margin-bottom:16px">🌟</div>
+      <div style="font-family:var(--display);font-size:36px;color:var(--gold2);margin-bottom:8px">+${ha} Hasanah</div>
+      <div style="font-size:15px;color:rgba(245,240,232,.6);margin-bottom:8px">Total: ${A.totalHasanah} ⭐</div>
+      ${key ? '<div style="font-size:28px;margin:12px 0">🗝️ Noor Key Earned!</div>' : ''}
+      <button class="btn btn-gold btn-full" style="margin-top:24px" onclick="rewardContinue()">Continue →</button>
+    </div>`;
   startStarRain();
   SS('s-reward');
 }
@@ -2434,7 +2455,7 @@ function rewardContinue() {
 }
 
 function startStarRain() {
-  const container = document.getElementById('star-rain');
+  const container = document.getElementById('srainwrap');
   if (!container) return;
   container.innerHTML = '';
   for (let i = 0; i < 30; i++) {
@@ -2459,20 +2480,20 @@ function renderQuizQ() {
   const q = A.world.quiz[A.quiz.idx];
   if (!q) { finishQuiz(); return; }
 
-  document.getElementById('quiz-world').textContent = A.world.title;
-  document.getElementById('quiz-num').textContent   = `Question ${A.quiz.idx+1} of ${A.world.quiz.length}`;
-  document.getElementById('quiz-q').textContent     = q.q;
+  document.getElementById('quiz-wtitle').textContent = A.world.title;
+  document.getElementById('qnum').textContent   = `Question ${A.quiz.idx+1} of ${A.world.quiz.length}`;
+  document.getElementById('qtext').textContent     = q.q;
 
-  const opts = document.getElementById('quiz-options');
+  const opts = document.getElementById('qopts');
   opts.innerHTML = q.o.map((o, i) => `
     <button class="quiz-opt" onclick="answerQuiz(${i})">${o}</button>
   `).join('');
 
-  document.getElementById('quiz-praise').style.display = 'none';
-  document.getElementById('quiz-next-btn').style.display = 'none';
+  document.getElementById('qpraise').style.display = 'none';
+  document.getElementById('qnext').style.display = 'none';
 
   const pct = (A.quiz.idx / A.world.quiz.length) * 100;
-  const pb = document.getElementById('quiz-progress-fill');
+  const pb = document.getElementById('qpfill');
   if (pb) pb.style.width = pct + '%';
 }
 
@@ -2491,11 +2512,11 @@ function answerQuiz(idx) {
   });
 
   if (correct) {
-    const praise = document.getElementById('quiz-praise');
+    const praise = document.getElementById('qpraise');
     praise.textContent = q.p;
     praise.style.display = 'block';
   }
-  document.getElementById('quiz-next-btn').style.display = 'block';
+  document.getElementById('qnext').style.display = 'block';
 }
 
 function quizNext() {
@@ -2512,18 +2533,25 @@ async function finishQuiz() {
   const pct = Math.round((A.quiz.score / A.world.quiz.length) * 100);
   const ha  = A.quiz.score * 10;
 
-  // Show result
-  document.getElementById('quiz-result-score').textContent = `${A.quiz.score}/${A.world.quiz.length}`;
-  document.getElementById('quiz-result-pct').textContent   = pct + '%';
-  document.getElementById('quiz-result-msg').textContent   =
-    pct >= 80 ? 'Masha\'Allah! Excellent work! 🌟' :
-    pct >= 60 ? 'Well done! Keep learning! ✨' :
-    'Good effort! Try again to improve! 💪';
-  document.getElementById('quiz-result').style.display = 'block';
-  document.getElementById('quiz-options').style.display = 'none';
-  document.getElementById('quiz-q').style.display = 'none';
-  document.getElementById('quiz-next-btn').style.display = 'none';
-  document.getElementById('quiz-praise').style.display = 'none';
+  // Show result in qopts container
+  const msg = pct >= 80 ? "Masha'Allah! Excellent work! 🌟" :
+              pct >= 60 ? 'Well done! Keep learning! ✨' :
+              'Good effort! Review and try again! 💪';
+  const qopts = document.getElementById('qopts');
+  if (qopts) qopts.innerHTML = `
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:48px;margin-bottom:12px">${pct>=80?'🌟':pct>=60?'✨':'💪'}</div>
+      <div style="font-size:32px;font-weight:800;color:var(--gold2);margin-bottom:4px">${A.quiz.score}/${A.world.quiz.length}</div>
+      <div style="font-size:18px;color:rgba(245,240,232,.7);margin-bottom:4px">${pct}%</div>
+      <div style="font-size:15px;color:rgba(245,240,232,.6);margin-bottom:24px">${msg}</div>
+      <button class="btn btn-gold btn-full" onclick="quizDone()">Continue →</button>
+    </div>`;
+  const qtext = document.getElementById('qtext');
+  if (qtext) qtext.style.display = 'none';
+  const qnext = document.getElementById('qnext');
+  if (qnext) qnext.style.display = 'none';
+  const qpraise = document.getElementById('qpraise');
+  if (qpraise) qpraise.style.display = 'none';
 
   // Update progress
   if (!A.progress[wid]) A.progress[wid] = {scenes_done:[],hasanah:0,keys:0};
@@ -2551,20 +2579,26 @@ function quizDone() { openWorld(A.world.id); }
 function openJournal() {
   A.journal = { entries: [], submitted: false };
   const jd = A.world.journal;
-  document.getElementById('journal-world').textContent = A.world.title;
-  document.getElementById('journal-title').textContent = jd.title;
-  document.getElementById('journal-intro').textContent = jd.intro;
 
-  const pf = document.getElementById('journal-prompts');
-  pf.innerHTML = jd.prompts.map((p, i) => `
-    <div class="journal-prompt-block">
-      <label class="journal-label">${p}</label>
-      <textarea class="journal-textarea" id="journal-entry-${i}" placeholder="Write your thoughts here..."></textarea>
-    </div>
-  `).join('');
+  const titleEl = document.getElementById('jw-title');
+  if (titleEl) titleEl.textContent = A.world.title;
 
-  document.getElementById('journal-nura').style.display = 'none';
-  document.getElementById('journal-submit-btn').style.display = 'block';
+  const hdr = document.getElementById('j-hdr');
+  if (hdr) hdr.innerHTML = `
+    <div style="font-size:20px;font-weight:800;margin-bottom:6px">${jd.title}</div>
+    <div style="font-size:14px;color:rgba(245,240,232,.6);line-height:1.6" id="j-intro-el">${jd.intro}</div>`;
+
+  const pf = document.getElementById('j-prompts');
+  if (pf) pf.innerHTML = jd.prompts.map((p, i) => `
+    <div class="journal-prompt-block" style="margin-bottom:16px">
+      <label class="journal-label" style="display:block;font-size:14px;font-weight:700;margin-bottom:8px;color:var(--gold2)">${p}</label>
+      <textarea class="journal-textarea" id="journal-entry-${i}"
+        placeholder="Write your thoughts here..."
+        style="width:100%;min-height:80px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px;color:var(--cream);font-family:var(--body);font-size:14px;resize:vertical;box-sizing:border-box"></textarea>
+    </div>`).join('') + `
+    <div id="j-nura-el" style="display:none;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);border-radius:12px;padding:16px;margin-top:8px;font-size:14px;line-height:1.6"></div>
+    <button id="j-submit-btn-el" class="btn btn-gold btn-full" style="margin-top:16px;margin-bottom:24px" onclick="submitJournal()">Submit ✨</button>`;
+
   SS('s-journal');
 }
 
@@ -2582,9 +2616,10 @@ async function submitJournal() {
   A.journal.submitted = true;
 
   // Show Nura response
-  document.getElementById('journal-nura').textContent = jd.nura;
-  document.getElementById('journal-nura').style.display = 'block';
-  document.getElementById('journal-submit-btn').style.display = 'none';
+  const nuraEl = document.getElementById('j-nura-el');
+  const submitEl = document.getElementById('j-submit-btn-el');
+  if (nuraEl) { nuraEl.textContent = jd.nura; nuraEl.style.display = 'block'; }
+  if (submitEl) submitEl.style.display = 'none';
 
   // Update progress
   const wid = A.world.id;
@@ -2917,19 +2952,19 @@ async function loadAdminStudio() {
 }
 
 function renderAdminAssets() {
-  const list = document.getElementById('admin-asset-list');
+  const list = document.getElementById('adm-assets');
   if (!list) return;
   list.innerHTML = A.adminAssets.map(a => `
-    <div class="asset-row">
-      <span class="asset-name">${esc(a.file_name)}</span>
-      <a class="asset-link" href="${a.public_url}" target="_blank">View</a>
+    <div class="asset-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)">
+      <span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${esc(a.file_name)}</span>
+      <a style="color:var(--gold);font-size:13px;font-weight:700;text-decoration:none" href="${a.public_url}" target="_blank">View ↗</a>
     </div>
-  `).join('') || '<p>No assets yet.</p>';
+  `).join('') || '<p style="color:rgba(245,240,232,.4);font-size:14px">No assets yet.</p>';
 }
 
 async function adminUpload() {
-  const input = document.getElementById('admin-file-input');
-  const tag   = document.getElementById('admin-file-tag')?.value.trim() || 'general';
+  const input = document.getElementById('adm-file');
+  const tag   = document.getElementById('adm-zone')?.value.trim() || 'general';
   if (!input?.files?.length) return toast('Choose a file first','error');
   const file = input.files[0];
   const path = `${tag}/${Date.now()}_${file.name}`;
@@ -2958,6 +2993,14 @@ function esc(str) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+
+// ── Aliases called directly from HTML buttons ────────────────
+function exitScene()   { openWorld(A.world?.id); }
+function exitQuiz()    { openWorld(A.world?.id); }
+function exitJournal() { openWorld(A.world?.id); }
+function advScene()    { sceneNext(); }
+function advQuiz()     { quizNext(); }
+function uploadAsset() { adminUpload(); }
 // ============================================================
 // INIT
 // ============================================================
