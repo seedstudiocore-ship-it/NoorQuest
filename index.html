@@ -263,7 +263,7 @@ select.input{appearance:none;cursor:pointer}
 <div id="app">
 
 <!-- SPLASH -->
-<div id="auth-screen" class="screen active">
+<div id="s-splash" class="screen">
   <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:20px;position:relative;z-index:1;text-align:center">
     <div class="moon">🌙</div>
     <div><div class="splash-title">NoorQuest</div><div style="font-size:13px;color:rgba(245,240,232,.6);letter-spacing:2px;text-transform:uppercase;margin-top:6px">An Islamic Journey</div></div>
@@ -273,8 +273,8 @@ select.input{appearance:none;cursor:pointer}
     </div>
     <p style="font-size:15px;line-height:1.7;color:rgba(245,240,232,.7);max-width:300px">Join Nura & Zain through 13 worlds of Islamic discovery. Ages 7–14.</p>
     <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px">
-      <button class="btn btn-gold btn-full" onclick="SS('auth')">Begin the Journey ✨</button>
-      <button class="btn btn-glass btn-full btn-sm" onclick="SS('setup')">⚙️ Setup Guide</button>
+      <button class="btn btn-gold btn-full" onclick="SS('s-auth')">Begin the Journey ✨</button>
+      <button class="btn btn-glass btn-full btn-sm" onclick="SS('s-setup')">⚙️ Setup Guide</button>
     </div>
   </div>
   <div style="padding:16px;text-align:center;font-size:12px;color:rgba(245,240,232,.25);position:relative;z-index:1">Made with ❤️ for Muslim children worldwide</div>
@@ -282,7 +282,7 @@ select.input{appearance:none;cursor:pointer}
 
 <!-- SETUP -->
 <div id="s-setup" class="screen">
-  <div class="back-hdr"><button class="back-btn" onclick="SS('splash')">←</button><b style="font-size:17px">Setup Guide</b></div>
+  <div class="back-hdr"><button class="back-btn" onclick="SS('s-splash')">←</button><b style="font-size:17px">Setup Guide</b></div>
   <div style="padding:20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px">
     <div class="card card-gold"><b style="font-size:17px;display:block;margin-bottom:8px">🚀 5-Minute Setup</b><p style="font-size:14px;line-height:1.7;color:rgba(245,240,232,.8)">NoorQuest stores all data in Supabase — no localStorage at all. Follow these steps.</p></div>
     <div><span class="lbl">Step 1 — Supabase Project</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">Go to <b style="color:var(--gold)">supabase.com</b> → New Project. Keep your URL and anon key.</p></div>
@@ -290,7 +290,7 @@ select.input{appearance:none;cursor:pointer}
     <div><span class="lbl">Step 3 — Update Config</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">Find <code style="color:var(--gold)">SUPABASE_URL</code> and <code style="color:var(--gold)">SUPABASE_KEY</code> in the &lt;script&gt; and replace with yours.</p></div>
     <div><span class="lbl">Step 4 — Deploy to Vercel</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">Push noorquest.html to GitHub → connect Vercel → done.</p></div>
     <div><span class="lbl">Step 5 — Become Admin</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">After signing up, run: <code style="color:var(--gold)">UPDATE profiles SET is_admin=TRUE WHERE email='you@email.com';</code></p></div>
-    <button class="btn btn-gold btn-full" onclick="SS('auth')">Start Using NoorQuest →</button>
+    <button class="btn btn-gold btn-full" onclick="SS('s-auth')">Start Using NoorQuest →</button>
   </div>
 </div>
 
@@ -311,7 +311,7 @@ select.input{appearance:none;cursor:pointer}
   <div class="topbar">
     <div><div style="font-size:13px;color:rgba(245,240,232,.5)">Parent Dashboard</div><div id="d-name" style="font-weight:800;font-size:18px">Hello!</div></div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button id="admin-btn" style="display:none;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);color:#a78bfa;padding:8px 14px;font-size:13px;border-radius:50px;cursor:pointer;font-weight:700" onclick="SS('admin')">⚙️ Admin</button>
+      <button id="admin-btn" style="display:none;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);color:#a78bfa;padding:8px 14px;font-size:13px;border-radius:50px;cursor:pointer;font-weight:700" onclick="SS('s-admin')">⚙️ Admin</button>
       <button class="btn btn-sm btn-glass" onclick="signout()">Sign Out</button>
     </div>
   </div>
@@ -326,7 +326,7 @@ select.input{appearance:none;cursor:pointer}
 <!-- WORLD MAP -->
 <div id="s-map" class="screen">
   <div class="ctopbar">
-    <button class="back-btn" onclick="SS('dash')">←</button>
+    <button class="back-btn" onclick="SS('s-dash')">←</button>
     <div id="map-ava" style="font-size:26px"></div>
     <div style="flex:1"><div id="map-cname" style="font-weight:800;font-size:16px"></div><div style="font-size:12px;color:rgba(245,240,232,.5)">Explorer's Journey</div></div>
     <div class="hchip">⭐ <span id="map-ha">0</span></div>
@@ -341,7 +341,7 @@ select.input{appearance:none;cursor:pointer}
 
 <!-- WORLD DETAIL -->
 <div id="s-wdetail" class="screen">
-  <div class="back-hdr"><button class="back-btn" onclick="SS('map')">←</button><b id="wd-title" style="font-size:17px;flex:1">World</b></div>
+  <div class="back-hdr"><button class="back-btn" onclick="SS('s-map')">←</button><b id="wd-title" style="font-size:17px;flex:1">World</b></div>
   <div id="wd-hero" class="who-hero"></div>
   <div id="wd-scenes" style="padding:0 16px;flex:1;overflow-y:auto;padding-bottom:16px"></div>
   <div id="wd-actions" style="padding:12px 16px 20px;flex-shrink:0;display:flex;flex-direction:column;gap:10px"></div>
@@ -388,14 +388,14 @@ select.input{appearance:none;cursor:pointer}
 <!-- REWARD -->
 <div id="s-reward" class="screen">
   <div id="srainwrap" class="stars-rain"></div>
-  <div style="padding:16px;flex-shrink:0;z-index:1"><button class="back-btn" onclick="SS('wdetail')" style="background:rgba(255,255,255,.1)">←</button></div>
+  <div style="padding:16px;flex-shrink:0;z-index:1"><button class="back-btn" onclick="SS('s-wdetail')" style="background:rgba(255,255,255,.1)">←</button></div>
   <div id="reward-wrap" class="reward-wrap"></div>
 </div>
 
 <!-- ADMIN -->
 <div id="s-admin" class="screen">
   <div style="padding:16px 20px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08)">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px"><button class="back-btn" onclick="SS('dash')">←</button><b style="font-size:20px">Admin Studio</b><span class="badge badge-purple">⚙️ Admin Only</span></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px"><button class="back-btn" onclick="SS('s-dash')">←</button><b style="font-size:20px">Admin Studio</b><span class="badge badge-purple">⚙️ Admin Only</span></div>
     <p style="font-size:13px;color:rgba(245,240,232,.5);padding-left:48px">Upload media for any world/scene. Visible globally to all children instantly.</p>
   </div>
   <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px">
@@ -2035,13 +2035,24 @@ function toast(msg, type='info') {
 
 // ── Loading overlay ──────────────────────────────────────────
 function setLoading(on) {
-  const ov = document.getElementById('loading-overlay');
+  const ov = document.getElementById('loading');
   if (ov) ov.style.display = on ? 'flex' : 'none';
 }
 
 // ── Modal ────────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id)?.classList.add('active'); }
-function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
+function openModal(html) {
+  const bg = document.getElementById('modal-bg');
+  const inner = document.getElementById('modal-inner');
+  if (!bg || !inner) return;
+  inner.innerHTML = html;
+  bg.style.display = 'flex';
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-bg')) {
+    const bg = document.getElementById('modal-bg');
+    if (bg) bg.style.display = 'none';
+  }
+}
 
 // ── Stars background ─────────────────────────────────────────
 function initStars() {
@@ -2114,7 +2125,7 @@ async function signout() {
         totalHasanah:0, totalKeys:0, world:null, scene:null, step:0, sceneHa:0,
         quiz:{idx:0,score:0,answers:[]}, journal:{entries:[],submitted:false},
         adminFile:null, adminAssets:[] };
-  SS('auth-screen');
+  SS('s-auth');
 }
 
 // ── Load profile ─────────────────────────────────────────────
@@ -2131,7 +2142,7 @@ async function loadChildren() {
   const { data } = await sb.from('children').select('*').eq('parent_id', A.user.id).order('created_at');
   A.children = data || [];
   renderDashboard();
-  SS('dashboard');
+  SS('s-dash');
 }
 
 // ── Dashboard ─────────────────────────────────────────────────
@@ -2158,7 +2169,25 @@ function renderDashboard() {
 }
 
 // ── Open add-child modal ──────────────────────────────────────
-function openAddChild() { openModal('add-child-modal'); }
+function openAddChild() {
+  openModal(`
+    <div class="modal-handle"></div>
+    <h3 style="font-size:18px;font-weight:800;margin-bottom:16px">Add New Explorer</h3>
+    <div style="margin-bottom:12px">
+      <label style="font-size:13px;color:rgba(245,240,232,.6);display:block;margin-bottom:6px">Child's Name</label>
+      <input id="child-name-input" class="input" placeholder="e.g. Nura" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:13px;color:rgba(245,240,232,.6);display:block;margin-bottom:6px">Age</label>
+      <input id="child-age-input" class="input" type="number" min="5" max="18" placeholder="e.g. 10" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:13px;color:rgba(245,240,232,.6);display:block;margin-bottom:6px">Avatar</label>
+      <input id="child-avatar-input" class="input" placeholder="e.g. 🌟" style="width:100%;box-sizing:border-box">
+    </div>
+    <button class="btn btn-gold btn-full" onclick="addChild()">Add Explorer ✨</button>
+  `);
+}
 
 // ── Add child ────────────────────────────────────────────────
 async function addChild() {
@@ -2173,7 +2202,7 @@ async function addChild() {
   setLoading(false);
   if (error) return toast(error.message, 'error');
   A.children.push(data);
-  closeModal('add-child-modal');
+  closeModal();
   document.getElementById('child-name-input').value = '';
   document.getElementById('child-age-input').value = '';
   renderDashboard();
@@ -2199,18 +2228,18 @@ async function loadProgress() {
     if (row.keys) A.totalKeys += row.keys;
   });
   renderWorldMap();
-  SS('world-map');
+  SS('s-map');
 }
 
 // ── World Map ────────────────────────────────────────────────
 function renderWorldMap() {
-  const grid = document.getElementById('world-map-grid');
-  const hEl  = document.getElementById('map-hasanah');
+  const grid = document.getElementById('world-grid');
+  const hEl  = document.getElementById('map-ha');
   const kEl  = document.getElementById('map-keys');
   if (hEl) hEl.textContent = A.totalHasanah;
   if (kEl) kEl.textContent = A.totalKeys;
-  if (document.getElementById('map-child-name'))
-    document.getElementById('map-child-name').textContent = A.child?.name || '';
+  if (document.getElementById('map-cname'))
+    document.getElementById('map-cname').textContent = A.child?.name || '';
   if (!grid) return;
   grid.innerHTML = WORLD_META.map((m, i) => {
     const p = A.progress[m.id];
@@ -2269,7 +2298,7 @@ function openWorld(wid) {
     jBtn.disabled = !journalUnlock;
     jBtn.textContent = p.journal_done ? '✓ Journal Done' : (journalUnlock ? 'Open Journal' : 'Complete quiz to unlock');
   }
-  SS('world-detail');
+  SS('s-wdetail');
 }
 
 // ── Start scene ───────────────────────────────────────────────
@@ -2279,7 +2308,7 @@ function startScene(sceneId) {
   A.step    = 0;
   A.sceneHa = 0;
   renderSceneStep();
-  SS('scene-player');
+  SS('s-player');
 }
 
 // ── Scene player ──────────────────────────────────────────────
@@ -2383,7 +2412,7 @@ function showReward(ha, key) {
   document.getElementById('reward-total').textContent = A.totalHasanah;
   document.getElementById('reward-key').style.display = key ? 'block' : 'none';
   startStarRain();
-  SS('reward');
+  SS('s-reward');
 }
 
 function rewardContinue() {
@@ -2409,7 +2438,7 @@ function startStarRain() {
 function startQuiz() {
   A.quiz = { idx:0, score:0, answers:[] };
   renderQuizQ();
-  SS('quiz');
+  SS('s-quiz');
 }
 
 function renderQuizQ() {
@@ -2522,7 +2551,7 @@ function openJournal() {
 
   document.getElementById('journal-nura').style.display = 'none';
   document.getElementById('journal-submit-btn').style.display = 'block';
-  SS('journal');
+  SS('s-journal');
 }
 
 async function submitJournal() {
@@ -2865,12 +2894,12 @@ function listenTap(el) {
 // ============================================================
 async function loadAdminStudio() {
   if (!A.profile?.is_admin) {
-    SS('dashboard'); return;
+    SS('s-dash'); return;
   }
   const { data } = await sb.from('admin_assets').select('*').order('created_at', {ascending:false}).limit(20);
   A.adminAssets = data || [];
   renderAdminAssets();
-  SS('admin');
+  SS('s-admin');
 }
 
 function renderAdminAssets() {
@@ -2919,15 +2948,16 @@ function esc(str) {
 // INIT
 // ============================================================
 async function init() {
+  SS('s-splash');
   initStars();
-  SS('auth-screen'); // ADD THIS LINE RIGHT HERE
-  
+
+  // Restore session
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     A.user = session.user;
     await loadProfile();
   } else {
-    SS('auth-screen');
+    SS('s-auth');
   }
 
   // Auth state listener
@@ -2936,7 +2966,7 @@ async function init() {
       A.user = session.user;
       await loadProfile();
     } else if (event === 'SIGNED_OUT') {
-      SS('auth-screen');
+      SS('s-auth');
     }
   });
 }
