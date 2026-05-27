@@ -1976,7 +1976,7 @@ const W13 = {
 // ============================================================
 
 const SUPABASE_URL = 'https://ycdbrvfraiehlibseakx.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_oVvGSGcy8ie-sYqXKqPwuA_Rahj4drY';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljZGJydmZyYWllaGxpYnNlYWt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MTQ2ODEsImV4cCI6MjA5NTI5MDY4MX0.L8qpHN8TJDwu-W9iSgYqjg1YR3SCH-oB948X3wokBvs';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── World registry ──────────────────────────────────────────
@@ -2106,13 +2106,17 @@ function authTab(tab) {
 async function login() {
   const email = document.getElementById('login-email')?.value.trim();
   const pass  = document.getElementById('login-pass')?.value;
-  if (!email || !pass) return toast('Please enter your email and password','error');
+  if (!email || !pass) return toast('Please enter your email and password', 'error');
   setLoading(true);
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) { setLoading(false); return toast(error.message, 'error'); }
+    A.user = data.user;
+    await loadProfile();
+  } catch(e) {
+    toast('Login failed: ' + e.message, 'error');
+  }
   setLoading(false);
-  if (error) return toast(error.message, 'error');
-  A.user = data.user;
-  await loadProfile();
 }
 
 // ── Auth: Signup ─────────────────────────────────────────────
@@ -2120,22 +2124,30 @@ async function signup() {
   const name  = document.getElementById('signup-name')?.value.trim();
   const email = document.getElementById('signup-email')?.value.trim();
   const pass  = document.getElementById('signup-pass')?.value;
-  if (!name || !email || !pass) return toast('Please fill in all fields','error');
-  if (pass.length < 6) return toast('Password must be at least 6 characters','error');
+  if (!name || !email || !pass) return toast('Please fill in all fields', 'error');
+  if (pass.length < 6) return toast('Password must be at least 6 characters', 'error');
   setLoading(true);
-  const { data, error } = await sb.auth.signUp({
-    email, password: pass,
-    options: { data: { display_name: name } }
-  });
-  setLoading(false);
-  if (error) return toast(error.message, 'error');
-  if (data.user && data.user.id) {
-    await sb.from('profiles').upsert({ id: data.user.id, display_name: name, email });
-    A.user = data.user;
-    await loadProfile();
-  } else {
-    toast('Account created! Check your email to confirm, then sign in.', 'success');
+  try {
+    const { data, error } = await sb.auth.signUp({
+      email, password: pass,
+      options: { data: { display_name: name } }
+    });
+    if (error) { setLoading(false); return toast(error.message, 'error'); }
+    if (data.user && data.user.id) {
+      // Try to create profile - don't crash if table missing
+      try {
+        await sb.from('profiles').upsert({ id: data.user.id, display_name: name, email });
+      } catch(e) { console.warn('Profile upsert skipped:', e.message); }
+      A.user = data.user;
+      A.profile = { id: data.user.id, display_name: name, email, is_admin: false };
+      await loadChildren();
+    } else {
+      toast('Check your email to confirm your account, then sign in!', 'success');
+    }
+  } catch(e) {
+    toast('Signup failed: ' + e.message, 'error');
   }
+  setLoading(false);
 }
 
 // ── Auth: Signout ────────────────────────────────────────────
@@ -2151,16 +2163,27 @@ async function signout() {
 // ── Load profile ─────────────────────────────────────────────
 async function loadProfile() {
   if (!A.user) return;
-  const { data } = await sb.from('profiles').select('*').eq('id', A.user.id).single();
-  A.profile = data;
+  try {
+    const { data } = await sb.from('profiles').select('*').eq('id', A.user.id).single();
+    A.profile = data || { id: A.user.id, display_name: A.user.email, is_admin: false };
+  } catch(e) {
+    console.warn('loadProfile error:', e.message);
+    A.profile = { id: A.user.id, display_name: A.user.email, is_admin: false };
+  }
   await loadChildren();
 }
 
 // ── Load children ────────────────────────────────────────────
 async function loadChildren() {
   if (!A.user) return;
-  const { data } = await sb.from('children').select('*').eq('parent_id', A.user.id).order('created_at');
-  A.children = data || [];
+  try {
+    const { data, error } = await sb.from('children').select('*').eq('parent_id', A.user.id).order('created_at');
+    if (error) console.warn('loadChildren error:', error.message);
+    A.children = data || [];
+  } catch(e) {
+    console.warn('loadChildren exception:', e.message);
+    A.children = [];
+  }
   renderDashboard();
   SS('s-dash');
 }
