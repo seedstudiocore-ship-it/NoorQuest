@@ -415,7 +415,7 @@ select.input{appearance:none;cursor:pointer}
       </div>
       <input id="adm-desc" class="input" placeholder="Description (optional)" style="margin-bottom:12px">
       <div class="upload-zone" onclick="document.getElementById('adm-file').click()" id="adm-zone">
-        <input type="file" id="adm-file" accept="image/*,audio/*,video/*" style="display:none" onchange="setAdminFile(this)">
+        <input type="file" id="adm-file" accept="image/*,audio/*,video/*" style="display:none" onchange="document.getElementById('adm-fname').textContent=this.files[0]?.name||'No file'">
         <div style="font-size:36px;margin-bottom:8px">📁</div>
         <div style="font-weight:700;font-size:15px;margin-bottom:4px" id="adm-fname">Tap to select file</div>
         <div style="font-size:13px;color:rgba(245,240,232,.5)">Images, audio, and video</div>
@@ -2114,9 +2114,9 @@ async function login() {
     A.user = data.user;
     await loadProfile();
   } catch(e) {
+    setLoading(false);
     toast('Login failed: ' + e.message, 'error');
   }
-  setLoading(false);
 }
 
 // ── Auth: Signup ─────────────────────────────────────────────
@@ -2142,12 +2142,13 @@ async function signup() {
       A.profile = { id: data.user.id, display_name: name, email, is_admin: false };
       await loadChildren();
     } else {
+      setLoading(false);
       toast('Check your email to confirm your account, then sign in!', 'success');
     }
   } catch(e) {
+    setLoading(false);
     toast('Signup failed: ' + e.message, 'error');
   }
-  setLoading(false);
 }
 
 // ── Auth: Signout ────────────────────────────────────────────
@@ -2184,6 +2185,7 @@ async function loadChildren() {
     console.warn('loadChildren exception:', e.message);
     A.children = [];
   }
+  setLoading(false);
   renderDashboard();
   SS('s-dash');
 }
@@ -2987,7 +2989,7 @@ function renderAdminAssets() {
 
 async function adminUpload() {
   const input = document.getElementById('adm-file');
-  const tag   = document.getElementById('adm-zone')?.value.trim() || 'general';
+  const tag   = 'general';
   if (!input?.files?.length) return toast('Choose a file first','error');
   const file = input.files[0];
   const path = `${tag}/${Date.now()}_${file.name}`;
