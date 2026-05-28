@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>NoorQuest</title>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Nunito:wght@400;600;700;800&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito:wght@400;600;700;800&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!--
 SQL SETUP (run in Supabase SQL Editor):
@@ -72,190 +72,422 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXEC
 -- Make yourself admin: UPDATE public.profiles SET is_admin = TRUE WHERE email = 'your@email.com';
 -->
 <style>
-:root{--navy:#080f1e;--navy2:#0d1b35;--navy3:#112244;--gold:#d4a843;--gold2:#f0c060;--gold3:#ffe08a;--cream:#f5f0e8;--cream2:#ede5d4;--green:#059669;--red:#dc2626;--purple:#7c3aed;--shadow:0 4px 24px rgba(0,0,0,0.5);--glow:0 0 24px rgba(212,168,67,0.4);--r:16px;--r2:24px;--body:'Nunito',sans-serif;--display:'Scheherazade New',serif;--arabic:'Amiri',serif}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;background:var(--navy)}
-body{font-family:var(--body);color:var(--cream);display:flex;justify-content:center}
-#app{width:100%;max-width:480px;height:100%;position:relative;overflow:hidden;background:var(--navy)}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transition:opacity .3s}
-.screen.active{opacity:1;pointer-events:all}
-#starsbg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) var(--dl,0s) infinite}
-@keyframes twinkle{0%,100%{opacity:.2;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 24px;border-radius:50px;border:none;cursor:pointer;font-family:var(--body);font-weight:700;font-size:16px;transition:all .2s;outline:none}
-.btn:active{transform:scale(.97)}
-.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);box-shadow:0 4px 16px rgba(212,168,67,.4)}
-.btn-outline{background:transparent;border:2px solid var(--gold);color:var(--gold)}
-.btn-glass{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:var(--cream)}
-.btn-danger{background:var(--red);color:#fff}
-.btn-sm{padding:8px 18px;font-size:14px}
-.btn-full{width:100%}
-.card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:var(--r2);padding:20px;backdrop-filter:blur(8px)}
-.card-gold{background:rgba(212,168,67,.08);border-color:rgba(212,168,67,.25)}
-.input{width:100%;padding:14px 18px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:12px;color:var(--cream);font-family:var(--body);font-size:15px;outline:none;transition:border-color .2s}
-.input::placeholder{color:rgba(245,240,232,.4)}
-.input:focus{border-color:var(--gold)}
-textarea.input{resize:vertical;min-height:80px}
-select.input{appearance:none;cursor:pointer}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700}
-.badge-gold{background:rgba(212,168,67,.2);color:var(--gold2);border:1px solid rgba(212,168,67,.3)}
-.badge-green{background:rgba(5,150,105,.2);color:#34d399;border:1px solid rgba(5,150,105,.3)}
-.badge-purple{background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3)}
-.lbl{font-size:12px;font-weight:700;color:rgba(245,240,232,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block}
-.arabic{font-family:var(--arabic);direction:rtl;text-align:right;line-height:2}
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-10px);background:rgba(212,168,67,.95);color:var(--navy);padding:12px 24px;border-radius:50px;font-weight:700;font-size:14px;z-index:9999;box-shadow:var(--shadow);transition:opacity .3s,transform .3s;pointer-events:none;max-width:320px;text-align:center;opacity:0}
-.loading{position:fixed;inset:0;background:rgba(8,15,30,.85);display:flex;align-items:center;justify-content:center;z-index:9998;flex-direction:column;gap:16px}
-.spinner{width:48px;height:48px;border:3px solid rgba(212,168,67,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.divider{height:1px;background:rgba(255,255,255,.1);margin:16px 0}
-.back-hdr{display:flex;align-items:center;gap:12px;padding:14px 16px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.06)}
-.back-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.08);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--cream);flex-shrink:0}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
-.modal{background:var(--navy2);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:480px;border-top:1px solid rgba(255,255,255,.1);animation:slideup .3s ease}
-@keyframes slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 20px}
-/* Splash */
-#s-splash{background:radial-gradient(ellipse at 50% 30%,#1a2f55,var(--navy) 70%);z-index:1}
-.moon{font-size:80px;animation:float 4s ease-in-out infinite;filter:drop-shadow(0 0 30px rgba(212,168,67,.5))}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-.splash-title{font-family:var(--display);font-size:52px;color:var(--gold2);text-shadow:0 0 40px rgba(212,168,67,.5);line-height:1}
-/* Auth */
-.auth-tab{flex:1;padding:10px;text-align:center;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;color:rgba(245,240,232,.5);transition:all .2s}
-.auth-tab.on{background:var(--gold);color:var(--navy)}
-.errmsg{background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);border-radius:10px;padding:12px;font-size:14px;color:#fca5a5;text-align:center}
-/* Dashboard */
-.topbar{background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.child-card{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:14px;margin-bottom:12px;cursor:pointer;transition:all .2s}
-.child-card:active{background:rgba(212,168,67,.1);border-color:rgba(212,168,67,.3)}
-.add-btn{border:2px dashed rgba(212,168,67,.3);background:transparent;border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;color:var(--gold);font-family:var(--body);font-weight:700;font-size:15px;transition:all .2s}
-.add-btn:hover{background:rgba(212,168,67,.06)}
-/* Avatar */
-.ava{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy3),#1a2f55);display:flex;align-items:center;justify-content:center;font-size:26px;border:2px solid rgba(212,168,67,.3);flex-shrink:0}
-/* Map */
-.ctopbar{padding:12px 16px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
-.hchip{background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.3);border-radius:50px;padding:4px 12px;font-size:13px;font-weight:700;color:var(--gold2)}
-.wgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px 32px}
-.wcard{border-radius:var(--r);padding:16px 14px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;min-height:120px;display:flex;flex-direction:column;justify-content:flex-end;border:1px solid rgba(255,255,255,.08)}
-.wcard.locked{opacity:.45;cursor:default}
-.wcard.locked::after{content:'🔒';position:absolute;top:10px;right:10px;font-size:16px}
-.wcard.complete::after{content:'✅';position:absolute;top:10px;right:10px;font-size:16px}
-.wc1{background:linear-gradient(135deg,rgba(124,58,237,.35),rgba(8,15,30,.85))}
-.wc2{background:linear-gradient(135deg,rgba(5,150,105,.35),rgba(8,15,30,.85))}
-.wc3{background:linear-gradient(135deg,rgba(212,168,67,.35),rgba(8,15,30,.85))}
-.wc4{background:linear-gradient(135deg,rgba(220,38,38,.3),rgba(8,15,30,.85))}
-.wc5{background:linear-gradient(135deg,rgba(37,99,235,.35),rgba(8,15,30,.85))}
-.wc6{background:linear-gradient(135deg,rgba(251,146,60,.35),rgba(8,15,30,.85))}
-.wc7{background:linear-gradient(135deg,rgba(20,184,166,.35),rgba(8,15,30,.85))}
-.wc8{background:linear-gradient(135deg,rgba(139,92,246,.35),rgba(8,15,30,.85))}
-.wc9{background:linear-gradient(135deg,rgba(236,72,153,.35),rgba(8,15,30,.85))}
-.wc10{background:linear-gradient(135deg,rgba(245,158,11,.35),rgba(8,15,30,.85))}
-.wc11{background:linear-gradient(135deg,rgba(16,185,129,.35),rgba(8,15,30,.85))}
-.wc12{background:linear-gradient(135deg,rgba(239,68,68,.3),rgba(8,15,30,.85))}
-.wc13{background:linear-gradient(135deg,rgba(212,168,67,.45),rgba(8,15,30,.85))}
-/* World detail */
-.who-hero{padding:20px;flex-shrink:0}
-.scene-item{display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);margin-bottom:10px;cursor:pointer;transition:all .2s}
-.scene-item:active,.scene-item.hover{background:rgba(212,168,67,.08);border-color:rgba(212,168,67,.25)}
-.scene-item.locked{opacity:.4;cursor:default}
-.scene-item.done{border-color:rgba(5,150,105,.3)}
-.snum{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;border:2px solid rgba(255,255,255,.15)}
-.snum.done{background:rgba(5,150,105,.3);border-color:#34d399}
-.waction{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--r);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);cursor:pointer;transition:all .2s;width:100%;text-align:left}
-.waction:active{background:rgba(212,168,67,.1)}
-.waction.done{background:rgba(5,150,105,.1);border-color:rgba(5,150,105,.3)}
-/* Player */
-#s-player{background:radial-gradient(ellipse at 50% 20%,#112244,var(--navy))}
-.progbar{height:4px;background:rgba(255,255,255,.1);flex-shrink:0}
-.progfill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .4s}
-.phdr{padding:14px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.step-lbl{flex:1;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase}
-.beat-txt{font-size:16px;line-height:1.85;color:var(--cream)}
-.beat-spk{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.beat-name{font-size:13px;font-weight:700;color:var(--gold2)}
-.dua-card{background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.2);border-radius:var(--r2);padding:20px;text-align:center}
-.dua-ar{font-family:var(--arabic);font-size:26px;direction:rtl;line-height:2;color:var(--gold2);margin-bottom:12px}
-.dua-lat{font-size:13px;font-style:italic;color:var(--gold3);margin-bottom:8px}
-.dua-en{font-size:15px;color:var(--cream);font-weight:600}
-.lesson-card{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:var(--r2);padding:20px}
-.lesson-ttl{font-weight:800;color:#a78bfa;font-size:13px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
-.lesson-txt{font-size:15px;line-height:1.8;color:var(--cream)}
-.step-dots{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
-.sdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .3s}
-.sdot.on{background:var(--gold);transform:scale(1.3)}
-.sdot.was{background:rgba(212,168,67,.4)}
-/* Interactives */
-.ix-box{border-radius:var(--r2);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:16px}
-.ix-ttl{font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
-.tap-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.tap-item{background:rgba(212,168,67,.06);border:1.5px solid rgba(212,168,67,.2);border-radius:12px;padding:14px;cursor:pointer;transition:all .3s;text-align:center;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.tap-item.lit{background:rgba(212,168,67,.15);border-color:var(--gold)}
-.tap-icon{font-size:26px}
-.tap-name{font-size:13px;font-weight:700}
-.tap-rev{font-size:12px;color:rgba(245,240,232,.65);display:none;line-height:1.5;text-align:left}
-.tap-item.lit .tap-rev{display:block}
-.breathe-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding:8px}
-.breathe-c{width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(212,168,67,.3),rgba(212,168,67,.05));border:2px solid rgba(212,168,67,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 1.8s ease;font-size:14px;font-weight:700;color:var(--gold)}
-.breathe-c.in{transform:scale(1.3);background:radial-gradient(circle,rgba(212,168,67,.5),rgba(212,168,67,.1))}
-.breathe-c.out{transform:scale(.9)}
-.build-steps{display:flex;flex-direction:column;gap:8px}
-.bstep{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;opacity:.3;transition:all .4s;display:flex;align-items:center;gap:10px}
-.bstep.built{opacity:1;background:rgba(212,168,67,.08);border-color:rgba(212,168,67,.3)}
-.bstep-ico{font-size:24px;flex-shrink:0}
-.bstep-txt{font-size:14px;font-weight:600;color:var(--cream)}
-.rev-items{display:flex;flex-direction:column;gap:8px}
-.rev-item{background:rgba(212,168,67,.05);border:1.5px solid rgba(212,168,67,.15);border-radius:10px;padding:14px;cursor:pointer}
-.rev-lbl{font-weight:700;font-size:14px;color:var(--gold2);display:flex;align-items:center;justify-content:space-between}
-.rev-body{font-size:13px;color:rgba(245,240,232,.7);margin-top:8px;display:none;line-height:1.6}
-.rev-item.open .rev-body{display:block}
-.listen-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.lis-item{background:rgba(124,58,237,.1);border:1.5px solid rgba(124,58,237,.2);border-radius:12px;padding:14px;cursor:pointer;transition:all .3s;text-align:center}
-.lis-item.playing{background:rgba(124,58,237,.25);border-color:#a78bfa;animation:pborder 1s infinite}
-@keyframes pborder{0%,100%{box-shadow:0 0 0 0 rgba(167,139,250,.4)}50%{box-shadow:0 0 0 8px rgba(167,139,250,0)}}
-.lis-ico{font-size:32px;margin-bottom:6px}
-.sort-wrap{display:flex;gap:10px}
-.sort-zone{flex:1;background:rgba(255,255,255,.04);border:2px dashed rgba(255,255,255,.15);border-radius:12px;padding:10px;min-height:120px}
-.sort-zone.yes{border-color:rgba(5,150,105,.4);background:rgba(5,150,105,.05)}
-.sort-zone.no{border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.04)}
-.sort-zone-ttl{font-size:11px;font-weight:700;color:rgba(245,240,232,.5);text-transform:uppercase;margin-bottom:8px;text-align:center}
-.sort-bag{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.sort-chip{background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.2);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
-.sort-chip:active{transform:scale(.97)}
-/* Quiz */
-.qhdr{padding:20px;flex-shrink:0}
-.qprog{background:rgba(255,255,255,.1);border-radius:50px;height:6px;margin-bottom:14px}
-.qpfill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:50px;transition:width .4s}
-.qnum{font-size:13px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px}
-.qqtext{font-size:17px;font-weight:700;line-height:1.6;color:var(--cream);margin-top:8px}
-.qopt{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 18px;cursor:pointer;font-size:15px;font-weight:600;transition:all .2s;text-align:left;display:block;width:100%}
-.qopt:hover{background:rgba(212,168,67,.08);border-color:rgba(212,168,67,.3)}
-.qopt.correct{background:rgba(5,150,105,.2);border-color:#34d399;color:#d1fae5}
-.qopt.wrong{background:rgba(220,38,38,.15);border-color:#f87171;color:#fecaca}
-.praise-box{background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.25);border-radius:var(--r);padding:14px 18px;font-size:14px;line-height:1.6}
-/* Journal */
-.jttl{font-family:var(--display);font-size:28px;color:var(--gold2)}
-.jintro{font-size:14px;color:rgba(245,240,232,.6);margin-top:6px;line-height:1.6}
-.jprompt-q{font-weight:700;font-size:15px;color:var(--gold2);margin-bottom:8px;line-height:1.5}
-.nura-resp{background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.2);border-radius:var(--r2);padding:16px;display:flex;gap:12px}
-.nura-txt{font-size:14px;line-height:1.7;font-style:italic;color:var(--cream2)}
-/* Reward */
-#s-reward{background:radial-gradient(ellipse at 50% 30%,#1a3a1f,var(--navy) 60%)}
-.reward-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;gap:20px;position:relative;z-index:1}
-.reward-ico{font-size:80px;animation:bouncein .5s cubic-bezier(.34,1.56,.64,1) forwards}
-@keyframes bouncein{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
-.reward-ttl{font-family:var(--display);font-size:36px;color:var(--gold2);line-height:1.2}
-.ha-award{background:rgba(212,168,67,.15);border:2px solid var(--gold);border-radius:var(--r2);padding:20px;text-align:center}
-.ha-num{font-family:var(--display);font-size:48px;color:var(--gold2)}
-.stars-rain{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.srain{position:absolute;font-size:20px;animation:fall var(--fd,2s) var(--fdl,0s) ease-in forwards}
-@keyframes fall{0%{transform:translateY(-50px) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(360deg);opacity:0}}
-/* Admin */
-.upload-zone{border:2px dashed rgba(212,168,67,.3);border-radius:var(--r2);padding:28px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(212,168,67,.03)}
-.upload-zone:hover,.upload-zone.dragover{background:rgba(212,168,67,.08);border-color:var(--gold)}
-.asset-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center}
-.asset-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.asset-info{flex:1;min-width:0}
-.asset-name{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.asset-meta{font-size:12px;color:rgba(245,240,232,.5);margin-top:2px}
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito:wght@400;600;700;800&family=Scheherazade+New:wght@400;700&display=swap');
+
+:root {
+  --navy:    #0A0E1A;
+  --navy2:   #0F1628;
+  --navy3:   #162040;
+  --gold:    #F5C842;
+  --gold2:   #E8A020;
+  --gold3:   #FDE68A;
+  --cream:   #FDF6E3;
+  --cream2:  #F0E6C8;
+  --teal:    #1A3A4A;
+  --rose:    #E8788A;
+  --green:   #059669;
+  --red:     #dc2626;
+  --purple:  #7c3aed;
+  --shadow:  0 8px 40px rgba(0,0,0,0.7);
+  --glow:    0 0 32px rgba(245,200,66,0.45);
+  --glow2:   0 0 60px rgba(245,200,66,0.2);
+  --r:       16px;
+  --r2:      24px;
+  --display: 'Cinzel', serif;
+  --body:    'Lora', Georgia, serif;
+  --ui:      'Nunito', sans-serif;
+  --arabic:  'Scheherazade New', serif;
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent }
+html, body { height:100%; overflow:hidden; background:var(--navy) }
+body { font-family:var(--body); color:var(--cream); display:flex; justify-content:center }
+#app { width:100%; max-width:480px; height:100%; position:relative; overflow:hidden; background:var(--navy) }
+.screen { position:absolute; inset:0; display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; opacity:0; pointer-events:none; transition:opacity .35s ease }
+.screen.active { opacity:1; pointer-events:all }
+
+/* ── Stars ── */
+#starsbg { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden }
+.star { position:absolute; border-radius:50%; background:#fff; animation:twinkle var(--d,3s) var(--dl,0s) infinite ease-in-out }
+@keyframes twinkle { 0%,100%{opacity:.1;transform:scale(1)} 50%{opacity:.9;transform:scale(1.5)} }
+
+/* ── Geometric pattern overlay ── */
+.geo-bg {
+  position:absolute; inset:0; pointer-events:none; opacity:.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpolygon points='40,4 52,28 78,28 57,44 65,70 40,54 15,70 23,44 2,28 28,28' fill='none' stroke='%23F5C842' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 80px 80px;
+}
+
+/* ── Buttons ── */
+.btn { display:flex; align-items:center; justify-content:center; gap:8px; padding:15px 28px; border-radius:50px; border:none; cursor:pointer; font-family:var(--ui); font-weight:800; font-size:15px; transition:all .2s ease; outline:none; letter-spacing:.3px }
+.btn:active { transform:scale(.97) }
+.btn-gold { background:linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%); color:var(--navy); box-shadow:0 4px 20px rgba(245,200,66,.45) }
+.btn-gold:hover { box-shadow:0 6px 32px rgba(245,200,66,.65); transform:translateY(-1px) }
+.btn-glass { background:rgba(255,255,255,.07); border:1.5px solid rgba(255,255,255,.18); color:var(--cream); font-family:var(--ui) }
+.btn-outline { background:transparent; border:2px solid var(--gold); color:var(--gold); font-family:var(--ui) }
+.btn-green { background:linear-gradient(135deg,#059669,#10b981); color:#fff; box-shadow:0 4px 20px rgba(5,150,105,.4) }
+.btn-sm { padding:9px 20px; font-size:13px }
+.btn-full { width:100% }
+
+/* ── Cards ── */
+.card { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:var(--r2); padding:20px; backdrop-filter:blur(12px) }
+.card-gold { background:rgba(245,200,66,.07); border-color:rgba(245,200,66,.25) }
+.card-teal { background:var(--teal); border:1px solid rgba(255,255,255,.08) }
+
+/* ── Inputs ── */
+.input { width:100%; padding:14px 18px; background:rgba(255,255,255,.07); border:1.5px solid rgba(255,255,255,.14); border-radius:14px; color:var(--cream); font-family:var(--ui); font-size:15px; outline:none; transition:border-color .2s }
+.input::placeholder { color:rgba(253,246,227,.35) }
+.input:focus { border-color:var(--gold); background:rgba(255,255,255,.1) }
+textarea.input { resize:vertical; min-height:90px; line-height:1.6 }
+select.input { appearance:none; cursor:pointer }
+
+/* ── Badges ── */
+.badge { display:inline-flex; align-items:center; gap:5px; padding:5px 13px; border-radius:50px; font-size:12px; font-weight:700; font-family:var(--ui) }
+.badge-gold { background:rgba(245,200,66,.18); color:var(--gold); border:1px solid rgba(245,200,66,.35) }
+.badge-purple { background:rgba(124,58,237,.2); color:#c4b5fd; border:1px solid rgba(124,58,237,.35) }
+
+/* ── UI Labels ── */
+.lbl { font-family:var(--ui); font-size:11px; font-weight:700; color:rgba(253,246,227,.45); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px; display:block }
+
+/* ── Arabic ── */
+.arabic { font-family:var(--arabic); direction:rtl; text-align:right; line-height:2.2 }
+
+/* ── Toast ── */
+.toast { position:fixed; top:24px; left:50%; transform:translateX(-50%) translateY(-16px); background:linear-gradient(135deg,var(--gold),var(--gold2)); color:var(--navy); padding:13px 28px; border-radius:50px; font-weight:800; font-size:14px; font-family:var(--ui); z-index:9999; box-shadow:var(--glow); transition:opacity .3s,transform .3s; pointer-events:none; max-width:340px; text-align:center; opacity:0 }
+
+/* ── Loading ── */
+.loading { position:fixed; inset:0; background:rgba(10,14,26,.88); display:flex; align-items:center; justify-content:center; z-index:9998; flex-direction:column; gap:18px }
+.spinner { width:52px; height:52px; border:3px solid rgba(245,200,66,.15); border-top-color:var(--gold); border-radius:50%; animation:spin .9s linear infinite }
+@keyframes spin { to{transform:rotate(360deg)} }
+.loading-txt { font-family:var(--display); color:var(--gold); font-size:14px; letter-spacing:2px; opacity:.7 }
+
+/* ── Back header ── */
+.back-hdr { display:flex; align-items:center; gap:12px; padding:14px 16px; flex-shrink:0; border-bottom:1px solid rgba(255,255,255,.07) }
+.back-btn { width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--cream); flex-shrink:0; transition:all .2s }
+.back-btn:hover { background:rgba(245,200,66,.15); border-color:rgba(245,200,66,.3) }
+
+/* ── Modal ── */
+.modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:100; display:flex; align-items:flex-end; justify-content:center; backdrop-filter:blur(6px) }
+.modal { background:var(--navy2); border-radius:28px 28px 0 0; padding:28px; width:100%; max-width:480px; border-top:1px solid rgba(255,255,255,.12); animation:slideup .3s ease }
+@keyframes slideup { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-handle { width:44px; height:4px; background:rgba(255,255,255,.18); border-radius:2px; margin:0 auto 22px }
+
+/* ═══════════════════════════════════════
+   SPLASH
+═══════════════════════════════════════ */
+#s-splash { background:radial-gradient(ellipse at 50% 25%, #1a2a55 0%, #0A0E1A 70%); z-index:1 }
+.splash-moon { font-size:90px; animation:float 4s ease-in-out infinite; filter:drop-shadow(0 0 40px rgba(245,200,66,.6)) }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+.splash-logo { font-family:var(--display); font-size:56px; font-weight:900; color:var(--gold); text-shadow:0 0 50px rgba(245,200,66,.55), 0 2px 0 rgba(0,0,0,.5); line-height:1; letter-spacing:2px }
+.splash-sub { font-family:var(--ui); font-size:13px; color:rgba(253,246,227,.5); letter-spacing:3px; text-transform:uppercase; margin-top:6px }
+.splash-desc { text-align:center; color:rgba(253,246,227,.65); font-size:15px; line-height:1.75; max-width:300px; font-style:italic }
+.char-wrap { display:flex; gap:28px; justify-content:center }
+.char-bubble { text-align:center }
+.char-avatar { font-size:52px; display:block; margin-bottom:6px; animation:float 4s ease-in-out infinite }
+.char-name { font-family:var(--display); font-size:12px; color:var(--gold3); letter-spacing:2px }
+
+/* ═══════════════════════════════════════
+   AUTH
+═══════════════════════════════════════ */
+#s-auth { background:radial-gradient(ellipse at 50% 20%, #1a2a55 0%, #0A0E1A 60%) }
+.auth-logo { font-family:var(--display); font-size:38px; font-weight:700; color:var(--gold); letter-spacing:1px }
+.auth-tab { flex:1; padding:11px; text-align:center; border-radius:12px; cursor:pointer; font-weight:700; font-size:14px; font-family:var(--ui); color:rgba(253,246,227,.45); transition:all .2s }
+.auth-tab.on { background:linear-gradient(135deg,var(--gold),var(--gold2)); color:var(--navy) }
+
+/* ═══════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════ */
+.topbar { background:rgba(255,255,255,.04); border-bottom:1px solid rgba(255,255,255,.08); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0 }
+.topbar-title { font-family:var(--display); font-size:13px; color:rgba(253,246,227,.4); letter-spacing:1.5px; text-transform:uppercase }
+.topbar-name { font-family:var(--display); font-size:20px; color:var(--cream); font-weight:700; margin-top:2px }
+.child-card { display:flex; align-items:center; gap:14px; background:var(--teal); border:1px solid rgba(255,255,255,.09); border-radius:18px; padding:16px; margin-bottom:12px; cursor:pointer; transition:all .25s }
+.child-card:active { background:rgba(245,200,66,.12); border-color:rgba(245,200,66,.35); transform:scale(.99) }
+.child-name { font-family:var(--display); font-weight:600; font-size:17px; color:var(--cream) }
+.child-meta { font-family:var(--ui); font-size:13px; color:rgba(253,246,227,.45); margin-top:3px }
+.add-btn { border:2px dashed rgba(245,200,66,.3); background:transparent; border-radius:18px; padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; width:100%; color:var(--gold); font-family:var(--ui); font-weight:700; font-size:15px; transition:all .2s }
+.add-btn:hover { background:rgba(245,200,66,.06); border-color:rgba(245,200,66,.5) }
+.ava { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,var(--navy3),#1e3060); display:flex; align-items:center; justify-content:center; font-size:28px; border:2px solid rgba(245,200,66,.3); flex-shrink:0 }
+
+/* ═══════════════════════════════════════
+   WORLD MAP
+═══════════════════════════════════════ */
+.ctopbar { padding:13px 16px; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04); border-bottom:1px solid rgba(255,255,255,.08); flex-shrink:0 }
+.hchip { background:rgba(245,200,66,.14); border:1px solid rgba(245,200,66,.3); border-radius:50px; padding:5px 13px; font-size:13px; font-weight:700; font-family:var(--ui); color:var(--gold) }
+.map-title { font-family:var(--display); font-size:24px; color:var(--gold); font-weight:700; letter-spacing:.5px }
+.map-sub { font-family:var(--ui); font-size:13px; color:rgba(253,246,227,.45); margin-top:3px }
+.wgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:14px 14px 36px }
+.wcard { border-radius:20px; padding:18px 16px; cursor:pointer; transition:all .3s ease; position:relative; overflow:hidden; min-height:130px; display:flex; flex-direction:column; justify-content:flex-end; border:1px solid rgba(255,255,255,.07) }
+.wcard::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,transparent 20%,rgba(0,0,0,.6) 100%); pointer-events:none }
+.wcard:not(.locked):active { transform:scale(.97); filter:brightness(1.1) }
+.wcard.locked { opacity:.4; cursor:default }
+.wcard.locked::after { content:''; position:absolute; top:12px; right:12px; width:22px; height:22px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='rgba(253,246,227,0.6)'%3E%3Cpath d='M12 2C9.24 2 7 4.24 7 7v2H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V11c0-1.1-.9-2-2-2h-2V7c0-2.76-2.24-5-5-5zm0 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-6H8.9V7c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/%3E%3C/svg%3E") center/contain no-repeat }
+.wcard.complete::after { content:'✦'; position:absolute; top:10px; right:12px; font-size:18px; color:var(--gold); text-shadow:0 0 10px rgba(245,200,66,.8) }
+.wcard-num { font-family:var(--ui); font-size:10px; font-weight:700; opacity:.6; letter-spacing:2px; text-transform:uppercase; position:relative; z-index:1 }
+.wcard-title { font-family:var(--display); font-weight:700; font-size:13px; line-height:1.3; margin-top:3px; position:relative; z-index:1 }
+.wcard-sub { font-family:var(--ui); font-size:11px; opacity:.65; margin-top:2px; position:relative; z-index:1 }
+.wcard-icon { font-size:36px; position:absolute; top:14px; left:16px; filter:drop-shadow(0 2px 8px rgba(0,0,0,.4)) }
+.wc1{background:linear-gradient(135deg,#3d1a8a,#0A0E1A)}
+.wc2{background:linear-gradient(135deg,#0a5a3e,#0A0E1A)}
+.wc3{background:linear-gradient(135deg,#7a4a00,#0A0E1A)}
+.wc4{background:linear-gradient(135deg,#7a1a1a,#0A0E1A)}
+.wc5{background:linear-gradient(135deg,#0a2a7a,#0A0E1A)}
+.wc6{background:linear-gradient(135deg,#7a3a0a,#0A0E1A)}
+.wc7{background:linear-gradient(135deg,#0a5a5a,#0A0E1A)}
+.wc8{background:linear-gradient(135deg,#3a1a6a,#0A0E1A)}
+.wc9{background:linear-gradient(135deg,#6a0a3a,#0A0E1A)}
+.wc10{background:linear-gradient(135deg,#6a4a00,#0A0E1A)}
+.wc11{background:linear-gradient(135deg,#0a4a3a,#0A0E1A)}
+.wc12{background:linear-gradient(135deg,#6a1a1a,#0A0E1A)}
+.wc13{background:linear-gradient(135deg,#5a4a00,#0A0E1A)}
+
+/* ═══════════════════════════════════════
+   WORLD DETAIL
+═══════════════════════════════════════ */
+.who-hero { padding:22px 20px 18px; flex-shrink:0; border-bottom:1px solid rgba(255,255,255,.07) }
+.world-hero-icon { font-size:52px; margin-bottom:10px; display:block; filter:drop-shadow(0 0 20px rgba(245,200,66,.4)) }
+.world-hero-title { font-family:var(--display); font-size:26px; color:var(--gold); font-weight:700; line-height:1.2 }
+.world-hero-sub { font-family:var(--ui); font-size:14px; color:rgba(253,246,227,.55); margin-top:5px; font-style:italic }
+.scene-item { display:flex; align-items:center; gap:13px; padding:15px 16px; background:var(--teal); border:1px solid rgba(255,255,255,.08); border-radius:16px; margin-bottom:10px; cursor:pointer; transition:all .25s }
+.scene-item:active { background:rgba(245,200,66,.1); border-color:rgba(245,200,66,.3); transform:scale(.99) }
+.scene-item.done { border-color:rgba(16,185,129,.35); background:rgba(5,150,105,.08) }
+.si-num { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:700; font-size:14px; flex-shrink:0; border:2px solid rgba(255,255,255,.15); background:rgba(255,255,255,.05) }
+.si-num.done { background:rgba(5,150,105,.25); border-color:#34d399; color:#34d399 }
+.si-title { font-family:var(--body); font-weight:600; font-size:15px; flex:1; color:var(--cream) }
+
+/* ═══════════════════════════════════════
+   SCENE PLAYER — SCROLLABLE SINGLE PAGE
+═══════════════════════════════════════ */
+#s-player { background:var(--navy) }
+.player-nav { display:flex; align-items:center; gap:12px; padding:12px 16px; flex-shrink:0; border-bottom:1px solid rgba(255,255,255,.06); background:rgba(10,14,26,.9); backdrop-filter:blur(10px); position:sticky; top:0; z-index:10 }
+.player-world-lbl { font-family:var(--display); font-size:11px; color:rgba(245,200,66,.6); letter-spacing:1.5px; text-transform:uppercase; flex:1 }
+.player-hchip { background:rgba(245,200,66,.12); border:1px solid rgba(245,200,66,.25); border-radius:50px; padding:5px 12px; font-size:12px; font-weight:700; font-family:var(--ui); color:var(--gold) }
+
+/* Scene scrollable container */
+.scene-scroll { flex:1; overflow-y:auto; }
+.scene-title-block { padding:28px 20px 20px; text-align:center }
+.scene-num-badge { font-family:var(--ui); font-size:11px; color:rgba(245,200,66,.5); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:8px }
+.scene-title-text { font-family:var(--display); font-size:22px; color:var(--gold); font-weight:700; line-height:1.3 }
+
+/* Beat block — image + text as one card */
+.beat-block { margin:0 0 2px 0 }
+.beat-image-zone {
+  width:100%; aspect-ratio:16/9; background:linear-gradient(160deg, var(--navy3) 0%, #0d2040 50%, var(--navy) 100%);
+  display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;
+  flex-shrink:0;
+}
+.beat-image-zone img { width:100%; height:100%; object-fit:cover; display:block }
+.beat-image-placeholder {
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  background: linear-gradient(160deg, #162040 0%, #0d1a30 60%, #0a1020 100%);
+}
+.beat-image-placeholder::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(245,200,66,.08) 0%, transparent 70%);
+}
+.bip-icon { font-size:42px; opacity:.3; position:relative }
+.bip-label { font-family:var(--display); font-size:10px; color:rgba(245,200,66,.25); letter-spacing:2px; text-transform:uppercase; position:relative }
+
+.beat-text-block { padding:20px 20px 24px; background:linear-gradient(180deg, #0d1a30 0%, var(--navy) 100%) }
+.beat-label { font-family:var(--ui); font-size:10px; font-weight:700; color:rgba(245,200,66,.4); letter-spacing:2px; text-transform:uppercase; margin-bottom:10px }
+.beat-prose {
+  font-family:var(--body); font-size:16px; line-height:1.9; color:var(--cream2);
+  font-weight:400;
+}
+.beat-prose em, .beat-prose i { color:var(--gold3); font-style:italic }
+/* Dialogue in gold italic */
+.beat-dialogue { color:var(--gold3); font-style:italic }
+
+/* What We Learn */
+.what-we-learn {
+  margin:2px 0; padding:24px 20px;
+  background:linear-gradient(135deg, rgba(22,32,64,.95) 0%, rgba(10,14,26,.98) 100%);
+  border-left:3px solid var(--gold); border-top:1px solid rgba(245,200,66,.15); border-bottom:1px solid rgba(245,200,66,.1);
+}
+.wwl-label { font-family:var(--display); font-size:11px; color:var(--gold); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:12px; opacity:.8 }
+.wwl-text { font-family:var(--body); font-size:15px; line-height:1.85; color:var(--cream); font-style:italic }
+
+/* Dua block */
+.dua-block {
+  margin:2px 0; padding:28px 20px 32px; text-align:center;
+  background:linear-gradient(135deg, #0d1a30 0%, #0a1020 100%);
+  border-top:1px solid rgba(245,200,66,.12);
+  position:relative;
+}
+.dua-block::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse at 50% 50%, rgba(245,200,66,.06) 0%, transparent 70%);
+  pointer-events:none;
+}
+.dua-ornament { font-size:22px; color:rgba(245,200,66,.3); margin-bottom:16px; letter-spacing:8px }
+.dua-ar {
+  font-family:var(--arabic); font-size:32px; color:var(--gold); direction:rtl; line-height:2.2;
+  margin-bottom:14px; text-shadow:0 0 30px rgba(245,200,66,.35);
+  animation:duashine 3s ease-in-out infinite;
+  position:relative;
+}
+@keyframes duashine {
+  0%,100%{text-shadow:0 0 20px rgba(245,200,66,.3)}
+  50%{text-shadow:0 0 40px rgba(245,200,66,.6), 0 0 80px rgba(245,200,66,.2)}
+}
+.dua-lat { font-family:var(--ui); font-size:14px; font-style:italic; color:rgba(253,246,227,.6); margin-bottom:8px; letter-spacing:.3px }
+.dua-en { font-family:var(--body); font-size:15px; color:rgba(253,246,227,.75); font-style:italic }
+
+/* Complete scene button */
+.complete-scene-btn {
+  margin:0; padding:20px; background:linear-gradient(180deg, var(--navy) 0%, #0d1a30 100%);
+  border-top:1px solid rgba(255,255,255,.06);
+}
+
+/* Gold particles burst */
+.particle { position:fixed; pointer-events:none; z-index:9999; animation:particle-fly var(--pd,.8s) ease-out forwards }
+@keyframes particle-fly {
+  0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--px,0px),var(--py,-60px)) scale(0)}
+}
+
+/* ═══════════════════════════════════════
+   INTERACTIVES
+═══════════════════════════════════════ */
+.ix-wrap { margin:2px 0; padding:24px 20px; background:linear-gradient(135deg,#0f1a30,#0a1020); border-top:1px solid rgba(255,255,255,.07) }
+.ix-title { font-family:var(--display); font-size:11px; color:rgba(245,200,66,.5); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:16px }
+
+/* REVEAL */
+.rev-items { display:flex; flex-direction:column; gap:10px }
+.rev-item { background:rgba(22,32,64,.8); border:1px solid rgba(245,200,66,.15); border-radius:16px; padding:16px 18px; cursor:pointer; transition:all .3s }
+.rev-item:active { transform:scale(.99) }
+.rev-item.open { background:rgba(22,32,64,.95); border-color:rgba(245,200,66,.4) }
+.rev-lbl { font-family:var(--body); font-weight:600; font-size:15px; color:var(--gold3); display:flex; align-items:center; justify-content:space-between; gap:8px }
+.rev-arrow { font-size:12px; color:rgba(245,200,66,.5); transition:transform .3s; flex-shrink:0 }
+.rev-item.open .rev-arrow { transform:rotate(90deg) }
+.rev-body { font-family:var(--body); font-size:14px; color:rgba(253,246,227,.75); margin-top:12px; display:none; line-height:1.75 }
+.rev-item.open .rev-body { display:block }
+
+/* TAP grid */
+.tap-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.tap-item { background:rgba(22,32,64,.8); border:1.5px solid rgba(245,200,66,.15); border-radius:18px; padding:18px 14px; cursor:pointer; transition:all .3s; text-align:center; min-height:100px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; position:relative; overflow:hidden }
+.tap-item::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 50%, rgba(245,200,66,.0) 0%, transparent 100%); transition:all .3s }
+.tap-item.lit { border-color:rgba(245,200,66,.5); background:rgba(22,32,64,.95) }
+.tap-item.lit::before { background:radial-gradient(circle at 50% 20%, rgba(245,200,66,.1) 0%, transparent 70%) }
+.tap-icon { font-size:28px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) }
+.tap-name { font-family:var(--display); font-size:13px; font-weight:600; color:var(--gold3) }
+.tap-rev { font-family:var(--body); font-size:12px; color:rgba(253,246,227,.7); display:none; line-height:1.6; text-align:left }
+.tap-item.lit .tap-rev { display:block }
+
+/* BUILD */
+.build-steps { display:flex; flex-direction:column; gap:10px }
+.bstep { background:rgba(22,32,64,.5); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px 16px; opacity:.3; transition:all .5s; display:flex; align-items:center; gap:12px }
+.bstep.built { opacity:1; background:rgba(22,32,64,.95); border-color:rgba(245,200,66,.3); animation:stepbuild .4s ease }
+@keyframes stepbuild { 0%{transform:translateX(-8px);opacity:0} 100%{transform:translateX(0);opacity:1} }
+.bstep-ico { font-size:24px; flex-shrink:0; filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) }
+.bstep-txt { font-family:var(--body); font-size:14px; color:var(--cream2); line-height:1.5 }
+.build-btn { margin-top:14px }
+
+/* BREATHE */
+.breathe-wrap { display:flex; flex-direction:column; align-items:center; gap:20px; padding:10px 0 }
+.breathe-c { width:150px; height:150px; border-radius:50%; background:radial-gradient(circle, rgba(245,200,66,.2) 0%, rgba(245,200,66,.04) 100%); border:2px solid rgba(245,200,66,.35); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 2s ease; font-family:var(--display); font-size:14px; font-weight:600; color:var(--gold); text-align:center; line-height:1.4; box-shadow:0 0 20px rgba(245,200,66,.15) }
+.breathe-c.in { transform:scale(1.35); background:radial-gradient(circle, rgba(245,200,66,.35) 0%, rgba(245,200,66,.08) 100%); box-shadow:0 0 50px rgba(245,200,66,.3) }
+.breathe-c.out { transform:scale(.85); box-shadow:0 0 10px rgba(245,200,66,.08) }
+
+/* LISTEN */
+.listen-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.lis-item { background:rgba(26,58,74,.8); border:1.5px solid rgba(100,180,220,.2); border-radius:18px; padding:18px 14px; cursor:pointer; transition:all .3s; text-align:center }
+.lis-item.open { background:rgba(26,58,74,.95); border-color:rgba(100,180,220,.5) }
+.lis-ico { font-size:32px; margin-bottom:8px; display:block }
+.lis-name { font-family:var(--display); font-size:13px; color:rgba(253,246,227,.8) }
+.lis-desc { font-family:var(--body); font-size:12px; color:rgba(253,246,227,.6); margin-top:8px; display:none; line-height:1.6; text-align:left }
+.lis-item.open .lis-desc { display:block }
+
+/* SORT */
+.sort-chips-wrap { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; padding:14px; background:rgba(255,255,255,.04); border-radius:14px; min-height:52px }
+.sort-chip { background:rgba(245,200,66,.1); border:1.5px solid rgba(245,200,66,.25); border-radius:10px; padding:7px 13px; font-family:var(--ui); font-size:13px; font-weight:600; color:var(--gold3); cursor:pointer; transition:all .2s; user-select:none }
+.sort-chip.selected { background:rgba(245,200,66,.25); border-color:var(--gold); transform:scale(1.03) }
+.sort-chip.placed { background:rgba(22,32,64,.8); border-color:rgba(255,255,255,.15); color:rgba(253,246,227,.8) }
+.sort-zones { display:flex; gap:12px; margin-top:4px }
+.sort-zone { flex:1; border:2px dashed rgba(255,255,255,.15); border-radius:16px; padding:12px; min-height:100px; transition:all .3s }
+.sort-zone:hover { border-color:rgba(245,200,66,.4); background:rgba(245,200,66,.04) }
+.sort-zone-ttl { font-family:var(--display); font-size:11px; color:rgba(253,246,227,.45); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; text-align:center }
+.sort-items-inner { display:flex; flex-direction:column; gap:6px; min-height:60px }
+
+/* ═══════════════════════════════════════
+   QUIZ
+═══════════════════════════════════════ */
+#s-quiz { background:radial-gradient(ellipse at 50% 15%, #162040 0%, var(--navy) 60%) }
+.qhdr { padding:20px 20px 14px; flex-shrink:0 }
+.qprog-wrap { background:rgba(255,255,255,.08); border-radius:50px; height:5px; margin-bottom:16px; overflow:hidden }
+.qpfill { height:100%; background:linear-gradient(90deg,var(--gold),var(--gold2)); border-radius:50px; transition:width .5s ease }
+.qnum-label { font-family:var(--ui); font-size:12px; color:rgba(245,200,66,.55); letter-spacing:2px; text-transform:uppercase }
+.qqtext { font-family:var(--body); font-size:18px; font-weight:600; line-height:1.65; color:var(--cream); margin-top:10px }
+.qopts-wrap { padding:0 20px; display:flex; flex-direction:column; gap:11px }
+.qopt { background:var(--teal); border:1.5px solid rgba(255,255,255,.1); border-radius:16px; padding:16px 20px; cursor:pointer; font-family:var(--body); font-size:15px; color:var(--cream); transition:all .25s; text-align:left; display:block; width:100%; line-height:1.5 }
+.qopt:hover { background:rgba(22,50,70,.95); border-color:rgba(245,200,66,.35) }
+.qopt.correct { background:rgba(5,150,105,.2); border-color:#34d399; color:#d1fae5 }
+.qopt.wrong { background:rgba(220,38,38,.15); border-color:#f87171; color:#fecaca }
+.praise-box { background:rgba(22,32,64,.9); border:1px solid rgba(245,200,66,.3); border-radius:18px; padding:18px 20px; margin:16px 20px 0; font-family:var(--body); font-size:15px; line-height:1.7; color:var(--cream2) }
+.praise-icon { font-size:28px; margin-bottom:8px; display:block }
+
+/* ═══════════════════════════════════════
+   JOURNAL
+═══════════════════════════════════════ */
+.jttl { font-family:var(--display); font-size:26px; color:var(--gold); font-weight:700 }
+.jintro { font-family:var(--body); font-size:14px; color:rgba(253,246,227,.6); margin-top:8px; line-height:1.7; font-style:italic }
+.jprompt-q { font-family:var(--body); font-weight:600; font-size:15px; color:var(--gold3); margin-bottom:10px; line-height:1.5 }
+.nura-resp { background:rgba(22,32,64,.9); border:1px solid rgba(245,200,66,.25); border-radius:20px; padding:20px; display:flex; gap:14px; align-items:flex-start }
+.nura-resp-txt { font-family:var(--body); font-size:14px; line-height:1.75; font-style:italic; color:var(--cream2) }
+
+/* ═══════════════════════════════════════
+   REWARD
+═══════════════════════════════════════ */
+#s-reward { background:radial-gradient(ellipse at 50% 25%, #1a3520 0%, var(--navy) 65%) }
+.reward-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px; text-align:center; gap:22px; position:relative; z-index:1 }
+.reward-key-ico { font-size:88px; animation:keyrise .8s cubic-bezier(.34,1.56,.64,1) forwards; filter:drop-shadow(0 0 40px rgba(245,200,66,.7)) }
+@keyframes keyrise { 0%{transform:scale(0) translateY(30px);opacity:0} 100%{transform:scale(1) translateY(0);opacity:1} }
+.reward-ttl { font-family:var(--display); font-size:32px; color:var(--gold); font-weight:700; line-height:1.2; text-shadow:0 0 30px rgba(245,200,66,.4) }
+.ha-award { background:rgba(22,32,64,.9); border:2px solid rgba(245,200,66,.4); border-radius:24px; padding:22px 32px; text-align:center; box-shadow:0 0 40px rgba(245,200,66,.15) }
+.ha-num { font-family:var(--display); font-size:52px; color:var(--gold); font-weight:900; text-shadow:0 0 20px rgba(245,200,66,.5) }
+.ha-lbl { font-family:var(--ui); font-size:12px; color:rgba(245,200,66,.6); letter-spacing:2.5px; text-transform:uppercase; margin-top:4px }
+.srainwrap { position:absolute; inset:0; pointer-events:none; overflow:hidden }
+.srain { position:absolute; animation:fall var(--fd,2.5s) var(--fdl,0s) ease-in forwards }
+@keyframes fall { 0%{transform:translateY(-30px) rotate(0);opacity:1} 100%{transform:translateY(110vh) rotate(540deg);opacity:0} }
+
+/* ═══════════════════════════════════════
+   ADMIN
+═══════════════════════════════════════ */
+.upload-zone { border:2px dashed rgba(245,200,66,.25); border-radius:20px; padding:32px; text-align:center; cursor:pointer; transition:all .25s; background:rgba(245,200,66,.02) }
+.upload-zone:hover,.upload-zone.dragover { background:rgba(245,200,66,.07); border-color:rgba(245,200,66,.5) }
+.asset-item { background:var(--teal); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px; margin-bottom:10px; display:flex; gap:12px; align-items:center }
+
+/* ═══════════════════════════════════════
+   ANIMATIONS & UTILITIES
+═══════════════════════════════════════ */
+.divider { height:1px; background:rgba(255,255,255,.08); margin:16px 0 }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.fade-in { animation:fadeInUp .4s ease forwards }
+@keyframes splashTitle { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulseglow { 0%,100%{box-shadow:0 4px 20px rgba(245,200,66,.45)} 50%{box-shadow:0 4px 40px rgba(245,200,66,.8),0 0 60px rgba(245,200,66,.3)} }
+.btn-gold { animation:pulseglow 2.5s ease-in-out infinite }
+/* Time-of-day greeting */
+.greeting-chip { display:inline-flex; align-items:center; gap:6px; background:rgba(245,200,66,.12); border:1px solid rgba(245,200,66,.25); border-radius:50px; padding:6px 14px; font-family:var(--ui); font-size:12px; color:var(--gold); letter-spacing:.5px; font-weight:700 }
+/* Hasanah odometer */
+@keyframes odometer { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+.ha-count { display:inline-block; animation:odometer .4s ease }
+/* World card tilt */
+.wcard:not(.locked) { transform-style:preserve-3d; will-change:transform }
+/* Progress ring */
+.progress-ring { position:absolute; top:-3px; left:-3px; width:calc(100% + 6px); height:calc(100% + 6px); border-radius:50%; pointer-events:none }
+/* Scene complete shimmer */
+.btn-green { background:linear-gradient(135deg, #059669, #10b981, #059669); background-size:200% 100%; animation:shimmer 2.5s ease infinite }
+@keyframes shimmer { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+/* Quiz slide in */
+@keyframes slideInRight { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+.quiz-question-wrap { animation:slideInRight .35s ease }
+/* Correct answer pulse */
+@keyframes correctPulse { 0%{transform:scale(1)} 50%{transform:scale(1.03)} 100%{transform:scale(1)} }
+.qopt.correct { animation:correctPulse .4s ease }
+/* Wrong shake */
+@keyframes wrongShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.qopt.wrong { animation:wrongShake .35s ease }
+/* Journal ink */
+@keyframes inkWrite { from{clip-path:inset(0 100% 0 0)} to{clip-path:inset(0 0% 0 0)} }
 </style>
 </head>
 <body>
@@ -264,23 +496,66 @@ select.input{appearance:none;cursor:pointer}
 
 <!-- SPLASH -->
 <div id="s-splash" class="screen">
-  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:20px;position:relative;z-index:1;text-align:center">
-    <div class="moon">🌙</div>
-    <div><div class="splash-title">NoorQuest</div><div style="font-size:13px;color:rgba(245,240,232,.6);letter-spacing:2px;text-transform:uppercase;margin-top:6px">An Islamic Journey</div></div>
-    <div style="display:flex;gap:24px">
-      <div style="text-align:center"><div style="font-size:48px;animation:float 4s ease-in-out infinite">👧</div><div style="font-size:12px;color:var(--gold3);font-weight:700;letter-spacing:1px">Nura</div></div>
-      <div style="text-align:center"><div style="font-size:48px;animation:float 4s ease-in-out .7s infinite">👦</div><div style="font-size:12px;color:var(--gold3);font-weight:700;letter-spacing:1px">Zain</div></div>
+  <!-- Looping background video -->
+  <video id="splash-bg-video" autoplay muted loop playsinline
+    style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;transition:opacity 1s">
+  </video>
+  <!-- Animated starfield fallback -->
+  <div id="splash-stars-canvas" style="position:absolute;inset:0;z-index:0;overflow:hidden">
+    <canvas id="lantern-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+  </div>
+  <!-- Dark overlay -->
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,14,26,.45) 0%,rgba(10,14,26,.75) 100%);z-index:1;pointer-events:none"></div>
+  <!-- Content -->
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:22px;position:relative;z-index:2;text-align:center">
+    <!-- Logo -->
+    <div class="splash-logo-wrap" style="animation:splashTitle .8s .2s ease both">
+      <div style="font-size:56px;margin-bottom:10px;filter:drop-shadow(0 0 40px rgba(245,200,66,.7));animation:float 4s ease-in-out infinite">🌙</div>
+      <div class="splash-logo">NoorQuest</div>
+      <div class="splash-sub">An Islamic Journey</div>
     </div>
-    <p style="font-size:15px;line-height:1.7;color:rgba(245,240,232,.7);max-width:300px">Join Nura & Zain through 13 worlds of Islamic discovery. Ages 7–14.</p>
-    <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px">
-      <button class="btn btn-gold btn-full" onclick="SS('s-auth')">Begin the Journey ✨</button>
-      <button class="btn btn-glass btn-full btn-sm" onclick="SS('s-setup')">⚙️ Setup Guide</button>
+    <!-- Intro video trigger -->
+    <button id="intro-vid-btn" onclick="playIntroVideo()"
+      style="background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.25);border-radius:50px;padding:10px 22px;color:var(--cream);font-family:var(--ui);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;animation:splashTitle .8s .5s ease both;letter-spacing:.5px;transition:all .2s">
+      <span style="font-size:18px">▶</span> Meet Nura & Zain
+    </button>
+    <!-- Characters -->
+    <div style="display:flex;gap:36px;animation:splashTitle .8s .7s ease both">
+      <div class="char-bubble">
+        <div style="font-size:56px;display:block;animation:float 4s ease-in-out infinite;filter:drop-shadow(0 4px 16px rgba(0,0,0,.5))">👧</div>
+        <div style="font-family:var(--display);font-size:13px;color:var(--gold3);letter-spacing:1.5px;margin-top:6px">Nura</div>
+      </div>
+      <div class="char-bubble">
+        <div style="font-size:56px;display:block;animation:float 4s ease-in-out .7s infinite;filter:drop-shadow(0 4px 16px rgba(0,0,0,.5))">👦</div>
+        <div style="font-family:var(--display);font-size:13px;color:var(--gold3);letter-spacing:1.5px;margin-top:6px">Zain</div>
+      </div>
+    </div>
+    <p style="font-family:var(--body);font-size:15px;line-height:1.8;color:rgba(253,246,227,.75);max-width:290px;font-style:italic;animation:splashTitle .8s .9s ease both">Join Nura & Zain through 13 worlds of Islamic discovery.</p>
+    <div style="display:flex;flex-direction:column;gap:11px;width:100%;max-width:300px;animation:splashTitle .8s 1.1s ease both">
+      <button class="btn btn-gold btn-full" onclick="SS('s-auth')" style="font-size:16px;padding:17px 28px;letter-spacing:.5px">
+        Begin the Journey ✦
+      </button>
+      <button class="btn btn-glass btn-sm btn-full" onclick="SS('s-setup')">Setup Guide</button>
     </div>
   </div>
-  <div style="padding:16px;text-align:center;font-size:12px;color:rgba(245,240,232,.25);position:relative;z-index:1">Made with ❤️ for Muslim children worldwide</div>
-</div>
+  <div style="padding:16px;text-align:center;font-size:11px;color:rgba(253,246,227,.2);position:relative;z-index:2;font-family:var(--ui);letter-spacing:1px">Made with ❤️ for Muslim children worldwide</div>
 
-<!-- SETUP -->
+  <!-- Intro video modal -->
+  <div id="intro-modal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.92);z-index:50;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:440px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-family:var(--display);font-size:16px;color:var(--gold)">Meet Your Guides</div>
+        <button onclick="closeIntroVideo()" style="background:rgba(255,255,255,.1);border:none;color:var(--cream);font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+      <video id="intro-video-el" controls playsinline
+        style="width:100%;border-radius:20px;background:#000;aspect-ratio:16/9;display:block">
+        <source src="" type="video/mp4">
+      </video>
+      <p style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);text-align:center;margin-top:14px;font-style:italic">Watch how Nura and Zain begin their journey</p>
+      <button class="btn btn-gold btn-full" onclick="closeIntroVideo()" style="margin-top:14px">Start My Journey ✦</button>
+    </div>
+  </div>
+</div>
 <div id="s-setup" class="screen">
   <div class="back-hdr"><button class="back-btn" onclick="SS('s-splash')">←</button><b style="font-size:17px">Setup Guide</b></div>
   <div style="padding:20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px">
@@ -349,19 +624,17 @@ select.input{appearance:none;cursor:pointer}
 
 <!-- SCENE PLAYER -->
 <div id="s-player" class="screen">
-  <div class="progbar"><div id="prog-fill" class="progfill" style="width:0%"></div></div>
-  <div class="phdr">
+  <!-- Sticky nav -->
+  <div class="player-nav">
     <button class="back-btn" onclick="exitScene()">←</button>
-    <div id="plbl" class="step-lbl">Beat A</div>
-    <div id="p-ha" class="hchip" style="font-size:12px">⭐ 0</div>
+    <div id="plbl" class="player-world-lbl">World 1</div>
+    <div id="p-ha" class="player-hchip">⭐ 0</div>
   </div>
-  <div id="pcontent" style="flex:1;overflow-y:auto;padding:16px"></div>
-  <div style="padding:16px;flex-shrink:0">
-    <div id="sdots" class="step-dots"></div>
-    <button id="pnext" class="btn btn-gold btn-full" onclick="advScene()">Next →</button>
+  <!-- Scrollable scene content -->
+  <div class="scene-scroll" id="scene-scroll-wrap">
+    <div id="pcontent"></div>
   </div>
 </div>
-
 <!-- QUIZ -->
 <div id="s-quiz" class="screen">
   <div class="back-hdr"><button class="back-btn" onclick="exitQuiz()">←</button><b id="quiz-wtitle" style="font-size:17px;flex:1">Quiz</b></div>
@@ -394,35 +667,118 @@ select.input{appearance:none;cursor:pointer}
 
 <!-- ADMIN -->
 <div id="s-admin" class="screen">
-  <div style="padding:16px 20px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08)">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px"><button class="back-btn" onclick="SS('s-dash')">←</button><b style="font-size:20px">Admin Studio</b><span class="badge badge-purple">⚙️ Admin Only</span></div>
-    <p style="font-size:13px;color:rgba(245,240,232,.5);padding-left:48px">Upload media for any world/scene. Visible globally to all children instantly.</p>
-  </div>
-  <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px">
-    <div class="card">
-      <span class="lbl">Upload Asset</span>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div><span class="lbl" style="font-size:11px">World #</span>
-          <select id="adm-world" class="input" style="padding:10px 12px"><option value="">Select...</option>
-          <option value="1">1 - The Wonder of Allah</option><option value="2">2 - Wonders Inside You</option><option value="3">3 - Why Allah Made Me</option><option value="4">4 - The Test of This Life</option><option value="5">5 - The Hidden Map</option><option value="6">6 - Inside the Quran</option><option value="7">7 - Little Surah Studio</option><option value="8">8 - The Unseen World</option><option value="9">9 - Messengers of Allah</option><option value="10">10 - Stories of Prophets</option><option value="11">11 - Life of Muhammad ﷺ</option><option value="12">12 - Nations of the Past</option><option value="13">13 - Living Islam Today</option></select></div>
-        <div><span class="lbl" style="font-size:11px">Scene # (opt)</span><input id="adm-scene" type="number" class="input" placeholder="1-6" min="1" max="6" style="padding:10px 12px"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div><span class="lbl" style="font-size:11px">Beat (opt)</span>
-          <select id="adm-beat" class="input" style="padding:10px 12px"><option value="">Any</option><option value="A">Beat A</option><option value="B">Beat B</option><option value="C">Beat C</option><option value="interactive">Interactive</option><option value="lesson">Lesson</option><option value="dua">Dua</option></select></div>
-        <div><span class="lbl" style="font-size:11px">Type</span>
-          <select id="adm-type" class="input" style="padding:10px 12px"><option value="image">🖼️ Image</option><option value="audio">🎵 Audio</option><option value="video">🎬 Video</option></select></div>
-      </div>
-      <input id="adm-desc" class="input" placeholder="Description (optional)" style="margin-bottom:12px">
-      <div class="upload-zone" onclick="document.getElementById('adm-file').click()" id="adm-zone">
-        <input type="file" id="adm-file" accept="image/*,audio/*,video/*" style="display:none" onchange="document.getElementById('adm-fname').textContent=this.files[0]?.name||'No file'">
-        <div style="font-size:36px;margin-bottom:8px">📁</div>
-        <div style="font-weight:700;font-size:15px;margin-bottom:4px" id="adm-fname">Tap to select file</div>
-        <div style="font-size:13px;color:rgba(245,240,232,.5)">Images, audio, and video</div>
-      </div>
-      <button class="btn btn-gold btn-full" style="margin-top:12px" onclick="uploadAsset()">Upload Asset ↑</button>
+  <div class="back-hdr" style="flex-shrink:0">
+    <button class="back-btn" onclick="SS('s-dash')">←</button>
+    <div style="flex:1">
+      <div style="font-family:var(--display);font-size:20px;font-weight:700;color:var(--gold)">Admin Studio</div>
+      <div style="font-family:var(--ui);font-size:12px;color:rgba(253,246,227,.4);margin-top:2px">Media uploads · visible globally, instantly</div>
     </div>
-    <div><span class="lbl">Uploaded Assets</span><div id="adm-assets"><div style="text-align:center;color:rgba(245,240,232,.4);font-size:14px;padding:24px">Loading...</div></div></div>
+    <span class="badge badge-purple">Admin</span>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:18px">
+
+    <!-- Global videos -->
+    <div>
+      <span class="lbl">Homepage Videos</span>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="card card-gold">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="font-size:24px">🎬</div>
+            <div>
+              <div style="font-family:var(--display);font-size:14px;color:var(--gold)">Background Loop Video</div>
+              <div style="font-family:var(--ui);font-size:12px;color:rgba(253,246,227,.45)">Plays silently behind the splash screen</div>
+            </div>
+          </div>
+          <input type="file" id="splash-bg-file" accept="video/*" style="display:none" onchange="uploadGlobalVideo('splash_bg',this)">
+          <button class="btn btn-outline btn-sm btn-full" onclick="document.getElementById('splash-bg-file').click()">Upload Background Video ↑</button>
+        </div>
+        <div class="card card-gold">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="font-size:28px">👧👦</div>
+            <div>
+              <div style="font-family:var(--display);font-size:14px;color:var(--gold)">Character Intro Video</div>
+              <div style="font-family:var(--ui);font-size:12px;color:rgba(253,246,227,.45)">"Meet Nura &amp; Zain" — shown on splash screen tap</div>
+            </div>
+          </div>
+          <input type="file" id="intro-vid-file" accept="video/*" style="display:none" onchange="uploadGlobalVideo('intro_video',this)">
+          <button class="btn btn-outline btn-sm btn-full" onclick="document.getElementById('intro-vid-file').click()">Upload Intro Video ↑</button>
+        </div>
+        <div id="global-vid-msg" style="font-family:var(--ui);font-size:13px;text-align:center;min-height:20px"></div>
+      </div>
+    </div>
+
+    <!-- Scene images -->
+    <div>
+      <span class="lbl">Scene Images &amp; Media</span>
+      <div class="card">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <span class="lbl" style="font-size:10px">World</span>
+            <select id="adm-world" class="input" style="padding:10px 12px;font-family:var(--ui)">
+              <option value="">Select...</option>
+              <option value="1">1 — The Wonder of Allah</option>
+              <option value="2">2 — Wonders Inside You</option>
+              <option value="3">3 — Why Allah Made Me</option>
+              <option value="4">4 — The Test of This Life</option>
+              <option value="5">5 — The Hidden Map</option>
+              <option value="6">6 — Inside the Quran</option>
+              <option value="7">7 — Little Surah Studio</option>
+              <option value="8">8 — The Unseen World</option>
+              <option value="9">9 — Messengers of Allah</option>
+              <option value="10">10 — Stories of Prophets</option>
+              <option value="11">11 — Life of Muhammad ﷺ</option>
+              <option value="12">12 — Nations of the Past</option>
+              <option value="13">13 — Living Islam Today</option>
+            </select>
+          </div>
+          <div>
+            <span class="lbl" style="font-size:10px">Scene</span>
+            <input id="adm-scene" type="number" class="input" placeholder="1–6" min="1" max="6" style="padding:10px 12px;font-family:var(--ui)">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <span class="lbl" style="font-size:10px">Beat</span>
+            <select id="adm-beat" class="input" style="padding:10px 12px;font-family:var(--ui)">
+              <option value="">Any</option>
+              <option value="A">Beat A</option>
+              <option value="B">Beat B</option>
+              <option value="C">Beat C</option>
+              <option value="interactive">Interactive</option>
+            </select>
+          </div>
+          <div>
+            <span class="lbl" style="font-size:10px">Type</span>
+            <select id="adm-type" class="input" style="padding:10px 12px;font-family:var(--ui)">
+              <option value="image">🖼️ Image</option>
+              <option value="audio">🎵 Audio</option>
+              <option value="video">🎬 Video</option>
+            </select>
+          </div>
+        </div>
+        <input id="adm-desc" class="input" placeholder="Description (optional)" style="margin-bottom:10px;font-family:var(--ui)">
+        <div class="upload-zone" onclick="document.getElementById('adm-file').click()" id="adm-zone">
+          <input type="file" id="adm-file" accept="image/*,audio/*,video/*" style="display:none"
+            onchange="document.getElementById('adm-fname').textContent=this.files[0]?.name||'No file'">
+          <div style="font-size:28px;margin-bottom:8px;opacity:.4">📁</div>
+          <div style="font-family:var(--display);font-size:13px;color:rgba(253,246,227,.55)">Tap to select file</div>
+          <div id="adm-fname" style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);margin-top:6px">No file selected</div>
+        </div>
+        <button class="btn btn-gold btn-full" onclick="uploadAsset()" style="margin-top:12px">Upload Asset ↑</button>
+        <div id="adm-msg" style="margin-top:10px;font-family:var(--ui);font-size:13px;text-align:center;min-height:20px"></div>
+      </div>
+    </div>
+
+    <!-- Assets list -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span class="lbl" style="margin:0">Uploaded Assets</span>
+        <button class="btn btn-glass btn-sm" onclick="loadAdminAssets()">↻ Refresh</button>
+      </div>
+      <div id="adm-assets-list">
+        <div style="text-align:center;color:rgba(253,246,227,.35);font-family:var(--ui);font-size:13px;padding:20px">Tap Refresh to load assets</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -441,118 +797,101 @@ select.input{appearance:none;cursor:pointer}
 const W1 = {
   id:1, title:"The Wonder of Allah", sub:"Who is Allah?", icon:"✨", cc:"wc1",
   scenes:[
-    {id:1, title:"The Question That Changes Everything",
-     A:"Nura and Zain sit on a hill watching the sun set — the sky turning from blue to orange to pink to deep purple, all in one slow silent movement. Zain watches and feels something strange. \"Who made this?\" he asks quietly. \"Not like — who drew it. But who decided that sunsets should look like this?\"",
-     B:"\"If I painted something,\" Nura says, \"you could tell it was me. My brushstrokes. My choices.\" She pauses. \"Maybe the world works the same way. If you look carefully enough at anything — a leaf, a raindrop, a heartbeat — you can see the One who made it.\" Zain stares at the horizon. That thought won't leave him.",
-     C:"Every single thing in existence was either made by something else, or it made itself, or it was made by something that was never made. A table needs a carpenter. A baby needs parents. But at the very beginning — before there was anything — there had to be a Creator who needed no creator. Who existed before time. Muslims call that Creator Allah.",
+    {id:1, title:"The Valley at Dawn",
+     A:'"Whoa." Zain stops walking so suddenly that Nura bumps right into him. Then she sees it too — and her mouth drops open.',
+     B:"A whole golden valley stretches out below them, so wide they can't see the end. The sun is just waking up, painting everything orange and pink and gold. It's like someone tipped a jar of glitter over the whole world.",
+     C:'"It\'s not even on the map," Zain whispers. Nura lifts her lantern — but then laughs. "My lantern is so tiny," she giggles. "And Allah\'s lamp up there is..." She looks at the rising sun. "Just a little bit bigger." They both giggle. And then they go quiet. Because WOW.',
      ix:{type:'REVEAL', items:[
-       {l:'🌅 The Sunset', c:'The perfect colours and timing of every sunset are not random. They are the signature of a Creator who cares about beauty.'},
-       {l:'💧 Water', c:'Water is the only substance that expands when it freezes. If it didn\'t, ice would sink and oceans would freeze solid. Allah designed this exact property.'},
-       {l:'🌱 The Seed', c:'Inside a tiny seed is the complete DNA blueprint for a towering tree. Every tree began as something you could hold in your palm.'},
-       {l:'⭐ The Stars', c:'The light you see from some stars left them thousands of years ago. You are reading ancient history written across the sky every night.'}
+       {l:'An-Nur — The Light', c:"Allah is An-Nur — the Light. He made the sun, the stars, and every ray of light in this world. And He also puts a special kind of light inside the hearts of those who believe in Him."}
      ]},
-     lesson:"Allah is the Creator of everything — the visible and the invisible, the near and the far, the known and the unknown. He created without needing anything to create with. When you look at the world with open eyes, you are reading His signature.",
-     dua:{ar:"سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", lat:"Subhaanallahi wa bihamdihi", en:"Glory be to Allah and praise be to Him"},
-     ha:10},
+     lesson:"Allah is An-Nur — the Light. He made the sun, the stars, and every ray of light in this world. And He also puts a special kind of light inside the hearts of those who believe in Him.",
+     dua:{ar:"سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", lat:"Subhaan Allaahi wa bihamdihi", en:"Glory be to Allah, and all praise belongs to Him"},
+     ha:5},
 
-    {id:2, title:"The Names That Reveal Him",
-     A:"\"If you want to know someone,\" Nura says, \"you learn their name first. Then you learn what they do. Then you learn how they treat people.\" She opens her notebook. \"Allah has 99 names. Each one tells us something different about Him. Each one is a door.\"",
-     B:"Zain picks one at random: Al-Latif. \"What does that mean?\" he asks. Nura looks it up. \"The Subtle. The Gentle. The One who is aware of every tiny detail and acts with perfect gentleness.\" Zain is quiet. \"So there's a name that means He cares about tiny things,\" he says slowly. \"He doesn't just care about big obvious things.\" Nura nods. \"Every leaf. Every thought. Every small fear.\"",
-     C:"The 99 Names of Allah are not 99 labels. They are 99 windows. Each one reveals a different quality of the same One. Allah is Ar-Rahman — the Most Merciful. Al-'Alim — the All-Knowing. Al-Qadir — the All-Powerful. Al-Wadud — the Loving. Al-Qarib — the Near. You can know Allah through His names. That is why learning them is itself a form of worship.",
-     ix:{type:'TAP', items:[
-       {i:'💫', n:'Ar-Rahman', r:'The Most Merciful — His mercy covers all things. It reaches you before you even ask.'},
-       {i:'👁️', n:'Al-Alim', r:'The All-Knowing — He knows what you hide and what you reveal. He knows your thoughts before you think them.'},
-       {i:'💙', n:'Al-Wadud', r:'The Loving — The only One whose love has no condition, no end, and no limit.'},
-       {i:'🤲', n:'Al-Qarib', r:'The Near — Closer to you than your own jugular vein. He is never far.'},
-       {i:'🛡️', n:'Al-Hafiz', r:'The Protector — He guards you from what you see and what you cannot see.'},
-       {i:'🎁', n:'Al-Razzaq', r:'The Provider — Every breath of air, every drop of water, every bite of food — all from Him.'}
-     ]},
-     lesson:"Allah revealed His 99 Beautiful Names so we could truly know Him — not just know about Him. Each name is a doorway into understanding His nature. The more you know His names, the closer you feel to Him.",
-     dua:{ar:"اللَّهُمَّ إِنِّي أَسْأَلُكَ بِكُلِّ اسْمٍ هُوَ لَكَ", lat:"Allaahumma innee as'aluka bikulli ismin huwa lak", en:"O Allah, I ask You by every name that belongs to You"},
-     ha:10},
-
-    {id:3, title:"Allah Sees Everything",
-     A:"It is very late. The whole city is asleep. Zain is awake, staring at the ceiling, thinking about something that happened today that nobody knows about. Nobody saw. He made a choice when nobody was watching — and he's not sure it was the right one. In the dark and silence, a thought comes: \"But Allah saw.\"",
-     B:"That thought could be frightening. Or it could be something else entirely. Nura once said: \"The fact that Allah sees everything means nothing you do is invisible. The kind things you do in secret? He sees those too. The tears you cry alone? He knows. The effort you make when no one is watching? He records it.\" Zain lies in the dark and thinks about that differently.",
-     C:"Allah has a quality called Al-Basir — He who sees all things. And Al-Khabir — He who is fully aware of everything. Nothing is hidden from Him. Not the smallest ant under the deepest rock. Not the thought you didn't say out loud. Not the good you did when no one was watching. This is called Ihsan — to worship and live as if you can see Allah, knowing that He always sees you.",
-     ix:{type:'BUILD', steps:[
-       {i:'🤫', t:'Secret kindness: helping someone when no one is watching → Allah records it'},
-       {i:'😢', t:'Silent tears: crying alone at night → Allah knows and responds'},
-       {i:'💪', t:'Private effort: trying hard when there\'s no reward → Allah sees the effort'},
-       {i:'🤲', t:'Quiet dua: whispering to Allah in the dark → He hears every word'},
-       {i:'✅', t:'This is Ihsan: living knowing Allah always sees you — the highest level of faith'}
-     ]},
-     lesson:"Allah sees and knows everything — and this is not something to fear if your heart is turned toward Him. It means no good deed is invisible. No sincere prayer goes unheard. No effort is wasted. Nothing you do in goodness is forgotten.",
-     dua:{ar:"اللَّهُمَّ اجْعَلْنِي مِمَّنْ يَخْشَاكَ", lat:"Allaahumma-j'alnee mimman yakhshaak", en:"O Allah, make me among those who are in awe of You"},
-     ha:10},
-
-    {id:4, title:"Why We Worship",
-     A:"\"Why does Allah want us to worship Him?\" Zain asks. \"It's not like He needs our salah. He's Allah. He doesn't need anything.\" It's a very honest question. Nura has wondered the same thing. \"I think,\" she says carefully, \"worship is not for Him. It's for us.\"",
-     B:"\"Think about it,\" Nura continues. \"When you pray, who changes? When you remember Allah, who benefits? When you are grateful, what happens inside you?\" Zain thinks about how he feels after Fajr. Quieter. Cleaner somehow. Focused. \"It changes me,\" he admits. Nura nods. \"Worship keeps your heart pointing in the right direction. It doesn't add anything to Allah. It adds everything to you.\"",
-     C:"Allah says in a Hadith Qudsi: \"O My servants, you can never harm Me and you can never benefit Me. Even if everyone — jinn and humans — had the most perfect faith, it would add nothing to My Kingdom. And if they all disbelieved, it would take nothing from My Kingdom.\" Worship is the medicine for the human heart. Prayer, gratitude, and remembrance of Allah keep us clear, grounded, and connected to the One who created us.",
-     ix:{type:'SORT', zA:"Benefits Allah", zB:"Benefits You", items:['Your salah','Feeling peaceful after dhikr','Your dua','Being grateful','Waking for Fajr','Clarity of heart','Your zakat','Growing closer to Allah']},
-     lesson:"Allah does not need our worship. We need it. Every salah, every act of dhikr, every moment of gratitude — these are medicine for our hearts, not gifts to Allah. The one who worships gains everything.",
-     dua:{ar:"اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ", lat:"Allaahumma a'innee 'alaa dhikrika wa shukrika wa husni 'ibaadatik", en:"O Allah, help me to remember You, be grateful to You, and worship You well"},
-     ha:10},
-
-    {id:5, title:"Tawakkul — True Trust",
-     A:"They face a problem they cannot solve on their own. They've tried everything. They've done their best. And still — the outcome is not in their hands. Zain feels something he doesn't quite have a word for. A mix of helplessness and fear. \"What do you do,\" he asks quietly, \"when you've done everything you can and it's still not enough?\"",
-     B:"Nura thinks of something her grandfather told her. \"He said: do your best, then let go. Not give up — let go. There's a difference.\" Zain waits. \"Giving up means thinking nothing will work. Letting go means trusting that Allah will handle what you cannot. You did your part. Now trust Him with His part.\" That word — tawakkul — settles in Zain's chest like a warm thing.",
-     C:"The Prophet Ibrahim ﷺ was thrown into a massive fire. As he flew through the air toward the flames, the angel Jibreel appeared and said: \"Do you need anything?\" Ibrahim replied: \"From you — no. From Allah — He knows my state.\" That is tawakkul. Doing everything in your power, then releasing the outcome to the One who controls all outcomes. Not passive. Not giving up. Trusting completely.",
+    {id:2, title:"The Sky Without Pillars",
+     A:"Zain tilts his head ALL the way back. Nura tilts hers back too. They stare up at the sky together — just blue, stretching forever in every direction.",
+     B:'"Okay," Zain says slowly, "but what\'s HOLDING it up?" Nura squints hard, like she\'s looking for the ropes. "There\'s no rope," she says. "No poles. Nothing." She spins around checking. "It just... STAYS there."',
+     C:'Zain sits down on the grass and keeps staring up. "Allah holds it," he says quietly. "Without anything." He thinks about that. That\'s not normal. That\'s extraordinary. That\'s... Allah.',
      ix:{type:'REVEAL', items:[
-       {l:'What Tawakkul IS', c:'After doing your best, releasing the outcome to Allah. Trusting His wisdom over your anxiety. Knowing He sees more than you do.'},
-       {l:'What Tawakkul is NOT', c:'Doing nothing and expecting results. Being lazy and calling it trust. Giving up and calling it faith.'},
-       {l:'Ibrahim\'s Tawakkul 🔥', c:'Thrown into a fire — he trusted Allah so completely that he didn\'t even ask for help. Allah commanded the fire: be cool and safe.'},
-       {l:'Your Tawakkul 🤲', c:'Study hard, prepare well, make dua, do your best — then say: "Ya Allah, I\'ve done what I can. The rest is Yours."'}
+       {l:"No pillars, no ropes", c:"Allah holds the sky up without any pillars or ropes — and He's been doing it since forever! He keeps everything in the whole universe in its exact right place. Not one star ever drifts away without His permission."}
      ]},
-     lesson:"Tawakkul is not giving up. It is working as hard as you can, preparing as thoroughly as you can, making dua — and then releasing the outcome to the One who controls all outcomes.",
-     dua:{ar:"حَسْبِيَ اللَّهُ وَنِعْمَ الوَكِيلُ", lat:"Hasbiyallaahu wa ni'mal-wakeel", en:"Allah is enough for me, and He is the best guardian"},
-     ha:10},
+     lesson:"Allah holds the sky up without any pillars or ropes — and He's been doing it since forever! He keeps everything in the whole universe in its exact right place. Not one star ever drifts away without His permission.",
+     dua:{ar:"رَبَّنَا مَا خَلَقْتَ هَٰذَا بَاطِلًا", lat:"Rabbanaa maa khalaqta haadha baatilaa", en:"Our Lord, You did not create all of this without a purpose"},
+     ha:5},
 
-    {id:6, title:"Love and Gratitude",
-     A:"Nura finds a letter in her bag that she forgot was there — a note her mother wrote her a long time ago. Something about being proud of her. Nura reads it standing in the middle of the path and her eyes fill. \"I forgot,\" she says quietly. \"I forgot how much she loves me.\" The words on paper made love feel real again.",
-     B:"\"Allah wrote His love for us too,\" Zain says quietly. He remembers something he heard: that Allah has a mercy so vast it encompasses all things. That He has saved the greater part of His mercy for the Day of Judgment. That a mother's love for her child is only a fraction of His love. Nura holds the letter. A mother's love — and Allah's is greater than that.",
-     C:"Shukr — gratitude — is the response to love. When you recognise what you have been given, and you acknowledge the Giver, something opens in your chest. The Prophet ﷺ would stand in prayer until his feet swelled and when asked why he said: \"Shall I not be a grateful servant?\" Gratitude is not just saying 'alhamdulillah.' It is seeing — truly seeing — the gift of every moment.",
-     ix:{type:'TAP', items:[
-       {i:'🫁', n:'Your Lungs', r:'Right now, breathing without thinking about it. Allah gave you 20,000 breaths every day for free.'},
-       {i:'🧠', n:'Your Mind', r:'The ability to think, wonder, remember, and understand. An entire universe inside your head.'},
-       {i:'👨‍👩‍👧', n:'Your Family', r:'People who loved you before you could remember. Who chose you. Who stayed.'},
-       {i:'📖', n:'The Quran', r:'The direct words of Allah — preserved perfectly for 1400 years — available to you right now.'},
-       {i:'🕌', n:'Islam', r:'The complete way of life. The path. The map. The community. Given to you as a gift from birth.'},
-       {i:'🌅', n:'This Day', r:'Right now, this exact moment is a gift. Yesterday is gone. Tomorrow isn\'t here yet. This is what you have.'}
+    {id:3, title:"The Tiny Seed",
+     A:'Zain picks something up off the ground. He holds it up to the light. It\'s so small it almost disappears on his fingertip. "What IS this?" he asks.',
+     B:'Nura looks at it. Then she looks at the enormous oak tree next to them — the one so big that five children couldn\'t hold hands around its trunk. She looks back at the seed. Then back at the tree. "Zain," she says very carefully, "I think... that tree started as something like THAT."',
+     C:'Zain stares at the seed. Then at the tree. Then at the seed again. "No," he says. "NO." He starts laughing. "That\'s IMPOSSIBLE." Nura grins. "And yet... here\'s the tree."',
+     ix:{type:'REVEAL', items:[
+       {l:"The impossible seed", c:"Inside every single tiny seed, Allah placed His command to grow. He packed an entire forest inside something you can barely see! That's how powerful He is — He makes the impossible normal."}
      ]},
-     lesson:"Allah loves you — and His love is not abstract. It is visible everywhere: in your lungs, in your mind, in the people He placed around you, in the Quran He preserved for you. Real gratitude means seeing all of that and saying with your whole heart: Alhamdulillah.",
-     dua:{ar:"اللَّهُمَّ لَكَ الحَمْدُ كَمَا يَنْبَغِي لِجَلَالِ وَجْهِكَ", lat:"Allaahumma lakal-hamdu kamaa yanbaghee lijalaali wajhik", en:"O Allah, all praise belongs to You as befits the glory of Your face"},
-     ha:10}
+     lesson:"Inside every single tiny seed, Allah placed His command to grow. He packed an entire forest inside something you can barely see! That's how powerful He is — He makes the impossible normal.",
+     dua:{ar:"اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا", lat:"Allaahumma innee as'aluka 'ilman naafi'aa", en:"O Allah, I ask You for knowledge that is truly useful"},
+     ha:5},
+
+    {id:4, title:"The River's Gifts",
+     A:"They follow a sound through the trees — and find the most beautiful river. Crystal clear, cold, sparkly. Cows are drinking peacefully downstream. Silver fish dart around near Nura's feet. A bee buzzes past, heading somewhere important.",
+     B:'Zain fills his water bottle and holds it up to the sun. It glitters like a tiny rainbow. "Wait," he says, working something out in his head. "This water came from the sky... then filled the river... then the cows drink it... then the fish live in it... then it waters the trees..." He looks at Nura. "Allah planned ALL of that. With just... water."',
+     C:'"Don\'t forget the bees," Nura says without looking up. She is already writing it all down in her journal.',
+     ix:{type:'REVEAL', items:[
+       {l:"One gift, a thousand blessings", c:"Allah arranged EVERYTHING with water — it falls from the sky, fills rivers, feeds fish, nourishes cows who give us milk, and grows every tree that gives us fruit. One amazing gift, a thousand amazing blessings!"}
+     ]},
+     lesson:"Allah arranged EVERYTHING with water — it falls from the sky, fills rivers, feeds fish, nourishes cows who give us milk, and grows every tree that gives us fruit. One amazing gift, a thousand amazing blessings!",
+     dua:{ar:"اللَّهُمَّ بَارِكْ لَنَا فِيمَا رَزَقْتَنَا", lat:"Allaahumma baarik lanaa feemaa razaqtanaa", en:"O Allah, bless us in all that You have given us"},
+     ha:5},
+
+    {id:5, title:"The Orchard of Gifts",
+     A:"Past the river, they find the orchard. Date palms. Pomegranate trees. Fig trees. A beehive buzzing in the branches. Everything dripping with fruit.",
+     B:'Zain reaches up and touches a fat, warm date. He pops it in his mouth. His eyes go wide. "That is — WOW." Nura is already tasting a pomegranate seed. "Crunchy AND sweet," she says, amazed. "How does it do BOTH?"',
+     C:'"Allah didn\'t HAVE to make food taste good," Zain says suddenly. "He could have just made it... fuel." Nura looks at her pomegranate. "He made it delicious because He loves us," she says quietly. That feels like a really important thing to understand.',
+     ix:{type:'REVEAL', items:[
+       {l:"Delicious on purpose", c:"Allah made hundreds of different fruits — all different colours, tastes and smells — when He could have just given us plain fuel to survive. He made food DELICIOUS because He loves us and wants us to enjoy this world."}
+     ]},
+     lesson:"Allah made hundreds of different fruits — all different colours, tastes and smells — when He could have just given us plain fuel to survive. He made food DELICIOUS because He loves us and wants us to enjoy this world.",
+     dua:{ar:"الحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنَا وَسَقَانَا", lat:"Alhamdu lillaahil-ladhee at'amanaa wa saqaanaa", en:"All praise to Allah who fed us and gave us drink"},
+     ha:5},
+
+    {id:6, title:"Stars and Tafakkur",
+     A:"The sun goes down, and the stars come out — first one, then ten, then a MILLION. Zain and Nura sit on two separate rocks on the hilltop and just... look.",
+     B:'"Each one," Zain says slowly, "is its own sun. Some are BIGGER than our sun." He lets that sink in. There are a million suns above him right now, so far away they look like tiny dots. Nura holds up her lantern next to the sky and grins. "My lantern," she says, "versus... that." They both laugh. Then go quiet again.',
+     C:"This quiet moment — sitting still, looking at Allah's creation, and just THINKING about who made all of this — this feeling has a name. It's called tafakkur. And the Prophet ﷺ said one hour of tafakkur can be worth more than a whole night of worship. Zain and Nura didn't know that. But they were already doing it.",
+     ix:{type:'REVEAL', items:[
+       {l:"Tafakkur تَفَكُّر", c:"Looking at Allah's creation and thinking deeply about who made it — this is called tafakkur. The Prophet ﷺ taught us that deep reflection on Allah's signs is one of the most powerful forms of worship. You don't need to move a single muscle — just think, and notice, and wonder."}
+     ]},
+     lesson:"Looking at Allah's creation and thinking deeply about who made it — this is called tafakkur (تَفَكُّر). The Prophet ﷺ taught us that deep reflection on Allah's signs is one of the most powerful forms of worship. You don't need to move a single muscle — just think, and notice, and wonder.",
+     dua:{ar:"اللَّهُمَّ لَكَ الحَمْدُ أَنْتَ نُورُ السَّمَاوَاتِ وَالأَرْضِ", lat:"Allaahumma lakal-hamdu anta noorus-samaawaati wal-ard", en:"O Allah, all praise is Yours — You are the Light of the heavens and the earth"},
+     ha:5}
   ],
   quiz:[
-    {q:"Who is Allah according to Islamic belief?",
-     o:["A very wise person","The Creator who created everything and needs no creator","A force like gravity","One of many gods"],
-     c:1, p:"Yes! Allah is the Creator of everything — who existed before creation and needs nothing from it. SubhanAllah! ⭐"},
-    {q:"What does 'Ihsan' mean?",
-     o:["Praying five times a day","Being kind to neighbours","Living as if you can see Allah, knowing He always sees you","Going to the masjid regularly"],
-     c:2, p:"Masha'Allah! Ihsan is the highest level of faith — living every moment aware that Allah sees you. ✨"},
-    {q:"Why do we worship Allah?",
-     o:["Because He needs it","To show other people we're Muslim","Because it benefits us and keeps our hearts connected to Him","Because the law requires it"],
-     c:2, p:"Exactly! Allah needs nothing from us. Worship is medicine for the human heart — it benefits US. Allahu Akbar! 🌟"},
-    {q:"What is tawakkul?",
-     o:["Giving up and accepting fate","Working hard, making dua, then trusting Allah with the outcome","Asking others for help","Praying extra nawafil"],
-     c:1, p:"Beautiful! Tawakkul is not laziness — it is full effort PLUS complete trust. The combination that changes everything!"},
-    {q:"What are Allah's 99 Names for?",
-     o:["They have magical powers","They are just labels","Each name is a window that reveals a quality of Allah and helps us know Him better","They protect us from evil"],
-     c:2, p:"SubhanAllah! Each name is a door to knowing Allah more deeply. The more you know His names, the closer you feel to Him! 💛"}
+    {q:"What name of Allah means 'The Light'?",
+     o:["Al-Aziz","An-Nur","Al-Malik","Ar-Rahman"],
+     c:1, p:"Masha'Allah! An-Nur — the Light! Nura knew you'd remember that one! ⭐"},
+    {q:"In Scene 2, Zain couldn't find any ropes or poles holding up the sky. What does this show us about Allah?",
+     o:["The sky is made of glass","The ropes are invisible","Allah holds the entire sky up with no support — His power needs nothing!","Clouds are very light"],
+     c:2, p:"Exactly! Allah needs nothing to hold up the sky. That's how powerful He is! SubhanAllah!"},
+    {q:"Nura picked up a tiny seed. Why was it so amazing?",
+     o:["It tasted sweet","It was a rare colour","Inside it was Allah's command to grow into something enormous — an entire tree!","It glowed in the dark"],
+     c:2, p:"Yes! Allah packed the power of a whole forest into something tiny. Allahu Akbar!"},
+    {q:"At the river, Zain worked out that Allah used water for LOTS of things. Which of these was NOT one of them?",
+     o:["Cows drink water and give us milk","Fish live in the water","Water makes diamonds","Water from the sky fills the rivers"],
+     c:2, p:"Ha! Water doesn't make diamonds — but everything else is true! Allah planned SO much with just one gift of water!"},
+    {q:"In the last scene, Zain and Nura sat quietly looking at the stars and thinking about Allah. The special name for this act of deep reflection is called...",
+     o:["Tawakkul","Tafakkur","Tasbih","Tawbah"],
+     c:1, p:"SubhanAllah! Tafakkur — you remembered! Now you know what YOU are doing every time you look at something beautiful and think about Allah. That's worship! 🌟"}
   ],
   journal:{
-    title:"✨ My Wonder Journal",
-    intro:"Zain and Nura discovered who Allah is. Now reflect on what you've found.",
+    title:"🌟 My Wonder Journal",
+    intro:"Zain and Nura found so many signs of Allah today. Now it's YOUR turn to look around you!",
     prompts:[
-      "One quality or name of Allah that means the most to me, and why:",
-      "Something in the world around me that shows me Allah's care:",
-      "A dua of love and gratitude to Allah, in your own words:"
+      "Three things Allah made that I can see right now:",
+      "The one thing in creation that amazes me the most:",
+      "A dua I want to say to Allah right now, in my own words:"
     ],
-    nura:"Masha'Allah! You just took the most important step — turning toward your Creator and really thinking about Him. That reflection is itself worship. Allah sees every sincere thought. 🌙✨"
+    nura:"Masha'Allah! You didn't just READ about Allah's signs — you found them in YOUR life! That's what tafakkur really is. You just did it! Your video adventure is waiting! 🎬"
   }
 };
+
 const W2 = {
   id:2, title:"Wonders Inside You", sub:"What did Allah put inside me?", icon:"🫀", cc:"wc2",
   scenes:[
@@ -2022,6 +2361,8 @@ function SS(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById(id);
   if (el) { el.classList.add('active'); window.scrollTo(0,0); }
+  if (id === 's-admin') setTimeout(loadAdminAssets, 150);
+  if (id === 's-map') setTimeout(() => renderWorldMap && renderWorldMap(), 50);
 }
 
 // ── Toast ────────────────────────────────────────────────────
@@ -2195,28 +2536,66 @@ function renderDashboard() {
   const list = document.getElementById('children-list');
   const empty = document.getElementById('no-children');
   if (!list) return;
-  // Update greeting
+
+  // Time-of-day greeting
+  const greetEl = document.getElementById('d-greeting');
+  if (greetEl) {
+    const h = new Date().getHours();
+    const prayers = [
+      {t:'Fajr time ✨', min:4, max:6},
+      {t:'Good morning 🌅', min:6, max:12},
+      {t:'Good afternoon 🌤️', min:12, max:17},
+      {t:'Asr time 🌇', min:15, max:17},
+      {t:'Good evening 🌙', min:17, max:20},
+      {t:'Maghrib time 🌙', min:18, max:20},
+      {t:'Good night ⭐', min:20, max:24}
+    ];
+    const match = prayers.filter(p => h >= p.min && h < p.max).pop() || {t:'Assalamu Alaikum 🌙'};
+    greetEl.textContent = match.t;
+  }
+
   const dname = document.getElementById('d-name');
-  if (dname && A.profile) dname.textContent = 'Hello, ' + (A.profile.display_name || 'Parent') + '!';
-  // Show admin button if admin
+  if (dname && A.profile) dname.textContent = A.profile.display_name || 'Parent';
+
   const adminBtn = document.getElementById('admin-btn');
   if (adminBtn) adminBtn.style.display = A.profile?.is_admin ? 'inline-flex' : 'none';
-  if (!A.children.length) {
-    list.innerHTML = '';
+
+  list.innerHTML = '';
+  if (!A.children || A.children.length === 0) {
     if (empty) empty.style.display = 'block';
     return;
   }
   if (empty) empty.style.display = 'none';
-  list.innerHTML = A.children.map(c => `
-    <div class="child-card" onclick="selectChild('${c.id}')">
-      <div class="child-avatar">${c.avatar || '🌟'}</div>
-      <div class="child-info">
-        <div class="child-name">${esc(c.name)}</div>
-        <div class="child-age">Age ${c.age}</div>
+
+  A.children.forEach((ch, idx) => {
+    const worldsDone = Object.values(A.progress || {}).filter(p => p.quiz_done && p.journal_done).length;
+    const totalHa = Object.values(A.progress || {}).reduce((s, p) => s + (p.hasanah || 0), 0);
+    const pct = Math.round((worldsDone / 13) * 100);
+
+    const card = document.createElement('div');
+    card.className = 'child-card fade-in';
+    card.style.animationDelay = (idx * .12) + 's';
+    card.onclick = () => selectChild(ch.id);
+    card.innerHTML = `
+      <div style="position:relative;flex-shrink:0">
+        <div class="ava" style="font-size:30px">${ch.avatar || '🌟'}</div>
+        <svg class="progress-ring" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="27" fill="none" stroke="rgba(245,200,66,.15)" stroke-width="3"/>
+          <circle cx="30" cy="30" r="27" fill="none" stroke="var(--gold)" stroke-width="3"
+            stroke-dasharray="${2*Math.PI*27}"
+            stroke-dashoffset="${2*Math.PI*27*(1-pct/100)}"
+            stroke-linecap="round"
+            transform="rotate(-90 30 30)"
+            style="transition:stroke-dashoffset .8s ease"/>
+        </svg>
       </div>
-      <div class="child-arrow">›</div>
-    </div>
-  `).join('');
+      <div style="flex:1">
+        <div class="child-name">${ch.name}</div>
+        <div class="child-meta">Age ${ch.age || '—'} · ${worldsDone}/13 Worlds · ${totalHa} ⭐</div>
+      </div>
+      <div style="font-size:20px;opacity:.5">›</div>`;
+    list.appendChild(card);
+  });
 }
 
 // ── Open add-child modal ──────────────────────────────────────
@@ -2294,21 +2673,23 @@ function renderWorldMap() {
   if (!grid) return;
   grid.innerHTML = WORLD_META.map((m, i) => {
     const p = A.progress[m.id];
-    const prev = i === 0 ? true : !!A.progress[i]; // world i (previous)
+    const prev = i === 0 ? true : !!A.progress[i];
     const locked = !prev;
     const done   = p?.keys > 0;
-    let cls = `world-card ${m.cc}`;
+    let cls = `wcard ${m.cc}`;
     if (locked) cls += ' locked';
     if (done)   cls += ' complete';
+    const scDone = (p?.scenes_done || []).length;
+    const scTotal = WORLDS[m.id]?.scenes?.length || 6;
     return `
       <div class="${cls}" onclick="${locked ? '' : `openWorld(${m.id})`}">
-        <div class="wc-icon">${m.icon}</div>
-        <div class="wc-title">${m.title}</div>
-        <div class="wc-sub">${m.sub}</div>
-        ${done ? '<div class="wc-badge">🗝️</div>' : ''}
-        ${locked ? '<div class="wc-lock">🔒</div>' : ''}
+        <div class="wcard-icon">${m.icon}</div>
+        <div class="wcard-num">World ${m.id}</div>
+        <div class="wcard-title">${m.title}</div>
+        <div class="wcard-sub">${locked ? 'Locked' : (done ? '✦ Complete' : scDone + '/' + scTotal + ' scenes')}</div>
       </div>`;
   }).join('');
+  setTimeout(animateWorldCards, 80);
 }
 
 // ── Open world detail ─────────────────────────────────────────
@@ -2357,107 +2738,212 @@ function openWorld(wid) {
   SS('s-wdetail');
 }
 
-// ── Start scene ───────────────────────────────────────────────
+// ── Start scene ─────────────────────────────────────────────
 function startScene(sceneId) {
   A.scene = A.world.scenes.find(s => s.id === sceneId);
   if (!A.scene) return;
-  A.step    = 0;
+  A.step = 0;
   A.sceneHa = 0;
-  renderSceneStep();
+  renderFullScene();
   SS('s-player');
+  // Scroll to top
+  setTimeout(() => {
+    const sw = document.getElementById('scene-scroll-wrap');
+    if (sw) sw.scrollTop = 0;
+  }, 80);
 }
 
-// ── Scene player ──────────────────────────────────────────────
-const STEPS = ['A','B','C','ix','lesson','dua'];
+function exitScene() {
+  openWorld(A.world.id);
+}
 
-function renderSceneStep() {
+// ── Full scrollable scene renderer ───────────────────────────
+async function renderFullScene() {
   const sc = A.scene;
   if (!sc) return;
-  const step = STEPS[A.step];
 
+  // Update world label
   const lbl = document.getElementById('plbl');
-  if (lbl) lbl.textContent = (A.world?.title || '') + ' · ' + sc.title + ' · ' + getStepLabel(step);
+  if (lbl) lbl.textContent = (A.world?.title || '') + ' · Scene ' + sc.id;
+
+  // Update hasanah chip
+  updateHaChip();
+
+  // Load admin images for this scene
+  const imgs = await loadSceneImages(A.world.id, sc.id);
 
   const body = document.getElementById('pcontent');
   if (!body) return;
-  body.innerHTML = '';
 
-  const nextBtn = document.getElementById('pnext');
+  // Check if already done
+  const wProg = A.progress[A.world.id] || {};
+  const alreadyDone = (wProg.scenes_done || []).includes(sc.id);
 
-  if (step === 'A' || step === 'B' || step === 'C') {
-    body.innerHTML = `<div class="beat-text">${sc[step]}</div>`;
-    if (nextBtn) nextBtn.textContent = 'Continue →';
-  } else if (step === 'ix') {
-    renderInteractive(body, sc.ix);
-    if (nextBtn) nextBtn.textContent = 'Lesson →';
-  } else if (step === 'lesson') {
-    body.innerHTML = `
-      <div class="lesson-box">
-        <div class="lesson-label">✨ Lesson</div>
-        <div class="lesson-text">${sc.lesson}</div>
-      </div>`;
-    if (nextBtn) nextBtn.textContent = 'Dua →';
-  } else if (step === 'dua') {
-    body.innerHTML = `
-      <div class="dua-box">
-        <div class="dua-ar">${sc.dua.ar}</div>
-        <div class="dua-lat">${sc.dua.lat}</div>
-        <div class="dua-en">${sc.dua.en}</div>
-      </div>`;
-    if (nextBtn) nextBtn.textContent = 'Complete Scene ✓';
-  }
+  body.innerHTML = `
+    <!-- Scene title -->
+    <div class="scene-title-block">
+      <div class="scene-num-badge">Scene ${sc.id} of ${A.world.scenes.length}</div>
+      <div class="scene-title-text">${sc.title}</div>
+    </div>
 
-  // Progress bar
-  const pct = ((A.step+1)/STEPS.length)*100;
-  const pb = document.getElementById('prog-fill');
-  if (pb) pb.style.width = pct + '%';
+    <!-- Beat A -->
+    ${beatBlock('A', sc.A, imgs.A, 1)}
+
+    <!-- Beat B -->
+    ${beatBlock('B', sc.B, imgs.B, 2)}
+
+    <!-- Beat C -->
+    ${beatBlock('C', sc.C, imgs.C, 3)}
+
+    <!-- Interactive -->
+    <div class="ix-wrap" id="ix-container"></div>
+
+    <!-- What We Learn -->
+    <div class="what-we-learn">
+      <div class="wwl-label">✦ What We Learn</div>
+      <div class="wwl-text">${sc.lesson}</div>
+    </div>
+
+    <!-- Dua -->
+    <div class="dua-block">
+      <div class="dua-ornament">✦ ✦ ✦</div>
+      <div class="dua-ar">${sc.dua.ar}</div>
+      <div class="dua-lat">${sc.dua.lat}</div>
+      <div class="dua-en">${sc.dua.en}</div>
+    </div>
+
+    <!-- Complete button -->
+    <div class="complete-scene-btn">
+      ${alreadyDone
+        ? `<button class="btn btn-glass btn-full" onclick="exitScene()" style="opacity:.7">← Back to World</button>`
+        : `<button class="btn btn-green btn-full" onclick="completeScene()" id="scene-complete-btn" style="font-size:16px;padding:17px">
+             ✦ I've Read This Scene! &nbsp;+${sc.ha || 5} Hasanah
+           </button>`
+      }
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn btn-glass btn-sm" onclick="exitScene()">← Other Scenes</button>
+      </div>
+    </div>
+  `;
+
+  // Render interactive into its container
+  const ixEl = document.getElementById('ix-container');
+  if (ixEl && sc.ix) renderInteractive(ixEl, sc.ix);
+  else if (ixEl) ixEl.style.display = 'none';
 }
 
-function getStepLabel(step) {
-  const map = {A:'Part 1',B:'Part 2',C:'Part 3',ix:'Activity',lesson:'Lesson',dua:'Dua'};
-  return map[step] || '';
+function beatBlock(beatKey, text, imgUrl, num) {
+  const imgHtml = imgUrl
+    ? `<img src="${imgUrl}" alt="Scene image" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">`
+    : `<div class="beat-image-placeholder">
+         <div class="bip-icon">🌙</div>
+         <div class="bip-label">Image Coming Soon</div>
+       </div>`;
+  return `
+    <div class="beat-block fade-in" style="animation-delay:${(num-1)*.12}s">
+      <div class="beat-image-zone">${imgHtml}</div>
+      <div class="beat-text-block">
+        <div class="beat-label">Part ${num}</div>
+        <div class="beat-prose">${formatProse(text)}</div>
+      </div>
+    </div>`;
 }
 
-function sceneNext() {
-  if (A.step < STEPS.length - 1) {
-    A.step++;
-    renderSceneStep();
-  } else {
-    completeScene();
-  }
+function formatProse(text) {
+  // Wrap quoted speech in styled span
+  return text.replace(/"([^"]+)"/g, '<span class="beat-dialogue">"$1"</span>');
 }
 
-function scenePrev() {
-  if (A.step > 0) { A.step--; renderSceneStep(); }
+async function loadSceneImages(worldId, sceneId) {
+  const imgs = {A: null, B: null, C: null};
+  try {
+    const {data} = await sb.from('admin_assets')
+      .select('beat,url')
+      .eq('world_id', worldId)
+      .eq('scene_id', sceneId)
+      .eq('type', 'image');
+    if (data) {
+      data.forEach(r => { if (r.beat && imgs[r.beat] !== undefined) imgs[r.beat] = r.url; });
+    }
+  } catch(e) {}
+  return imgs;
+}
+
+function updateHaChip() {
+  const chip = document.getElementById('p-ha');
+  if (chip) chip.textContent = '⭐ ' + (A.totalHasanah || 0);
 }
 
 async function completeScene() {
   const wid = A.world.id;
   const sid = A.scene.id;
-  A.sceneHa = A.scene.ha || 10;
+  const ha = A.scene.ha || 5;
+
+  // Disable button
+  const btn = document.getElementById('scene-complete-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
 
   // Update local progress
-  if (!A.progress[wid]) A.progress[wid] = {scenes_done:[],hasanah:0,keys:0};
+  if (!A.progress[wid]) A.progress[wid] = {scenes_done:[], hasanah:0, keys:0};
   const p = A.progress[wid];
   if (!p.scenes_done) p.scenes_done = [];
   if (!p.scenes_done.includes(sid)) {
     p.scenes_done.push(sid);
-    p.hasanah = (p.hasanah || 0) + A.sceneHa;
-    A.totalHasanah += A.sceneHa;
+    p.hasanah = (p.hasanah || 0) + ha;
+    A.totalHasanah = (A.totalHasanah || 0) + ha;
   }
 
-  // Upsert to Supabase
-  await sb.from('progress').upsert({
-    child_id: A.child.id,
-    world_id: wid,
-    scenes_done: p.scenes_done,
-    hasanah: p.hasanah,
-    keys: p.keys || 0,
-    quiz_done: p.quiz_done || false,
-    journal_done: p.journal_done || false
-  }, { onConflict: 'child_id,world_id' });
+  // Gold particle burst
+  goldBurst();
 
-  showReward(A.sceneHa, false);
+  // Save to Supabase
+  try {
+    await sb.from('progress').upsert({
+      child_id: A.child.id,
+      world_id: wid,
+      scenes_done: p.scenes_done,
+      hasanah: p.hasanah,
+      keys: p.keys || 0,
+      quiz_done: p.quiz_done || false,
+      journal_done: p.journal_done || false
+    }, { onConflict: 'child_id,world_id' });
+  } catch(e) {}
+
+  // Show hasanah reward then return to world
+  showSceneReward(ha);
+}
+
+function showSceneReward(ha) {
+  const wrap = document.getElementById('reward-wrap');
+  if (!wrap) { openWorld(A.world.id); return; }
+  wrap.innerHTML = `
+    <div class="srainwrap" id="srainwrap"></div>
+    <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:20px;padding:40px 24px;text-align:center">
+      <div style="font-size:80px;animation:keyrise .7s cubic-bezier(.34,1.56,.64,1) forwards;filter:drop-shadow(0 0 40px rgba(245,200,66,.7))">⭐</div>
+      <div style="font-family:var(--display);font-size:34px;color:var(--gold);font-weight:700;text-shadow:0 0 30px rgba(245,200,66,.4)">+${ha} Hasanah!</div>
+      <div style="font-family:var(--ui);font-size:14px;color:rgba(253,246,227,.55);letter-spacing:1px">Total: ${A.totalHasanah} ⭐</div>
+      <div style="font-family:var(--body);font-size:15px;color:var(--cream2);font-style:italic;line-height:1.7;max-width:260px">Every good deed is recorded. Allah sees every moment of effort. 🌙</div>
+      <button class="btn btn-gold btn-full" onclick="openWorld(A.world.id)" style="font-size:15px;padding:16px">Continue Journey →</button>
+    </div>`;
+  startStarRain();
+  SS('s-reward');
+}
+
+// ── Gold particle burst ───────────────────────────────────────
+function goldBurst() {
+  const btn = document.getElementById('scene-complete-btn');
+  const rect = btn ? btn.getBoundingClientRect() : {left: window.innerWidth/2, top: window.innerHeight/2, width:0, height:0};
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  const particles = ['✦','⭐','✨','💛','🌟'];
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.textContent = particles[Math.floor(Math.random()*particles.length)];
+    el.style.cssText = `left:${cx}px;top:${cy}px;font-size:${14+Math.random()*12}px;--px:${(Math.random()-0.5)*180}px;--py:${-60-Math.random()*120}px;--pd:${.6+Math.random()*.6}s;animation-delay:${Math.random()*.2}s`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }
 }
 
 // ── Reward screen ─────────────────────────────────────────────
@@ -3033,6 +3519,7 @@ async function init() {
   SS('s-splash');
   authTab('login');
   initStars();
+  initSplash(); // lantern canvas + videos (async, non-blocking)
 
   // Restore session
   const { data: { session } } = await sb.auth.getSession();
@@ -3060,4 +3547,258 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPLASH — Video background + Lantern canvas + Intro video
+// ═══════════════════════════════════════════════════════════════
+async function initSplash() {
+  initLanternCanvas();
+  await loadSplashVideo();
+  await loadIntroVideoUrl();
+}
+
+async function loadSplashVideo() {
+  try {
+    const {data} = await sb.from('admin_assets')
+      .select('url').eq('type','video').eq('world_id',0).eq('beat','splash_bg').limit(1);
+    if (data && data[0]) {
+      const vid = document.getElementById('splash-bg-video');
+      if (vid) {
+        vid.src = data[0].url;
+        vid.style.opacity = '0.55';
+        // Hide canvas when video loads
+        vid.onloadeddata = () => {
+          const canvas = document.getElementById('splash-stars-canvas');
+          if (canvas) canvas.style.opacity = '0';
+        };
+      }
+    }
+  } catch(e) {}
+}
+
+async function loadIntroVideoUrl() {
+  try {
+    const {data} = await sb.from('admin_assets')
+      .select('url').eq('type','video').eq('world_id',0).eq('beat','intro_video').limit(1);
+    if (data && data[0]) {
+      const vidEl = document.getElementById('intro-video-el');
+      if (vidEl) {
+        vidEl.querySelector('source').src = data[0].url;
+        vidEl.load();
+      }
+      // Show the intro button
+      const btn = document.getElementById('intro-vid-btn');
+      if (btn) btn.style.display = 'flex';
+    } else {
+      // Hide button if no video uploaded
+      const btn = document.getElementById('intro-vid-btn');
+      if (btn) btn.style.display = 'none';
+    }
+  } catch(e) {
+    const btn = document.getElementById('intro-vid-btn');
+    if (btn) btn.style.display = 'none';
+  }
+}
+
+function playIntroVideo() {
+  const modal = document.getElementById('intro-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    const vid = document.getElementById('intro-video-el');
+    if (vid) vid.play();
+  }
+}
+
+function closeIntroVideo() {
+  const modal = document.getElementById('intro-modal');
+  if (modal) modal.style.display = 'none';
+  const vid = document.getElementById('intro-video-el');
+  if (vid) vid.pause();
+}
+
+// ── Lantern canvas (animated floating lanterns) ──────────────
+function initLanternCanvas() {
+  const canvas = document.getElementById('lantern-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const lanterns = Array.from({length: 28}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: 2 + Math.random() * 3,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: -0.2 - Math.random() * 0.4,
+    opacity: 0.2 + Math.random() * 0.6,
+    hue: 35 + Math.random() * 20, // gold range
+    pulse: Math.random() * Math.PI * 2
+  }));
+
+  // Also add stars
+  const stars = Array.from({length: 80}, () => ({
+    x: Math.random() * 480,
+    y: Math.random() * 900,
+    r: 0.5 + Math.random() * 1.5,
+    opacity: 0.1 + Math.random() * 0.7,
+    speed: 1 + Math.random() * 3
+  }));
+
+  let frame = 0;
+  function draw() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight || window.innerHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw stars
+    stars.forEach(s => {
+      const o = s.opacity * (0.5 + 0.5 * Math.sin(frame / s.speed));
+      ctx.beginPath();
+      ctx.arc(s.x % canvas.width, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${o})`;
+      ctx.fill();
+    });
+
+    // Draw lanterns
+    lanterns.forEach(l => {
+      l.pulse += 0.035;
+      const glow = 0.4 + 0.3 * Math.sin(l.pulse);
+      const grad = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * 4);
+      grad.addColorStop(0, `hsla(${l.hue},90%,70%,${glow})`);
+      grad.addColorStop(1, `hsla(${l.hue},90%,70%,0)`);
+      ctx.beginPath();
+      ctx.arc(l.x, l.y, l.r * 4, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(l.x, l.y, l.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${l.hue},95%,82%,${0.7 + 0.3 * Math.sin(l.pulse)})`;
+      ctx.fill();
+
+      l.x += l.vx;
+      l.y += l.vy;
+      if (l.y < -20) { l.y = canvas.height + 20; l.x = Math.random() * canvas.width; }
+      if (l.x < 0) l.x = canvas.width;
+      if (l.x > canvas.width) l.x = 0;
+    });
+
+    frame++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN — Video upload support
+// ═══════════════════════════════════════════════════════════════
+async function loadAdminAssets() {
+  const container = document.getElementById('adm-assets-list');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(253,246,227,.4);font-family:var(--ui);font-size:13px">Loading assets...</div>';
+  try {
+    const {data, error} = await sb.from('admin_assets').select('*').order('created_at', {ascending:false});
+    if (error || !data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(253,246,227,.35);font-family:var(--ui);font-size:13px">No assets uploaded yet.</div>';
+      return;
+    }
+    container.innerHTML = data.map(a => `
+      <div class="asset-item">
+        <div class="asset-thumb">
+          ${a.type === 'image' ? `<img src="${a.url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">` : a.type === 'video' ? '🎬' : '🎵'}
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">${a.description || (a.beat === 'splash_bg' ? 'Homepage BG Video' : a.beat === 'intro_video' ? 'Character Intro Video' : `W${a.world_id} S${a.scene_id || '-'} ${a.beat || ''} ${a.type}`)}</div>
+          <div class="asset-meta">World ${a.world_id || 'Global'} · ${a.type}</div>
+        </div>
+        <button onclick="deleteAsset('${a.id}')" style="background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);color:#f87171;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:11px;font-family:var(--ui);font-weight:700">Delete</button>
+      </div>`).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="color:#f87171;font-size:13px;padding:10px">Error loading assets.</div>';
+  }
+}
+
+async function deleteAsset(id) {
+  if (!confirm('Delete this asset?')) return;
+  await sb.from('admin_assets').delete().eq('id', id);
+  loadAdminAssets();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WORLD MAP — staggered entrance
+// ═══════════════════════════════════════════════════════════════
+function animateWorldCards() {
+  const cards = document.querySelectorAll('.wcard');
+  cards.forEach((card, i) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(16px)';
+    setTimeout(() => {
+      card.style.transition = 'opacity .4s ease, transform .4s ease';
+      card.style.opacity = card.classList.contains('locked') ? '0.4' : '1';
+      card.style.transform = 'translateY(0)';
+    }, i * 60);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// QUIZ — improved animations
+// ═══════════════════════════════════════════════════════════════
+function animateQuizQuestion() {
+  const wrap = document.querySelector('.quiz-question-wrap');
+  if (wrap) {
+    wrap.style.animation = 'none';
+    requestAnimationFrame(() => { wrap.style.animation = 'slideInRight .35s ease'; });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// JOURNAL — character count encouragement
+// ═══════════════════════════════════════════════════════════════
+function setupJournalEncouragemnet(textareaId, counterId) {
+  const ta = document.getElementById(textareaId);
+  const counter = document.getElementById(counterId);
+  if (!ta || !counter) return;
+  ta.addEventListener('input', () => {
+    const words = ta.value.trim().split(/\s+/).filter(Boolean).length;
+    if (words < 5) counter.textContent = 'Keep going...';
+    else if (words < 15) counter.textContent = 'Lovely start ✨';
+    else if (words < 30) counter.textContent = "Masha'Allah! 🌟";
+    else counter.textContent = "SubhanAllah — what a reflection! 💛";
+    counter.style.color = words >= 15 ? 'var(--gold)' : 'rgba(253,246,227,.4)';
+  });
+}
+async function uploadGlobalVideo(beatType, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const msgEl = document.getElementById('global-vid-msg');
+  if (msgEl) { msgEl.textContent = 'Uploading...'; msgEl.style.color = 'var(--gold)'; }
+  try {
+    const ext = file.name.split('.').pop();
+    const path = `global/${beatType}_${Date.now()}.${ext}`;
+    const {data: upData, error: upErr} = await sb.storage.from('noorquest-assets').upload(path, file, {upsert:true});
+    if (upErr) throw upErr;
+    const {data: urlData} = sb.storage.from('noorquest-assets').getPublicUrl(path);
+    const url = urlData.publicUrl;
+    // Remove old entry for this beat type
+    await sb.from('admin_assets').delete().eq('world_id', 0).eq('beat', beatType).eq('type', 'video');
+    // Insert new
+    await sb.from('admin_assets').insert({
+      world_id: 0, scene_id: null, beat: beatType,
+      type: 'video', url, description: beatType === 'splash_bg' ? 'Homepage BG Video' : 'Character Intro Video'
+    });
+    if (msgEl) { msgEl.textContent = '✅ Uploaded! Reload splash to see it.'; msgEl.style.color = '#34d399'; }
+    // Reload if relevant
+    if (beatType === 'splash_bg') loadSplashVideo();
+    if (beatType === 'intro_video') loadIntroVideoUrl();
+  } catch(e) {
+    if (msgEl) { msgEl.textContent = '❌ Upload failed: ' + (e.message || e); msgEl.style.color = '#f87171'; }
+  }
+}
+
+
 </script></body></html>
