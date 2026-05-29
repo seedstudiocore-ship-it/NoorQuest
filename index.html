@@ -2970,18 +2970,17 @@ function openWorld(wid) {
 }
 
 // ── Start scene ─────────────────────────────────────────────
-function startScene(sceneId) {
+async function startScene(sceneId) {
   A.scene = A.world.scenes.find(s => s.id === sceneId);
   if (!A.scene) return;
   A.step = 0;
   A.sceneHa = 0;
-  renderFullScene();
   SS('s-player');
-  // Scroll to top
-  setTimeout(() => {
-    const sw = document.getElementById('scene-scroll-wrap');
-    if (sw) sw.scrollTop = 0;
-  }, 80);
+  // Scroll to top immediately
+  const sw = document.getElementById('scene-scroll-wrap');
+  if (sw) sw.scrollTop = 0;
+  // Then render (awaited so content loads before user sees stale state)
+  await renderFullScene();
 }
 
 function exitScene() {
@@ -2991,32 +2990,29 @@ function exitScene() {
 // ── Full scrollable scene renderer ───────────────────────────
 async function renderFullScene() {
   const sc = A.scene;
-  if (!sc) return;
+  const worldId = A.world?.id;
+  if (!sc || !worldId) return;
+
+  // Render text content IMMEDIATELY — no waiting
+  const body = document.getElementById('pcontent');
+  if (!body) return;
 
   const lbl = document.getElementById('plbl');
   if (lbl) lbl.textContent = (A.world?.title || '') + ' · Scene ' + sc.id;
   updateHaChip();
 
-  // Load admin images + interactive media in parallel
-  const [imgs, ixAssets] = await Promise.all([
-    loadSceneImages(A.world.id, sc.id),
-    loadIxAssets(A.world.id, sc.id)
-  ]);
-
-  const body = document.getElementById('pcontent');
-  if (!body) return;
-
-  const wProg = A.progress[A.world.id] || {};
+  const wProg = A.progress[worldId] || {};
   const alreadyDone = (wProg.scenes_done || []).includes(sc.id);
 
+  // Render scene immediately with placeholder images
   body.innerHTML = `
     <div class="scene-title-block">
       <div class="scene-num-badge">Scene ${sc.id} of ${A.world.scenes.length}</div>
       <div class="scene-title-text">${sc.title}</div>
     </div>
-    ${beatBlock('A', sc.A, imgs.A, 1)}
-    ${beatBlock('B', sc.B, imgs.B, 2)}
-    ${beatBlock('C', sc.C, imgs.C, 3)}
+    ${beatBlock('A', sc.A, null, 1)}
+    ${beatBlock('B', sc.B, null, 2)}
+    ${beatBlock('C', sc.C, null, 3)}
     <div class="ix-wrap" id="ix-container"></div>
     <div class="what-we-learn">
       <div class="wwl-label">✦ What We Learn</div>
@@ -3029,29 +3025,47 @@ async function renderFullScene() {
       <div class="dua-en">${sc.dua.en}</div>
     </div>
     <div class="complete-scene-btn">
-      ${alreadyDone
-        ? (() => {
-            const nextSc = A.world.scenes.find(s => s.id === sc.id + 1);
-            return nextSc
-              ? `<button class="btn btn-gold btn-full" onclick="startScene(${nextSc.id})" style="font-size:15px;padding:16px">
-                   Next: ${nextSc.title} →
-                 </button>`
-              : `<button class="btn btn-green btn-full" onclick="exitScene()" style="font-size:15px;padding:16px">
-                   ✓ All Scenes Done — Continue →
-                 </button>`;
-          })()
-        : `<button class="btn btn-green btn-full" onclick="completeScene()" id="scene-complete-btn" style="font-size:16px;padding:17px">
-             ✦ I've Read This Scene! &nbsp;+${sc.ha || 5} Hasanah
-           </button>`
-      }
+      ${buildSceneBottomBtn(sc, alreadyDone)}
       <div style="text-align:center;margin-top:12px">
         <button class="btn btn-glass btn-sm" onclick="exitScene()">← All Scenes</button>
       </div>
     </div>`;
 
+  // Render interactive immediately (text-only, no assets yet)
   const ixEl = document.getElementById('ix-container');
-  if (ixEl && sc.ix) renderInteractive(ixEl, sc.ix, ixAssets);
+  if (ixEl && sc.ix) renderInteractive(ixEl, sc.ix, {});
   else if (ixEl) ixEl.style.display = 'none';
+
+  // Now load admin images in background — only apply if still on same scene
+  try {
+    const [imgs, ixAssets] = await Promise.all([
+      loadSceneImages(worldId, sc.id),
+      loadIxAssets(worldId, sc.id)
+    ]);
+
+    // STALE CHECK: if user navigated away, discard this result
+    if (A.scene?.id !== sc.id || A.world?.id !== worldId) return;
+
+    // Inject images into beat zones
+    ['A','B','C'].forEach(beat => {
+      if (!imgs[beat]) return;
+      const zones = body.querySelectorAll('.beat-image-zone');
+      const beatIdx = {A:0,B:1,C:2}[beat];
+      const zone = zones[beatIdx];
+      if (zone) {
+        zone.innerHTML = `<img src="${imgs[beat]}" alt="" loading="lazy"
+          style="width:100%;height:100%;object-fit:cover;display:block;
+          animation:fadeInUp .4s ease">`;
+      }
+    });
+
+    // Re-render interactive with real assets if any loaded
+    if (Object.keys(ixAssets).length > 0 && ixEl && sc.ix) {
+      renderInteractive(ixEl, sc.ix, ixAssets);
+    }
+  } catch(e) {
+    // Images failed silently — scene text still visible
+  }
 }
 
 function beatBlock(beatKey, text, imgUrl, num) {
@@ -3459,16 +3473,18 @@ function journalDone() { openWorld(A.world.id); }
 // INTERACTIVE RENDERERS
 // ============================================================
 
-function renderInteractive(container, ix) {
-  if (!ix) { container.innerHTML = '<p class="beat-text">Activity coming soon!</p>'; return; }
+function renderInteractive(container, ix, assets) {
+  if (!ix) { container.style.display = 'none'; return; }
+  const a = assets || {};
   switch(ix.type) {
-    case 'REVEAL':  renderREVEAL(container, ix);  break;
-    case 'TAP':     renderTAP(container, ix);     break;
-    case 'BUILD':   renderBUILD(container, ix);   break;
-    case 'SORT':    renderSORT(container, ix);    break;
-    case 'BREATHE': renderBREATHE(container, ix); break;
-    case 'LISTEN':  renderLISTEN(container, ix);  break;
-    default: container.innerHTML = `<p class="beat-text">Type: ${ix.type}</p>`;
+    case 'WONDER':  renderWONDER(container, ix, a);  break;
+    case 'REVEAL':  renderREVEAL(container, ix, a);  break;
+    case 'TAP':     renderTAP(container, ix, a);     break;
+    case 'BUILD':   renderBUILD(container, ix, a);   break;
+    case 'SORT':    renderSORT(container, ix, a);    break;
+    case 'BREATHE': renderBREATHE(container, ix, a); break;
+    case 'LISTEN':  renderLISTEN(container, ix, a);  break;
+    default: container.style.display = 'none';
   }
 }
 
@@ -4944,6 +4960,23 @@ function wonderStarGazer(el) {
   });
 }
 
+
+function buildSceneBottomBtn(sc, alreadyDone) {
+  if (!alreadyDone) {
+    return `<button class="btn btn-green btn-full" onclick="completeScene()" id="scene-complete-btn" style="font-size:16px;padding:17px">
+      ✦ I've Read This Scene! &nbsp;+${sc.ha || 5} Hasanah
+    </button>`;
+  }
+  const nextSc = A.world && A.world.scenes ? A.world.scenes.find(s => s.id === sc.id + 1) : null;
+  if (nextSc) {
+    return `<button class="btn btn-gold btn-full" onclick="startScene(${nextSc.id})" style="font-size:15px;padding:16px">
+      Next: ${nextSc.title} →
+    </button>`;
+  }
+  return `<button class="btn btn-green btn-full" onclick="exitScene()" style="font-size:15px;padding:16px">
+    ✓ All Scenes Done — Continue →
+  </button>`;
+}
 </script>  <!-- Floating home button — shown on inner screens -->
   <button class="home-fab" id="home-fab" onclick="goHome()" title="Home">⌂</button>
 </body></html>
