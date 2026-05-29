@@ -411,19 +411,45 @@ select.input { appearance:none; cursor:pointer }
 /* ═══════════════════════════════════════
    QUIZ
 ═══════════════════════════════════════ */
-#s-quiz { background:radial-gradient(ellipse at 50% 15%, #162040 0%, var(--navy) 60%) }
-.qhdr { padding:20px 20px 14px; flex-shrink:0 }
-.qprog-wrap { background:rgba(255,255,255,.08); border-radius:50px; height:5px; margin-bottom:16px; overflow:hidden }
-.qpfill { height:100%; background:linear-gradient(90deg,var(--gold),var(--gold2)); border-radius:50px; transition:width .5s ease }
-.qnum-label { font-family:var(--ui); font-size:12px; color:rgba(245,200,66,.55); letter-spacing:2px; text-transform:uppercase }
-.qqtext { font-family:var(--body); font-size:18px; font-weight:600; line-height:1.65; color:var(--cream); margin-top:10px }
-.qopts-wrap { padding:0 20px; display:flex; flex-direction:column; gap:11px }
-.qopt { background:var(--teal); border:1.5px solid rgba(255,255,255,.1); border-radius:16px; padding:16px 20px; cursor:pointer; font-family:var(--body); font-size:15px; color:var(--cream); transition:all .25s; text-align:left; display:block; width:100%; line-height:1.5 }
-.qopt:hover { background:rgba(22,50,70,.95); border-color:rgba(245,200,66,.35) }
-.qopt.correct { background:rgba(5,150,105,.2); border-color:#34d399; color:#d1fae5 }
-.qopt.wrong { background:rgba(220,38,38,.15); border-color:#f87171; color:#fecaca }
-.praise-box { background:rgba(22,32,64,.9); border:1px solid rgba(245,200,66,.3); border-radius:18px; padding:18px 20px; margin:16px 20px 0; font-family:var(--body); font-size:15px; line-height:1.7; color:var(--cream2) }
-.praise-icon { font-size:28px; margin-bottom:8px; display:block }
+#s-quiz { background:radial-gradient(ellipse at 50% 10%, #1a2550 0%, var(--navy) 55%) }
+/* Option buttons — letter-boxed style */
+.quiz-opt {
+  background:rgba(22,32,64,.7); border:1.5px solid rgba(255,255,255,.1);
+  border-radius:18px; padding:0; cursor:pointer;
+  font-family:var(--body); font-size:15px; color:var(--cream);
+  transition:all .22s ease; text-align:left; display:flex;
+  align-items:stretch; width:100%; line-height:1.5; overflow:hidden;
+}
+.quiz-opt:not([disabled]):hover { background:rgba(26,58,74,.95); border-color:rgba(245,200,66,.4); transform:translateX(3px) }
+.quiz-opt:not([disabled]):active { transform:scale(.99) }
+.quiz-opt-letter {
+  width:46px; min-width:46px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--display); font-size:13px; font-weight:700; color:rgba(245,200,66,.5);
+  background:rgba(255,255,255,.04); border-right:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+.quiz-opt-text { padding:15px 16px; flex:1; line-height:1.55 }
+.quiz-opt.correct { background:rgba(5,150,105,.18); border-color:#34d399 }
+.quiz-opt.correct .quiz-opt-letter { background:rgba(5,150,105,.3); color:#34d399 }
+.quiz-opt.wrong { background:rgba(220,38,38,.15); border-color:#f87171 }
+.quiz-opt.wrong .quiz-opt-letter { background:rgba(220,38,38,.2); color:#f87171 }
+/* Praise box */
+.praise-box {
+  background:linear-gradient(135deg, rgba(22,44,22,.9), rgba(10,20,10,.95));
+  border:1px solid rgba(52,211,153,.3); border-radius:20px;
+  padding:18px 20px; font-family:var(--body); font-size:15px; line-height:1.75; color:var(--cream2);
+  animation:fadeInUp .3s ease;
+}
+.praise-box-icon { font-size:26px; margin-bottom:8px; display:block }
+/* Quiz finish */
+.quiz-finish-card {
+  background:linear-gradient(160deg, var(--teal), rgba(10,14,26,.95));
+  border:1px solid rgba(245,200,66,.2); border-radius:24px;
+  padding:28px 24px; text-align:center; animation:fadeInUp .4s ease;
+}
+.quiz-score-ring { font-family:var(--display); font-size:56px; font-weight:900; color:var(--gold); text-shadow:0 0 30px rgba(245,200,66,.5); line-height:1 }
+.quiz-pct { font-family:var(--ui); font-size:14px; color:rgba(245,200,66,.6); letter-spacing:2px; margin-top:4px }
+.quiz-verdict { font-family:var(--body); font-size:17px; color:var(--cream); margin:16px 0; line-height:1.6; font-style:italic }
 
 /* ═══════════════════════════════════════
    JOURNAL
@@ -637,19 +663,37 @@ select.input { appearance:none; cursor:pointer }
 </div>
 <!-- QUIZ -->
 <div id="s-quiz" class="screen">
-  <div class="back-hdr"><button class="back-btn" onclick="exitQuiz()">←</button><b id="quiz-wtitle" style="font-size:17px;flex:1">Quiz</b></div>
-  <div class="qhdr">
-    <div class="qprog"><div id="qpfill" class="qpfill" style="width:0%"></div></div>
-    <div id="qnum" class="qnum">Question 1 of 5</div>
-    <div id="qtext" class="qqtext"></div>
+  <!-- Sticky header -->
+  <div style="padding:14px 16px 0;flex-shrink:0;background:linear-gradient(180deg,rgba(10,14,26,1) 60%,transparent)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <button class="back-btn" onclick="exitQuiz()">←</button>
+      <div id="quiz-wtitle" style="font-family:var(--display);font-size:14px;color:var(--gold);flex:1;letter-spacing:.5px">Quiz</div>
+      <div id="quiz-score-chip" class="hchip" style="font-size:12px">0 / 5</div>
+    </div>
+    <!-- Progress bar -->
+    <div style="height:3px;background:rgba(255,255,255,.08);border-radius:50px;overflow:hidden;margin-bottom:4px">
+      <div id="qpfill" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:50px;transition:width .5s ease;width:0%"></div>
+    </div>
+    <div id="qnum" style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.45);letter-spacing:2px;text-transform:uppercase;margin-bottom:0;padding-bottom:14px">Question 1 of 5</div>
   </div>
-  <div id="qopts" style="padding:0 20px;display:flex;flex-direction:column;gap:10px"></div>
-  <div id="qpraise" style="padding:0 20px;display:none"></div>
-  <div style="padding:16px 20px 20px;margin-top:auto">
-    <button id="qnext" class="btn btn-gold btn-full" style="display:none" onclick="advQuiz()">Next Question →</button>
+
+  <!-- Question + options scroll area -->
+  <div style="flex:1;overflow-y:auto;padding:0 20px 24px" id="quiz-scroll">
+    <!-- Question card -->
+    <div id="quiz-q-card" style="background:linear-gradient(135deg,var(--teal),rgba(10,14,26,.9));border:1px solid rgba(245,200,66,.15);border-radius:24px;padding:24px 22px;margin-bottom:20px">
+      <div style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">✦ Question</div>
+      <div id="qtext" style="font-family:var(--body);font-size:19px;font-weight:600;line-height:1.6;color:var(--cream)"></div>
+    </div>
+    <!-- Options -->
+    <div id="qopts" style="display:flex;flex-direction:column;gap:12px"></div>
+    <!-- Praise box -->
+    <div id="qpraise" style="display:none;margin-top:16px"></div>
+    <!-- Next button -->
+    <div style="margin-top:20px">
+      <button id="qnext" class="btn btn-gold btn-full" style="display:none;font-size:15px;padding:16px" onclick="advQuiz()">Next Question →</button>
+    </div>
   </div>
 </div>
-
 <!-- JOURNAL -->
 <div id="s-journal" class="screen">
   <div class="back-hdr"><button class="back-btn" onclick="exitJournal()">←</button><b id="jw-title" style="font-size:17px;flex:1">Reflection Journal</b></div>
@@ -769,10 +813,54 @@ select.input { appearance:none; cursor:pointer }
       </div>
     </div>
 
+    <!-- Interactive elements media upload -->
+    <div>
+      <span class="lbl">Interactive Scene Media</span>
+      <div class="card" style="padding:16px">
+        <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);font-style:italic;margin-bottom:14px;line-height:1.6">
+          Upload images or audio for individual interactive tap items within scenes (e.g. "Millions of Colours", "Rain sound", etc.)
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <span class="lbl" style="font-size:10px">World</span>
+            <select id="ix-world" class="input" style="padding:10px 12px;font-family:var(--ui)" onchange="loadIxItems()">
+              <option value="">Select...</option>
+              <option value="1">1 — The Wonder of Allah</option>
+              <option value="2">2 — Wonders Inside You</option>
+              <option value="3">3 — Why Allah Made Me</option>
+              <option value="4">4 — The Test of This Life</option>
+              <option value="5">5 — The Hidden Map</option>
+              <option value="6">6 — Inside the Quran</option>
+              <option value="7">7 — Little Surah Studio</option>
+              <option value="8">8 — The Unseen World</option>
+              <option value="9">9 — Messengers of Allah</option>
+              <option value="10">10 — Stories of Prophets</option>
+              <option value="11">11 — Life of Muhammad ﷺ</option>
+              <option value="12">12 — Nations of the Past</option>
+              <option value="13">13 — Living Islam Today</option>
+            </select>
+          </div>
+          <div>
+            <span class="lbl" style="font-size:10px">Scene</span>
+            <select id="ix-scene" class="input" style="padding:10px 12px;font-family:var(--ui)" onchange="loadIxItems()">
+              <option value="">Select...</option>
+              <option value="1">Scene 1</option>
+              <option value="2">Scene 2</option>
+              <option value="3">Scene 3</option>
+              <option value="4">Scene 4</option>
+              <option value="5">Scene 5</option>
+              <option value="6">Scene 6</option>
+            </select>
+          </div>
+        </div>
+        <div id="ix-items-list" style="margin-top:4px"></div>
+      </div>
+    </div>
+
     <!-- Assets list -->
     <div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <span class="lbl" style="margin:0">Uploaded Assets</span>
+        <span class="lbl" style="margin:0">All Uploaded Assets</span>
         <button class="btn btn-glass btn-sm" onclick="loadAdminAssets()">↻ Refresh</button>
       </div>
       <div id="adm-assets-list">
@@ -2704,37 +2792,83 @@ function openWorld(wid) {
   const titleEl = document.getElementById('wd-title');
   if (titleEl) titleEl.textContent = (meta?.icon || '') + ' ' + A.world.title;
 
-  // Hero area
+  // Hero
   const hero = document.getElementById('wd-hero');
-  if (hero) hero.innerHTML = `<div style="font-size:14px;color:rgba(245,240,232,.6);padding:12px 20px">${A.world.sub}</div>`;
+  if (hero) hero.innerHTML = `<div style="font-size:14px;color:rgba(245,240,232,.55);padding:12px 20px;font-family:var(--body);font-style:italic">${A.world.sub}</div>`;
 
   // Scene list
   const sl = document.getElementById('wd-scenes');
   if (sl) sl.innerHTML = A.world.scenes.map((sc, i) => {
     const finished = done.includes(sc.id);
-    return `<div class="scene-item ${finished?'done':''}" onclick="startScene(${sc.id})">
-      <span class="si-num">${i+1}</span>
+    return `<div class="scene-item ${finished ? 'done' : ''}" onclick="startScene(${sc.id})">
+      <div class="si-num ${finished ? 'done' : ''}">${finished ? '✓' : i+1}</div>
       <span class="si-title">${sc.title}</span>
-      ${finished ? '<span class="si-check">✓</span>' : '<span class="si-arr">›</span>'}
+      <span style="font-size:18px;opacity:.4;margin-left:auto">${finished ? '' : '›'}</span>
     </div>`;
   }).join('');
 
   // Action buttons
-  const scenesAll  = A.world.scenes.length;
-  const scenesDone = done.length;
+  const scenesAll     = A.world.scenes.length;
+  const scenesDone    = done.length;
+  const allScenesDone = scenesDone >= scenesAll;
   const quizUnlock    = scenesDone >= Math.ceil(scenesAll / 2);
   const journalUnlock = !!p.quiz_done;
-  const actions = document.getElementById('wd-actions');
-  if (actions) actions.innerHTML = `
-    <button id="wd-quiz-btn-el" class="btn btn-gold btn-full"
-      onclick="startQuiz()" ${quizUnlock ? '' : 'disabled'}>
-      ${p.quiz_done ? '✓ Quiz Done' : (quizUnlock ? '📝 Take the Quiz' : 'Complete '+Math.ceil(scenesAll/2)+' scenes to unlock quiz')}
-    </button>
-    <button id="wd-journal-btn-el" class="btn btn-glass btn-full"
-      onclick="openJournal()" ${journalUnlock ? '' : 'disabled'}>
-      ${p.journal_done ? '✓ Journal Done' : (journalUnlock ? '📖 Open Journal' : 'Complete quiz to unlock journal')}
-    </button>`;
+  const worldComplete = p.journal_done && p.quiz_done;
+  const nextWorld     = WORLDS[wid + 1];
 
+  const actions = document.getElementById('wd-actions');
+  if (!actions) { SS('s-wdetail'); return; }
+
+  let actHtml = '';
+
+  // If world is fully complete — show next world CTA
+  if (worldComplete && nextWorld) {
+    actHtml += `
+      <div style="background:linear-gradient(135deg,rgba(5,150,105,.15),rgba(10,14,26,.9));border:1px solid rgba(52,211,153,.25);border-radius:20px;padding:18px 20px;text-align:center;margin-bottom:4px">
+        <div style="font-size:28px;margin-bottom:6px">🗝️</div>
+        <div style="font-family:var(--display);font-size:15px;color:#34d399;margin-bottom:4px">World ${wid} Complete!</div>
+        <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);margin-bottom:14px;font-style:italic">You've earned your Noor Key.</div>
+        <button class="btn btn-green btn-full" onclick="openWorld(${wid+1})" style="font-size:15px;padding:15px">
+          Dive into World ${wid+1}: ${WORLDS[wid+1].title} →
+        </button>
+      </div>`;
+  }
+
+  // Quiz button
+  if (quizUnlock) {
+    if (p.quiz_done) {
+      actHtml += `<button class="btn btn-glass btn-full" onclick="startQuiz()" style="border-color:rgba(52,211,153,.3);color:#34d399">
+        ✓ Quiz Done &nbsp;·&nbsp; <span style="opacity:.6;font-size:13px">Redo Quiz</span>
+      </button>`;
+    } else {
+      actHtml += `<button class="btn btn-gold btn-full" onclick="startQuiz()" style="font-size:15px;padding:16px">
+        📝 Take the Quiz
+      </button>`;
+    }
+  } else {
+    actHtml += `<button class="btn btn-glass btn-full" disabled style="opacity:.4">
+      Complete ${Math.ceil(scenesAll/2)} scenes to unlock quiz
+    </button>`;
+  }
+
+  // Journal button
+  if (journalUnlock) {
+    if (p.journal_done) {
+      actHtml += `<button class="btn btn-glass btn-full" onclick="openJournal()" style="border-color:rgba(52,211,153,.3);color:#34d399">
+        ✓ Journal Done &nbsp;·&nbsp; <span style="opacity:.6;font-size:13px">Redo Journal</span>
+      </button>`;
+    } else {
+      actHtml += `<button class="btn btn-outline btn-full" onclick="openJournal()" style="font-size:15px;padding:15px">
+        📖 Open Reflection Journal
+      </button>`;
+    }
+  } else {
+    actHtml += `<button class="btn btn-glass btn-full" disabled style="opacity:.4">
+      Complete quiz to unlock journal
+    </button>`;
+  }
+
+  actions.innerHTML = actHtml;
   SS('s-wdetail');
 }
 
@@ -2762,57 +2896,41 @@ async function renderFullScene() {
   const sc = A.scene;
   if (!sc) return;
 
-  // Update world label
   const lbl = document.getElementById('plbl');
   if (lbl) lbl.textContent = (A.world?.title || '') + ' · Scene ' + sc.id;
-
-  // Update hasanah chip
   updateHaChip();
 
-  // Load admin images for this scene
-  const imgs = await loadSceneImages(A.world.id, sc.id);
+  // Load admin images + interactive media in parallel
+  const [imgs, ixAssets] = await Promise.all([
+    loadSceneImages(A.world.id, sc.id),
+    loadIxAssets(A.world.id, sc.id)
+  ]);
 
   const body = document.getElementById('pcontent');
   if (!body) return;
 
-  // Check if already done
   const wProg = A.progress[A.world.id] || {};
   const alreadyDone = (wProg.scenes_done || []).includes(sc.id);
 
   body.innerHTML = `
-    <!-- Scene title -->
     <div class="scene-title-block">
       <div class="scene-num-badge">Scene ${sc.id} of ${A.world.scenes.length}</div>
       <div class="scene-title-text">${sc.title}</div>
     </div>
-
-    <!-- Beat A -->
     ${beatBlock('A', sc.A, imgs.A, 1)}
-
-    <!-- Beat B -->
     ${beatBlock('B', sc.B, imgs.B, 2)}
-
-    <!-- Beat C -->
     ${beatBlock('C', sc.C, imgs.C, 3)}
-
-    <!-- Interactive -->
     <div class="ix-wrap" id="ix-container"></div>
-
-    <!-- What We Learn -->
     <div class="what-we-learn">
       <div class="wwl-label">✦ What We Learn</div>
       <div class="wwl-text">${sc.lesson}</div>
     </div>
-
-    <!-- Dua -->
     <div class="dua-block">
       <div class="dua-ornament">✦ ✦ ✦</div>
       <div class="dua-ar">${sc.dua.ar}</div>
       <div class="dua-lat">${sc.dua.lat}</div>
       <div class="dua-en">${sc.dua.en}</div>
     </div>
-
-    <!-- Complete button -->
     <div class="complete-scene-btn">
       ${alreadyDone
         ? `<button class="btn btn-glass btn-full" onclick="exitScene()" style="opacity:.7">← Back to World</button>`
@@ -2823,12 +2941,10 @@ async function renderFullScene() {
       <div style="text-align:center;margin-top:12px">
         <button class="btn btn-glass btn-sm" onclick="exitScene()">← Other Scenes</button>
       </div>
-    </div>
-  `;
+    </div>`;
 
-  // Render interactive into its container
   const ixEl = document.getElementById('ix-container');
-  if (ixEl && sc.ix) renderInteractive(ixEl, sc.ix);
+  if (ixEl && sc.ix) renderInteractive(ixEl, sc.ix, ixAssets);
   else if (ixEl) ixEl.style.display = 'none';
 }
 
@@ -2857,15 +2973,20 @@ function formatProse(text) {
 async function loadSceneImages(worldId, sceneId) {
   const imgs = {A: null, B: null, C: null};
   try {
-    const {data} = await sb.from('admin_assets')
-      .select('beat,url')
+    const {data, error} = await sb.from('admin_assets')
+      .select('beat,url,public_url')
       .eq('world_id', worldId)
       .eq('scene_id', sceneId)
       .eq('type', 'image');
     if (data) {
-      data.forEach(r => { if (r.beat && imgs[r.beat] !== undefined) imgs[r.beat] = r.url; });
+      data.forEach(r => {
+        const imgUrl = r.url || r.public_url;
+        if (r.beat && imgUrl) {
+          if (imgs[r.beat] !== undefined) imgs[r.beat] = imgUrl;
+        }
+      });
     }
-  } catch(e) {}
+  } catch(e) { console.warn('loadSceneImages error:', e); }
   return imgs;
 }
 
@@ -2991,30 +3112,45 @@ function renderQuizQ() {
   const q = A.world.quiz[A.quiz.idx];
   if (!q) { finishQuiz(); return; }
 
-  document.getElementById('quiz-wtitle').textContent = A.world.title;
-  document.getElementById('qnum').textContent   = `Question ${A.quiz.idx+1} of ${A.world.quiz.length}`;
-  document.getElementById('qtext').textContent     = q.q;
+  const total = A.world.quiz.length;
+  const curr  = A.quiz.idx + 1;
 
+  document.getElementById('quiz-wtitle').textContent = A.world.title;
+  document.getElementById('qnum').textContent = `Question ${curr} of ${total}`;
+  document.getElementById('quiz-score-chip').textContent = `${A.quiz.score} / ${total}`;
+  document.getElementById('qpfill').style.width = ((curr-1)/total * 100) + '%';
+  document.getElementById('qtext').textContent = q.q;
+
+  const letters = ['A','B','C','D'];
   const opts = document.getElementById('qopts');
   opts.innerHTML = q.o.map((o, i) => `
-    <button class="quiz-opt" onclick="answerQuiz(${i})">${o}</button>
-  `).join('');
+    <button class="quiz-opt" onclick="answerQuiz(${i})">
+      <div class="quiz-opt-letter">${letters[i]}</div>
+      <div class="quiz-opt-text">${o}</div>
+    </button>`).join('');
 
   document.getElementById('qpraise').style.display = 'none';
+  document.getElementById('qpraise').innerHTML = '';
   document.getElementById('qnext').style.display = 'none';
 
-  const pct = (A.quiz.idx / A.world.quiz.length) * 100;
-  const pb = document.getElementById('qpfill');
-  if (pb) pb.style.width = pct + '%';
+  // Animate question card in
+  const card = document.getElementById('quiz-q-card');
+  if (card) {
+    card.style.animation = 'none';
+    requestAnimationFrame(() => { card.style.animation = 'slideInRight .3s ease'; });
+  }
 }
 
 function answerQuiz(idx) {
   const q = A.world.quiz[A.quiz.idx];
   const correct = idx === q.c;
   if (correct) A.quiz.score++;
-  A.quiz.answers.push({ q: A.quiz.idx, chosen: idx, correct });
+  A.quiz.answers.push({q: A.quiz.idx, chosen: idx, correct});
 
-  // Highlight answer
+  // Update score chip
+  document.getElementById('quiz-score-chip').textContent = `${A.quiz.score} / ${A.world.quiz.length}`;
+
+  // Highlight options
   const opts = document.querySelectorAll('.quiz-opt');
   opts.forEach((btn, i) => {
     btn.disabled = true;
@@ -3022,12 +3158,24 @@ function answerQuiz(idx) {
     if (i === idx && !correct) btn.classList.add('wrong');
   });
 
+  // Show praise or correct answer reveal
+  const praiseEl = document.getElementById('qpraise');
   if (correct) {
-    const praise = document.getElementById('qpraise');
-    praise.textContent = q.p;
-    praise.style.display = 'block';
+    praiseEl.innerHTML = `<div class="praise-box"><span class="praise-box-icon">🌟</span>${q.p}</div>`;
+  } else {
+    praiseEl.innerHTML = `<div class="praise-box" style="border-color:rgba(245,200,66,.2)">
+      <span class="praise-box-icon">💛</span>
+      The correct answer was: <strong style="color:var(--gold3)">${q.o[q.c]}</strong><br>
+      <span style="opacity:.75;font-size:13px">Keep going — every question is a chance to learn!</span>
+    </div>`;
   }
-  document.getElementById('qnext').style.display = 'block';
+  praiseEl.style.display = 'block';
+
+  // Show next/finish button
+  const nextBtn = document.getElementById('qnext');
+  const isLast = A.quiz.idx >= A.world.quiz.length - 1;
+  nextBtn.textContent = isLast ? 'See My Results ✦' : 'Next Question →';
+  nextBtn.style.display = 'block';
 }
 
 function quizNext() {
@@ -3040,48 +3188,59 @@ function quizNext() {
 }
 
 async function finishQuiz() {
-  const wid = A.world.id;
-  const pct = Math.round((A.quiz.score / A.world.quiz.length) * 100);
-  const ha  = A.quiz.score * 10;
+  const wid  = A.world.id;
+  const total = A.world.quiz.length;
+  const pct  = Math.round((A.quiz.score / total) * 100);
+  const ha   = A.quiz.score * 10;
 
-  // Show result in qopts container
-  const msg = pct >= 80 ? "Masha'Allah! Excellent work! 🌟" :
-              pct >= 60 ? 'Well done! Keep learning! ✨' :
-              'Good effort! Review and try again! 💪';
+  const verdict = pct >= 80 ? {msg:"Masha'Allah! You aced it!", icon:'🌟', col:'#34d399'} :
+                  pct >= 60 ? {msg:"Well done! Keep learning!", icon:'✨', col:'var(--gold)'} :
+                              {msg:"Good effort! Review and try again.", icon:'💪', col:'rgba(253,246,227,.7)'};
+
+  // Update progress bar to 100%
+  document.getElementById('qpfill').style.width = '100%';
+
+  // Replace quiz area with finish card
   const qopts = document.getElementById('qopts');
-  if (qopts) qopts.innerHTML = `
-    <div style="text-align:center;padding:20px 0">
-      <div style="font-size:48px;margin-bottom:12px">${pct>=80?'🌟':pct>=60?'✨':'💪'}</div>
-      <div style="font-size:32px;font-weight:800;color:var(--gold2);margin-bottom:4px">${A.quiz.score}/${A.world.quiz.length}</div>
-      <div style="font-size:18px;color:rgba(245,240,232,.7);margin-bottom:4px">${pct}%</div>
-      <div style="font-size:15px;color:rgba(245,240,232,.6);margin-bottom:24px">${msg}</div>
-      <button class="btn btn-gold btn-full" onclick="quizDone()">Continue →</button>
-    </div>`;
-  const qtext = document.getElementById('qtext');
-  if (qtext) qtext.style.display = 'none';
-  const qnext = document.getElementById('qnext');
-  if (qnext) qnext.style.display = 'none';
   const qpraise = document.getElementById('qpraise');
+  const qcard = document.getElementById('quiz-q-card');
+  if (qcard) qcard.style.display = 'none';
   if (qpraise) qpraise.style.display = 'none';
 
+  if (qopts) qopts.innerHTML = `
+    <div class="quiz-finish-card">
+      <div style="font-size:52px;margin-bottom:14px;filter:drop-shadow(0 0 20px rgba(245,200,66,.5))">${verdict.icon}</div>
+      <div class="quiz-score-ring">${A.quiz.score}<span style="font-size:28px;opacity:.5">/${total}</span></div>
+      <div class="quiz-pct">${pct}% correct</div>
+      <div class="quiz-verdict">${verdict.msg}</div>
+      ${ha > 0 ? `<div style="background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.25);border-radius:14px;padding:14px 20px;margin-bottom:20px">
+        <div style="font-family:var(--display);font-size:24px;color:var(--gold)">+${ha} Hasanah</div>
+        <div style="font-family:var(--ui);font-size:12px;color:rgba(245,200,66,.5);letter-spacing:1px;margin-top:2px">AWARDED</div>
+      </div>` : ''}
+      <button class="btn btn-gold btn-full" onclick="quizDone()" style="font-size:15px;padding:16px">
+        Open My Journal ✦
+      </button>
+    </div>`;
+
+  const nextBtn = document.getElementById('qnext');
+  if (nextBtn) nextBtn.style.display = 'none';
+
   // Update progress
-  if (!A.progress[wid]) A.progress[wid] = {scenes_done:[],hasanah:0,keys:0};
+  if (!A.progress[wid]) A.progress[wid] = {scenes_done:[], hasanah:0, keys:0};
   const p = A.progress[wid];
   if (!p.quiz_done) {
     p.quiz_done = true;
-    p.hasanah = (p.hasanah||0) + ha;
-    A.totalHasanah += ha;
+    p.hasanah = (p.hasanah || 0) + ha;
+    A.totalHasanah = (A.totalHasanah || 0) + ha;
   }
 
-  await sb.from('progress').upsert({
-    child_id: A.child.id,
-    world_id: wid,
-    scenes_done: p.scenes_done || [],
-    hasanah: p.hasanah,
-    keys: p.keys || 0,
-    quiz_done: true,
-    journal_done: p.journal_done || false
-  }, { onConflict: 'child_id,world_id' });
+  try {
+    await sb.from('progress').upsert({
+      child_id: A.child.id, world_id: wid,
+      scenes_done: p.scenes_done || [], hasanah: p.hasanah,
+      keys: p.keys || 0, quiz_done: true, journal_done: p.journal_done || false
+    }, {onConflict: 'child_id,world_id'});
+  } catch(e) {}
 }
 
 function quizDone() { openWorld(A.world.id); }
@@ -3184,19 +3343,18 @@ function renderInteractive(container, ix) {
 }
 
 // ── REVEAL ──────────────────────────────────────────────────
-function renderREVEAL(container, ix) {
+function renderREVEAL(container, ix, assets) {
   container.innerHTML = `
-    <div class="ix-label">Tap each to reveal ✨</div>
-    <div class="reveal-list">
-      ${ix.items.map((item, i) => `
-        <div class="reveal-item" onclick="toggleReveal(this)">
-          <div class="reveal-head">
-            <span class="reveal-icon">▶</span>
+    <div class="ix-title">✦ Tap each to reveal</div>
+    <div class="rev-items">
+      ${ix.items.map((item, idx) => `
+        <div class="rev-item" onclick="this.classList.toggle('open')">
+          <div class="rev-lbl">
             <span>${item.l}</span>
+            <span class="rev-arrow">›</span>
           </div>
-          <div class="reveal-body" style="display:none">${item.c}</div>
-        </div>
-      `).join('')}
+          <div class="rev-body">${item.c}</div>
+        </div>`).join('')}
     </div>`;
 }
 
@@ -3210,23 +3368,25 @@ function toggleReveal(el) {
 }
 
 // ── TAP ─────────────────────────────────────────────────────
-function renderTAP(container, ix) {
+function renderTAP(container, ix, assets) {
   container.innerHTML = `
-    <div class="ix-label">Tap each to learn more 👆</div>
+    <div class="ix-title">Tap each to learn more 👆</div>
     <div class="tap-grid">
-      ${ix.items.map((item, i) => `
-        <div class="tap-card" onclick="tapCard(this, ${i})">
-          <div class="tap-front">
-            <div class="tap-emoji">${item.i}</div>
-            <div class="tap-name">${item.n}</div>
-          </div>
-          <div class="tap-back" style="display:none">${item.r}</div>
-        </div>
-      `).join('')}
+      ${ix.items.map((item, idx) => {
+        const imgUrl = assets && assets[`ix_item_${idx}_image`];
+        return `
+          <div class="tap-item" onclick="tapItem(this)">
+            ${imgUrl
+              ? `<img src="${imgUrl}" style="width:100%;height:70px;object-fit:cover;border-radius:10px;margin-bottom:4px">`
+              : `<div class="tap-icon">${item.i || item.ico || '✨'}</div>`}
+            <div class="tap-name">${item.n || item.l || ''}</div>
+            <div class="tap-rev">${item.r || item.c || ''}</div>
+          </div>`;
+      }).join('')}
     </div>`;
 }
 
-function tapCard(el, idx) {
+function tapItem(el, idx) {
   const front = el.querySelector('.tap-front');
   const back  = el.querySelector('.tap-back');
   const flipped = el.classList.contains('flipped');
@@ -3236,11 +3396,11 @@ function tapCard(el, idx) {
 }
 
 // ── BUILD ────────────────────────────────────────────────────
-function renderBUILD(container, ix) {
+function renderBUILD(container, ix, assets) {
   container.innerHTML = `
-    <div class="ix-label">Tap to build the story step by step 🏗️</div>
-    <div class="build-track" id="build-track"></div>
-    <button class="build-btn btn-primary" onclick="buildNext()">Start →</button>`;
+    <div class="ix-title">Build it step by step 🏗️</div>
+    <div class="build-steps" id="build-steps"></div>
+    <button class="btn btn-gold btn-sm build-btn" onclick="buildNext()" style="margin-top:12px">Begin →</button>`;
   window._buildIdx = 0;
   window._buildSteps = ix.steps;
 }
@@ -3375,15 +3535,13 @@ function checkSort(zA, zB, allItems) {
 }
 
 // ── BREATHE ──────────────────────────────────────────────────
-function renderBREATHE(container, ix) {
+function renderBREATHE(container, ix, assets) {
   container.innerHTML = `
-    <div class="ix-label">${ix.inst}</div>
+    <div class="ix-title">${ix.inst || "Breathe with Allah's name"}</div>
     <div class="breathe-wrap">
-      <div class="breathe-ring" id="breathe-ring">
-        <div class="breathe-text" id="breathe-text">Tap to start</div>
-      </div>
-    </div>
-    <button class="btn-primary" onclick="toggleBreathe()">Begin</button>`;
+      <div class="breathe-c" id="breathe-ring" onclick="toggleBreathe()">Tap to<br>begin</div>
+      <div style="font-family:var(--ui);font-size:12px;color:rgba(253,246,227,.4);letter-spacing:1px;text-align:center" id="breathe-phase"></div>
+    </div>`;
   window._breatheActive = false;
   window._breatheTimer  = null;
 }
@@ -3422,30 +3580,31 @@ function breatheCycle(ring, txt, inhale, count) {
 }
 
 // ── LISTEN ───────────────────────────────────────────────────
-function renderLISTEN(container, ix) {
+function renderLISTEN(container, ix, assets) {
+  const audioEls = [];
   container.innerHTML = `
-    <div class="ix-label">Tap each sound to explore 🎵</div>
+    <div class="ix-title">Tap each sound to explore 🎵</div>
     <div class="listen-grid">
-      ${ix.sounds.map((s, i) => `
-        <div class="listen-card" onclick="listenTap(this)">
-          <div class="listen-emoji">${s.i}</div>
-          <div class="listen-name">${s.n}</div>
-          <div class="listen-desc" style="display:none">${s.d}</div>
-        </div>
-      `).join('')}
+      ${ix.sounds.map((s, idx) => {
+        const audioUrl = assets && assets[`ix_item_${idx}_audio`];
+        return `
+          <div class="lis-item" onclick="listenTap(this, '${audioUrl || ''}')">
+            <span class="lis-ico">${s.i || '🎵'}</span>
+            <div class="lis-name">${s.n || s.l || ''}</div>
+            <div class="lis-desc">${s.d || s.c || ''}</div>
+          </div>`;
+      }).join('')}
     </div>`;
 }
 
-function listenTap(el) {
-  const desc = el.querySelector('.listen-desc');
-  const open = el.classList.contains('open');
-  document.querySelectorAll('.listen-card').forEach(c => {
-    c.classList.remove('open');
-    c.querySelector('.listen-desc').style.display = 'none';
-  });
-  if (!open) {
-    el.classList.add('open');
-    desc.style.display = 'block';
+function listenTap(el, audioUrl) {
+  el.classList.toggle('open');
+  if (audioUrl && el.classList.contains('open')) {
+    // Play audio if URL provided
+    if (window._currentAudio) { window._currentAudio.pause(); window._currentAudio = null; }
+    const audio = new Audio(audioUrl);
+    audio.play().catch(() => {});
+    window._currentAudio = audio;
   }
 }
 
@@ -3474,27 +3633,62 @@ function renderAdminAssets() {
 }
 
 async function adminUpload() {
-  const input = document.getElementById('adm-file');
-  const tag   = 'general';
-  if (!input?.files?.length) return toast('Choose a file first','error');
+  const input   = document.getElementById('adm-file');
+  const worldId = parseInt(document.getElementById('adm-world')?.value) || null;
+  const sceneId = parseInt(document.getElementById('adm-scene')?.value) || null;
+  const beat    = document.getElementById('adm-beat')?.value || null;
+  const type    = document.getElementById('adm-type')?.value || 'image';
+  const desc    = document.getElementById('adm-desc')?.value || '';
+  const msgEl   = document.getElementById('adm-msg');
+
+  if (!input?.files?.length) return toast('Choose a file first', 'error');
+  if (!worldId) return toast('Select a world first', 'error');
+
   const file = input.files[0];
-  const path = `${tag}/${Date.now()}_${file.name}`;
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const path = `w${worldId}/s${sceneId||0}_${beat||'gen'}_${Date.now()}.${ext}`;
+
+  if (msgEl) { msgEl.textContent = 'Uploading...'; msgEl.style.color = 'var(--gold)'; }
   setLoading(true);
-  const { data: upData, error: upErr } = await sb.storage
-    .from('noorquest-assets').upload(path, file, { upsert: true });
-  if (upErr) { setLoading(false); return toast(upErr.message,'error'); }
-  const { data: urlData } = sb.storage.from('noorquest-assets').getPublicUrl(path);
-  await sb.from('admin_assets').insert({
-    file_name: file.name,
-    file_path: path,
-    public_url: urlData.publicUrl,
-    tag,
-    uploaded_by: A.user.id
-  });
-  setLoading(false);
-  toast('Uploaded!','success');
-  input.value = '';
-  await loadAdminStudio();
+
+  try {
+    const {error: upErr} = await sb.storage
+      .from('noorquest-assets').upload(path, file, {upsert: true});
+    if (upErr) throw upErr;
+
+    const {data: urlData} = sb.storage.from('noorquest-assets').getPublicUrl(path);
+    const url = urlData.publicUrl;
+
+    // Remove existing asset for same slot to avoid duplicates
+    if (worldId && sceneId && beat) {
+      await sb.from('admin_assets').delete()
+        .eq('world_id', worldId).eq('scene_id', sceneId).eq('beat', beat).eq('type', type);
+    }
+
+    const {error: dbErr} = await sb.from('admin_assets').insert({
+      world_id: worldId,
+      scene_id: sceneId,
+      beat: beat,
+      type: type,
+      url: url,
+      public_url: url,
+      description: desc,
+      file_name: file.name,
+      uploaded_by: A.user?.id
+    });
+    if (dbErr) throw dbErr;
+
+    if (msgEl) { msgEl.textContent = '✅ Uploaded successfully!'; msgEl.style.color = '#34d399'; }
+    toast('Asset uploaded!', 'success');
+    input.value = '';
+    document.getElementById('adm-fname').textContent = 'No file selected';
+    setTimeout(loadAdminAssets, 300);
+  } catch(e) {
+    if (msgEl) { msgEl.textContent = '❌ ' + (e.message || 'Upload failed'); msgEl.style.color = '#f87171'; }
+    toast('Upload failed: ' + (e.message || e), 'error');
+  } finally {
+    setLoading(false);
+  }
 }
 
 // ── Helper: escape HTML ──────────────────────────────────────
@@ -3801,4 +3995,114 @@ async function uploadGlobalVideo(beatType, inputEl) {
 }
 
 
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN — Interactive items upload
+// ═══════════════════════════════════════════════════════════════
+function loadIxItems() {
+  const worldId = parseInt(document.getElementById('ix-world')?.value);
+  const sceneId = parseInt(document.getElementById('ix-scene')?.value);
+  const container = document.getElementById('ix-items-list');
+  if (!container) return;
+  if (!worldId || !sceneId) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const world = WORLDS[worldId];
+  if (!world) { container.innerHTML = '<div style="font-family:var(--ui);font-size:13px;color:rgba(253,246,227,.35)">World not found</div>'; return; }
+  const scene = world.scenes.find(s => s.id === sceneId);
+  if (!scene || !scene.ix) {
+    container.innerHTML = '<div style="font-family:var(--ui);font-size:13px;color:rgba(253,246,227,.35);padding:10px 0">This scene has no interactive elements.</div>';
+    return;
+  }
+
+  const ix = scene.ix;
+  const items = ix.items || [];
+
+  container.innerHTML = `
+    <div style="font-family:var(--display);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">
+      ${ix.type} — ${items.length} items
+    </div>
+    ${items.map((item, idx) => `
+      <div style="background:rgba(22,32,64,.8);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;margin-bottom:10px">
+        <div style="font-family:var(--body);font-weight:600;font-size:14px;color:var(--gold3);margin-bottom:10px">${item.ico || ''} ${item.l || item.n || ('Item ' + (idx+1))}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <div style="font-family:var(--ui);font-size:10px;color:rgba(253,246,227,.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Image</div>
+            <input type="file" id="ix-img-${idx}" accept="image/*" style="display:none"
+              onchange="uploadIxAsset(${worldId},${sceneId},${idx},'image',this)">
+            <button class="btn btn-glass btn-sm" onclick="document.getElementById('ix-img-${idx}').click()" style="width:100%;font-size:12px">
+              📷 Upload Image
+            </button>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <div style="font-family:var(--ui);font-size:10px;color:rgba(253,246,227,.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Audio</div>
+            <input type="file" id="ix-aud-${idx}" accept="audio/*" style="display:none"
+              onchange="uploadIxAsset(${worldId},${sceneId},${idx},'audio',this)">
+            <button class="btn btn-glass btn-sm" onclick="document.getElementById('ix-aud-${idx}').click()" style="width:100%;font-size:12px">
+              🎵 Upload Audio
+            </button>
+          </div>
+        </div>
+        <div id="ix-msg-${idx}" style="font-family:var(--ui);font-size:12px;margin-top:8px;min-height:16px;color:rgba(253,246,227,.4)"></div>
+      </div>
+    `).join('')}`;
+}
+
+async function uploadIxAsset(worldId, sceneId, itemIdx, type, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const msgEl = document.getElementById(`ix-msg-${itemIdx}`);
+  if (msgEl) { msgEl.textContent = 'Uploading...'; msgEl.style.color = 'var(--gold)'; }
+
+  try {
+    const ext  = file.name.split('.').pop();
+    const beat = `ix_item_${itemIdx}`;
+    const path = `w${worldId}/s${sceneId}_${beat}_${type}_${Date.now()}.${ext}`;
+
+    const {error: upErr} = await sb.storage.from('noorquest-assets').upload(path, file, {upsert:true});
+    if (upErr) throw upErr;
+
+    const {data: urlData} = sb.storage.from('noorquest-assets').getPublicUrl(path);
+    const url = urlData.publicUrl;
+
+    // Remove old entry for same slot
+    await sb.from('admin_assets').delete()
+      .eq('world_id', worldId).eq('scene_id', sceneId).eq('beat', beat).eq('type', type);
+
+    await sb.from('admin_assets').insert({
+      world_id: worldId, scene_id: sceneId,
+      beat: beat, type: type, url: url, public_url: url,
+      description: `W${worldId} S${sceneId} Interactive item ${itemIdx} ${type}`,
+      uploaded_by: A.user?.id
+    });
+
+    if (msgEl) { msgEl.textContent = `✅ ${type} uploaded!`; msgEl.style.color = '#34d399'; }
+  } catch(e) {
+    if (msgEl) { msgEl.textContent = '❌ ' + (e.message || 'Failed'); msgEl.style.color = '#f87171'; }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCENE PLAYER — load interactive media from admin_assets
+// ═══════════════════════════════════════════════════════════════
+async function loadIxAssets(worldId, sceneId) {
+  const result = {};
+  try {
+    const {data} = await sb.from('admin_assets')
+      .select('beat,type,url,public_url')
+      .eq('world_id', worldId)
+      .eq('scene_id', sceneId)
+      .like('beat', 'ix_item_%');
+    if (data) {
+      data.forEach(r => {
+        const url = r.url || r.public_url;
+        const key = `${r.beat}_${r.type}`;
+        if (url) result[key] = url;
+      });
+    }
+  } catch(e) {}
+  return result;
+}
 </script></body></html>
