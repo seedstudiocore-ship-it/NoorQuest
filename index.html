@@ -910,7 +910,9 @@ select.input option { background:#0f1628; color:#FDF6E3 }
           <div id="adm-fname" style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);margin-top:6px">No file selected</div>
         </div>
         <button class="btn btn-gold btn-full" onclick="uploadAsset()" style="margin-top:12px">Upload Asset ↑</button>
+        <button class="btn btn-glass btn-sm btn-full" onclick="testImageLoad()" style="margin-top:8px">🔍 Test — Check What Loaded</button>
         <div id="adm-msg" style="margin-top:10px;font-family:var(--ui);font-size:13px;text-align:center;min-height:20px"></div>
+        <div id="adm-test-result" style="margin-top:8px;font-family:var(--ui);font-size:12px;line-height:1.7;display:none"></div>
       </div>
     </div>
 
@@ -3093,28 +3095,33 @@ function formatProse(text) {
 async function loadSceneImages(worldId, sceneId) {
   const imgs = {A: null, B: null, C: null};
   try {
-    // Query by tag prefix: w{worldId}_s{sceneId}_
     const prefix = `w${worldId}_s${sceneId}_`;
-    const {data} = await sb.from('admin_assets')
-      .select('tag,public_url')
+    // Select all possible URL column names
+    const {data, error} = await sb.from('admin_assets')
+      .select('*')
       .like('tag', prefix + '%');
+
+    console.log(`[NQ] loadSceneImages W${worldId}S${sceneId}: found ${data?.length || 0} rows, error:`, error?.message || 'none');
+    if (data && data.length > 0) console.log('[NQ] rows:', data.map(r => ({tag:r.tag, url:r.url, pub:r.public_url})));
+
     if (data) {
       data.forEach(r => {
-        const url = r.public_url;
+        // Try every possible URL column name
+        const url = r.url || r.public_url || r.file_url || r.asset_url;
         if (!url || !r.tag) return;
-        // tag format: w1_s1_A_image
         const parts = r.tag.split('_');
-        // parts: ['w1','s1','A','image']
+        // Expected: ['w1','s1','A','image'] — beat is parts[2]
         if (parts.length >= 4) {
-          const beat = parts[2];  // A, B, or C
-          const type = parts[3];  // image
+          const beat = parts[2];
+          const type = parts[3];
           if (type === 'image' && (beat === 'A' || beat === 'B' || beat === 'C')) {
             imgs[beat] = url;
+            console.log(`[NQ] ✅ Found image for beat ${beat}:`, url);
           }
         }
       });
     }
-  } catch(e) { console.warn('loadSceneImages:', e.message); }
+  } catch(e) { console.warn('[NQ] loadSceneImages error:', e.message); }
   return imgs;
 }
 
@@ -3844,11 +3851,13 @@ async function adminUpload() {
     // Insert with tag as key + public_url (columns that exist in original schema)
     const {error: dbErr} = await sb.from('admin_assets').insert({
       tag:        tag,
+      url:        url,
       public_url: url,
       file_name:  file.name,
       file_path:  path,
       uploaded_by: A.user?.id
     });
+    console.log('[NQ] adminUpload insert:', {tag, url}, 'error:', dbErr?.message || 'none');
     if (dbErr) throw dbErr;
 
     if (msgEl) { msgEl.textContent = '✅ Uploaded! Children will see this immediately.'; msgEl.style.color = '#34d399'; }
@@ -4372,206 +4381,206 @@ function renderWONDER(container, ix, assets) {
   }
 }
 
-// ─── 1. DAWN WATCH ───────────────────────────────────────────
+// ─── 1. LIGHT PAINTER (An-Nur — reveal what's already there) ─
 function wonderDawnWatch(el) {
-  const pauses = [
-    {pct:0.15, q:"Who decided the sky would change colour?"},
-    {pct:0.5,  q:"Could it have just stayed... grey?"},
-    {pct:0.88, q:"He made it beautiful. He didn't have to."}
-  ];
-  let phase = 0;
-  let animating = true;
-  let progress = 0;
-  let waiting = false;
-  let raf;
-
   el.innerHTML = `
-    <div style="position:relative;overflow:hidden;height:280px;cursor:pointer" onclick="dawnTap()">
-      <canvas id="dawn-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
-      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 28px">
-        <div id="dawn-q" style="font-family:var(--body);font-size:17px;color:var(--cream);text-align:center;line-height:1.7;opacity:0;transition:opacity .8s ease;font-style:italic;text-shadow:0 2px 12px rgba(0,0,0,.8)"></div>
-        <div id="dawn-tap" style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:2px;text-transform:uppercase;margin-top:12px;opacity:0;transition:opacity .6s ease">Tap to continue</div>
-      </div>
-      <div id="dawn-reveal" style="position:absolute;bottom:16px;left:0;right:0;z-index:4;text-align:center;pointer-events:none">
-        <div style="font-family:var(--display);font-size:15px;color:var(--gold);letter-spacing:1px;opacity:0;transition:opacity 1.2s ease;text-shadow:0 0 24px rgba(245,200,66,.6)" id="dawn-final">An-Nur — اَلنُّوْرُ — Every sunrise is a signature.</div>
-      </div>
-      <div style="position:absolute;top:12px;left:0;right:0;text-align:center;z-index:4;pointer-events:none">
-        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.35);letter-spacing:3px;text-transform:uppercase">✦ Dawn Watch</div>
+    <div style="position:relative;overflow:hidden;height:300px;background:#000;cursor:crosshair" id="lp-wrap">
+      <canvas id="lp-bg" style="position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1"></canvas>
+      <canvas id="lp-light" style="position:absolute;inset:0;width:100%;height:100%;display:block;z-index:2"></canvas>
+      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:18px">
+        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">✦ An-Nur — The Light</div>
+        <div id="lp-hint" style="font-family:var(--body);font-size:15px;color:rgba(253,246,227,.65);font-style:italic;text-align:center;padding:0 24px;transition:opacity .6s ease;text-shadow:0 2px 8px rgba(0,0,0,.9)">
+          The light was already here. Tap to find it.
+        </div>
+        <div id="lp-reveal" style="font-family:var(--body);font-size:15px;color:var(--gold);font-style:italic;text-align:center;padding:0 24px;opacity:0;transition:opacity 1.2s ease;line-height:1.7;text-shadow:0 0 20px rgba(245,200,66,.4)">
+          He gave you light to see.<br>Then He made it beautiful so you'd look up.
+        </div>
       </div>
     </div>`;
 
   requestAnimationFrame(() => {
-    const canvas = document.getElementById('dawn-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    const W = canvas.width, H = canvas.height;
+    const bgCanvas = document.getElementById('lp-bg');
+    const lightCanvas = document.getElementById('lp-light');
+    const wrap = document.getElementById('lp-wrap');
+    if (!bgCanvas || !lightCanvas || !wrap) return;
 
-    // Horizon silhouette points
-    const hills = [];
-    for (let x = 0; x <= W; x += W/8) {
-      hills.push({x, y: H * (0.72 + Math.sin(x/W*Math.PI)*0.08 + Math.random()*0.04)});
-    }
-    hills[0].x = 0; hills[hills.length-1].x = W;
+    const W = wrap.offsetWidth || 360;
+    const H = wrap.offsetHeight || 300;
+    bgCanvas.width = lightCanvas.width = W;
+    bgCanvas.height = lightCanvas.height = H;
 
-    const skyColors = [
-      [6,8,24],    // deep night
-      [18,12,45],  // pre-dawn purple
-      [65,20,40],  // rose
-      [160,70,30], // amber
-      [220,130,40],// gold
-      [245,185,80] // bright gold
-    ];
+    const bgCtx = bgCanvas.getContext('2d');
+    const lCtx = lightCanvas.getContext('2d');
 
-    function lerp(a, b, t) { return a + (b-a)*t; }
-    function lerpColor(t) {
-      const n = skyColors.length - 1;
-      const i = Math.min(Math.floor(t * n), n - 1);
-      const f = (t * n) - i;
-      const a = skyColors[i], b = skyColors[i+1];
-      return [lerp(a[0],b[0],f), lerp(a[1],b[1],f), lerp(a[2],b[2],f)];
-    }
+    // ── Draw the hidden scene on bgCanvas ──────────────────
+    // Everything is drawn at full colour — light canvas reveals it
+    function drawHiddenScene() {
+      // Sky gradient (dawn)
+      const sky = bgCtx.createLinearGradient(0,0,0,H);
+      sky.addColorStop(0,'#0a0510');
+      sky.addColorStop(0.45,'#1a0d25');
+      sky.addColorStop(0.75,'#3d1a0a');
+      sky.addColorStop(1,'#1a0805');
+      bgCtx.fillStyle = sky; bgCtx.fillRect(0,0,W,H);
 
-    let stars = Array.from({length:60}, () => ({
-      x:Math.random()*W, y:Math.random()*H*0.7,
-      r:0.5+Math.random()*1.5, phase:Math.random()*Math.PI*2
-    }));
-
-    function draw(t) {
-      const p = Math.min(progress, 1);
-      // Sky gradient
-      const top = lerpColor(p);
-      const mid = lerpColor(Math.max(0, p - 0.2));
-      const hor = lerpColor(Math.min(1, p + 0.15));
-      const grad = ctx.createLinearGradient(0,0,0,H);
-      grad.addColorStop(0, `rgb(${top.map(Math.round).join(',')})`);
-      grad.addColorStop(0.55, `rgb(${mid.map(Math.round).join(',')})`);
-      grad.addColorStop(1, `rgb(${hor.map(Math.round).join(',')})`);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0,0,W,H);
-
-      // Stars fade out as dawn rises
-      const starAlpha = Math.max(0, 1 - p * 3);
-      if (starAlpha > 0) {
-        stars.forEach(s => {
-          const tw = 0.5 + 0.5*Math.sin(t*0.001 + s.phase);
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-          ctx.fillStyle = `rgba(255,255,255,${tw * starAlpha})`;
-          ctx.fill();
-        });
+      // Stars
+      for (let i = 0; i < 60; i++) {
+        const sx = (Math.sin(i*137.5)*0.5+0.5)*W;
+        const sy = (Math.sin(i*97.3)*0.5+0.5)*H*0.6;
+        bgCtx.beginPath(); bgCtx.arc(sx,sy,0.6+Math.random()*1.2,0,Math.PI*2);
+        bgCtx.fillStyle=`rgba(255,255,255,${0.4+Math.random()*0.5})`; bgCtx.fill();
       }
 
-      // Sun glow on horizon
-      if (p > 0.3) {
-        const sunAlpha = (p - 0.3) / 0.7;
-        const sunX = W * 0.5, sunY = H * (0.74 - p * 0.08);
-        const sg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, W * 0.5);
-        sg.addColorStop(0, `rgba(255,220,100,${sunAlpha * 0.6})`);
-        sg.addColorStop(0.3, `rgba(245,160,50,${sunAlpha * 0.25})`);
-        sg.addColorStop(1, 'transparent');
-        ctx.fillStyle = sg;
-        ctx.fillRect(0,0,W,H);
-        // Sun disc
-        if (p > 0.65) {
-          const discAlpha = (p - 0.65) / 0.35;
-          const discR = 18 + discAlpha * 12;
-          const discG = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, discR);
-          discG.addColorStop(0, `rgba(255,245,200,${discAlpha * 0.9})`);
-          discG.addColorStop(0.6, `rgba(255,190,60,${discAlpha * 0.7})`);
-          discG.addColorStop(1, 'transparent');
-          ctx.fillStyle = discG;
-          ctx.beginPath();
-          ctx.arc(sunX, sunY, discR, 0, Math.PI*2);
-          ctx.fill();
-        }
-      }
+      // Horizon glow
+      const hg = bgCtx.createRadialGradient(W*0.5,H*0.72,0,W*0.5,H*0.72,W*0.55);
+      hg.addColorStop(0,'rgba(220,120,30,0.7)');
+      hg.addColorStop(0.35,'rgba(180,70,15,0.3)');
+      hg.addColorStop(1,'transparent');
+      bgCtx.fillStyle = hg; bgCtx.fillRect(0,0,W,H);
 
-      // Birds (appear near end)
-      if (p > 0.75) {
-        const bAlpha = (p - 0.75) / 0.25;
-        ctx.strokeStyle = `rgba(10,14,26,${bAlpha * 0.6})`;
-        ctx.lineWidth = 1.5;
-        [0.35, 0.5, 0.62, 0.42, 0.55].forEach((bx, i) => {
-          const by = H * (0.38 + i*0.03 - p * 0.1);
-          const bxp = bx + (t * 0.00003 * (0.8 + i*0.1)) % 0.3;
-          const bs = 6 + i * 2;
-          ctx.beginPath();
-          ctx.moveTo(W*bxp - bs, by);
-          ctx.quadraticCurveTo(W*bxp - bs/2, by - 3, W*bxp, by);
-          ctx.quadraticCurveTo(W*bxp + bs/2, by - 3, W*bxp + bs, by);
-          ctx.stroke();
-        });
-      }
+      // Sun disc peeking
+      const sunG = bgCtx.createRadialGradient(W*0.5,H*0.73,0,W*0.5,H*0.73,22);
+      sunG.addColorStop(0,'rgba(255,230,150,0.95)');
+      sunG.addColorStop(0.5,'rgba(245,160,50,0.7)');
+      sunG.addColorStop(1,'transparent');
+      bgCtx.fillStyle=sunG; bgCtx.beginPath(); bgCtx.arc(W*0.5,H*0.73,22,0,Math.PI*2); bgCtx.fill();
 
-      // Silhouette hills
-      const hillDark = Math.max(5, 25 - p * 20);
-      ctx.fillStyle = `rgb(${hillDark},${hillDark + 3},${hillDark + 8})`;
-      ctx.beginPath();
-      ctx.moveTo(0, H);
-      hills.forEach((h, i) => {
-        if (i === 0) ctx.moveTo(h.x, h.y);
-        else {
-          const prev = hills[i-1];
-          const cpx = (prev.x + h.x) / 2;
-          ctx.quadraticCurveTo(prev.x, prev.y, cpx, (prev.y+h.y)/2);
-        }
+      // Birds
+      bgCtx.strokeStyle='rgba(10,5,20,0.7)'; bgCtx.lineWidth=1.5;
+      [[0.3,0.38],[0.42,0.33],[0.55,0.36],[0.65,0.31],[0.72,0.40]].forEach(([bx,by]) => {
+        const bs=7, cx=bx*W, cy=by*H;
+        bgCtx.beginPath(); bgCtx.moveTo(cx-bs,cy);
+        bgCtx.quadraticCurveTo(cx-bs/2,cy-3,cx,cy);
+        bgCtx.quadraticCurveTo(cx+bs/2,cy-3,cx+bs,cy); bgCtx.stroke();
       });
-      ctx.lineTo(W, H);
-      ctx.closePath();
-      ctx.fill();
+
+      // Valley hills silhouette
+      bgCtx.fillStyle='rgba(8,4,16,0.85)';
+      bgCtx.beginPath(); bgCtx.moveTo(0,H*0.78);
+      bgCtx.quadraticCurveTo(W*0.15,H*0.68, W*0.28,H*0.73);
+      bgCtx.quadraticCurveTo(W*0.42,H*0.78, W*0.5,H*0.75);
+      bgCtx.quadraticCurveTo(W*0.65,H*0.70, W*0.78,H*0.76);
+      bgCtx.quadraticCurveTo(W*0.9,H*0.82, W,H*0.78);
+      bgCtx.lineTo(W,H); bgCtx.lineTo(0,H); bgCtx.closePath(); bgCtx.fill();
+
+      // Trees on hillside
+      [[0.18,0.72],[0.32,0.71],[0.58,0.73],[0.80,0.74]].forEach(([tx,ty]) => {
+        const x=tx*W, y=ty*H;
+        bgCtx.strokeStyle='rgba(5,12,4,0.9)'; bgCtx.lineWidth=2;
+        bgCtx.beginPath(); bgCtx.moveTo(x,y); bgCtx.lineTo(x,y-22); bgCtx.stroke();
+        bgCtx.beginPath(); bgCtx.arc(x,y-26,10,0,Math.PI*2);
+        bgCtx.fillStyle='rgba(8,22,6,0.85)'; bgCtx.fill();
+      });
+
+      // Nura & Zain silhouettes on hilltop
+      const fx=W*0.46, fy=H*0.73;
+      bgCtx.fillStyle='rgba(5,3,12,0.9)';
+      // Nura
+      bgCtx.beginPath(); bgCtx.arc(fx-8,fy-18,5,0,Math.PI*2); bgCtx.fill();
+      bgCtx.beginPath(); bgCtx.moveTo(fx-8,fy-13); bgCtx.lineTo(fx-8,fy); bgCtx.lineWidth=3;
+      bgCtx.strokeStyle='rgba(5,3,12,0.9)'; bgCtx.stroke();
+      // Zain
+      bgCtx.beginPath(); bgCtx.arc(fx+8,fy-18,5,0,Math.PI*2); bgCtx.fill();
+      bgCtx.beginPath(); bgCtx.moveTo(fx+8,fy-13); bgCtx.lineTo(fx+8,fy); bgCtx.stroke();
+      // Lantern glow
+      const lg = bgCtx.createRadialGradient(fx-8,fy-6,0,fx-8,fy-6,14);
+      lg.addColorStop(0,'rgba(245,200,66,0.5)');
+      lg.addColorStop(1,'transparent');
+      bgCtx.fillStyle=lg; bgCtx.beginPath(); bgCtx.arc(fx-8,fy-6,14,0,Math.PI*2); bgCtx.fill();
+    }
+    drawHiddenScene();
+
+    // ── Light canvas starts dark, reveals bg through tap ──
+    // Fill light canvas black
+    lCtx.fillStyle = '#000';
+    lCtx.fillRect(0,0,W,H);
+
+    // Use destination-out to erase holes, revealing background
+    lCtx.globalCompositeOperation = 'destination-out';
+
+    let tapCount = 0;
+    const maxTaps = 16;
+    const rays = [];
+    let animFrame;
+
+    function spawnRays(x, y) {
+      const count = 12;
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI*2 * i/count) + (Math.random()-0.5)*0.25;
+        rays.push({
+          x, y, angle,
+          speed: 3.5 + Math.random()*3,
+          len: 0,
+          maxLen: 80 + Math.random()*100,
+          width: 2 + Math.random()*3,
+          life: 1
+        });
+      }
+      // Central burst glow
+      const grad = lCtx.createRadialGradient(x,y,0,x,y,60);
+      grad.addColorStop(0,'rgba(255,255,255,0.95)');
+      grad.addColorStop(0.4,'rgba(255,255,255,0.5)');
+      grad.addColorStop(1,'rgba(255,255,255,0)');
+      lCtx.fillStyle = grad;
+      lCtx.beginPath(); lCtx.arc(x,y,60,0,Math.PI*2); lCtx.fill();
     }
 
-    function checkPause() {
-      if (waiting) return;
-      const currentPause = pauses[phase];
-      if (currentPause && progress >= currentPause.pct) {
-        animating = false;
-        waiting = true;
-        const q = document.getElementById('dawn-q');
-        const tap = document.getElementById('dawn-tap');
-        if (q) { q.textContent = currentPause.q; q.style.opacity = '1'; }
-        if (tap) tap.style.opacity = '1';
-        if (phase === pauses.length - 1) {
-          // Last pause — show final reveal instead of tap prompt
-          setTimeout(() => {
-            const fin = document.getElementById('dawn-final');
-            if (fin) fin.style.opacity = '1';
-            if (tap) tap.style.opacity = '0';
-          }, 1200);
-        }
+    function animateRays() {
+      // Draw rays on light canvas (erasing darkness)
+      rays.forEach((r, idx) => {
+        r.len += r.speed;
+        r.life = Math.max(0, 1 - r.len/r.maxLen);
+        if (r.len > r.maxLen) return;
+        const ex = r.x + Math.cos(r.angle)*r.len;
+        const ey = r.y + Math.sin(r.angle)*r.len;
+        const sx = r.x + Math.cos(r.angle)*Math.max(0,r.len-20);
+        const sy = r.y + Math.sin(r.angle)*Math.max(0,r.len-20);
+        lCtx.beginPath();
+        lCtx.moveTo(sx,sy); lCtx.lineTo(ex,ey);
+        lCtx.strokeStyle = `rgba(255,255,255,${r.life * 0.7})`;
+        lCtx.lineWidth = r.width * r.life;
+        lCtx.lineCap = 'round';
+        lCtx.stroke();
+      });
+      // Remove dead rays
+      for (let i=rays.length-1;i>=0;i--) if(rays[i].len>=rays[i].maxLen) rays.splice(i,1);
+      if (rays.length > 0) animFrame = requestAnimationFrame(animateRays);
+    }
+
+    function onTap(e) {
+      e.preventDefault();
+      const rect = lightCanvas.getBoundingClientRect();
+      const touch = e.touches ? e.touches[0] : e;
+      const x = (touch.clientX - rect.left) * (W / rect.width);
+      const y = (touch.clientY - rect.top) * (H / rect.height);
+
+      spawnRays(x, y);
+      if (animFrame) cancelAnimationFrame(animFrame);
+      animFrame = requestAnimationFrame(animateRays);
+
+      tapCount++;
+      if (tapCount === 6) {
+        const hint = document.getElementById('lp-hint');
+        if (hint) hint.style.opacity = '0';
+      }
+      if (tapCount >= maxTaps) {
+        // Fully reveal — fade out the darkness canvas
+        lightCanvas.style.transition = 'opacity 1.8s ease';
+        lightCanvas.style.opacity = '0';
+        setTimeout(() => {
+          const hint = document.getElementById('lp-hint');
+          const rev = document.getElementById('lp-reveal');
+          if (hint) hint.style.display = 'none';
+          if (rev) rev.style.opacity = '1';
+        }, 900);
       }
     }
 
-    window.dawnTap = function() {
-      if (!waiting) return;
-      phase++;
-      waiting = false;
-      animating = true;
-      const q = document.getElementById('dawn-q');
-      const tap = document.getElementById('dawn-tap');
-      if (q) q.style.opacity = '0';
-      if (tap) tap.style.opacity = '0';
-    };
-
-    let last = 0;
-    function loop(t) {
-      if (animating) {
-        const dt = last ? (t - last) : 16;
-        progress += dt * 0.00018;
-        last = t;
-        draw(t);
-        checkPause();
-      }
-      raf = requestAnimationFrame(loop);
-    }
-    raf = requestAnimationFrame(loop);
-
-    // Cleanup on navigate away
-    window._dawnRaf = raf;
+    wrap.addEventListener('click', onTap);
+    wrap.addEventListener('touchstart', onTap, {passive:false});
   });
 }
+
 
 // ─── 2. SKY PILLARS ──────────────────────────────────────────
 function wonderSkyPillars(el) {
@@ -4716,15 +4725,15 @@ function wonderSkyPillars(el) {
   });
 }
 
-// ─── 3. GROW SEED ─────────────────────────────────────────────
+// ─── 3. GROW SEED ────────────────────────────────────────────
 function wonderGrowSeed(el) {
   const stages = [
     {label:'A tiny seed', desc:'Tap to plant...', pct:0},
-    {label:'Germinating', desc:'Something is waking up...', pct:0.12},
-    {label:'Sprout', desc:'It knows exactly what to do...', pct:0.25},
-    {label:'Sapling', desc:'Growing...', pct:0.42},
-    {label:'Young tree', desc:'Getting there...', pct:0.62},
-    {label:'Oak tree', desc:"It's enormous!", pct:0.82},
+    {label:'Germinating', desc:'Something is waking up...', pct:0.1},
+    {label:'Sprout', desc:'It knows exactly what to do...', pct:0.22},
+    {label:'Sapling', desc:'Growing...', pct:0.38},
+    {label:'Young tree', desc:'Getting there...', pct:0.56},
+    {label:'Oak tree', desc:"It's enormous!", pct:0.76},
     {label:'Ancient oak', desc:'All from that tiny seed — Allahu Akbar!', pct:1.0, final:true}
   ];
   let stage = 0;
@@ -4732,13 +4741,13 @@ function wonderGrowSeed(el) {
   let targetProgress = 0;
 
   el.innerHTML = `
-    <div style="position:relative;overflow:hidden;height:320px;cursor:pointer;background:linear-gradient(180deg,#020608,#080f10)" onclick="growTap()">
+    <div style="position:relative;overflow:hidden;height:300px;cursor:pointer;background:linear-gradient(180deg,#020608,#060c10)" onclick="growTap()">
       <canvas id="tree-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
-      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:18px">
-        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.35);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">✦ Grow It</div>
+      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:16px">
+        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.35);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px">✦ Grow It</div>
         <div id="tree-stage" style="font-family:var(--display);font-size:18px;color:var(--gold);letter-spacing:1px;text-shadow:0 0 16px rgba(245,200,66,.4)">A tiny seed</div>
         <div id="tree-desc" style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);margin-top:4px;font-style:italic">Tap to plant...</div>
-        <div id="tree-reveal" style="font-family:var(--display);font-size:14px;color:var(--gold);margin-top:10px;opacity:0;transition:opacity 1s ease;letter-spacing:.5px;text-align:center;padding:0 20px">كُنْ فَيَكُونُ — "Be, and it is."</div>
+        <div id="tree-reveal" style="font-family:var(--display);font-size:14px;color:var(--gold);margin-top:8px;opacity:0;transition:opacity 1s ease;letter-spacing:.5px;text-align:center;padding:0 20px;line-height:1.6">كُنْ فَيَكُونُ — "Be, and it is."</div>
       </div>
     </div>`;
 
@@ -4746,117 +4755,125 @@ function wonderGrowSeed(el) {
     const canvas = document.getElementById('tree-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    canvas.width = canvas.offsetWidth || 360;
+    canvas.height = canvas.offsetHeight || 300;
     const W = canvas.width, H = canvas.height;
 
-    // Procedural tree using L-system inspired branching
-    function drawTreeBranch(ctx, x, y, len, angle, depth, maxDepth, progress, windOff) {
-      if (depth > maxDepth || len < 3) return;
-      const endX = x + Math.sin(angle + windOff * 0.02) * len;
-      const endY = y - Math.cos(angle) * len;
-      const depthRatio = depth / maxDepth;
-      const w = Math.max(1, (maxDepth - depth + 1) * 1.8 * (1 - depthRatio * 0.3));
-      // Colour: brown trunk → green tips
-      const g = Math.min(1, depthRatio * 1.4);
-      const r = Math.round(80 - g * 40);
-      const gr = Math.round(45 + g * 90);
-      const b = Math.round(15 + g * 20);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(endX, endY);
-      ctx.strokeStyle = `rgba(${r},${gr},${b},0.92)`;
-      ctx.lineWidth = w;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-      if (depth >= maxDepth - 1 && progress > 0.5) {
-        // Leaf clusters
-        const leafCount = Math.floor(4 + progress * 8);
-        for (let i = 0; i < leafCount; i++) {
-          const lx = endX + (Math.random()-0.5)*22*progress;
-          const ly = endY + (Math.random()-0.5)*22*progress;
-          const lr = 3.5 + Math.random()*6*progress;
-          ctx.beginPath(); ctx.arc(lx,ly,lr,0,Math.PI*2);
-          const lGreen = 30 + Math.floor(progress*55);
-          const lBright = 20 + Math.floor(progress*30);
-          ctx.fillStyle = `rgba(${20+Math.random()*30},${lGreen+Math.random()*40},${lBright},${0.5+progress*0.35})`;
+    // Dynamic zoom: as tree grows, we scale down so it always fits
+    function getScale(p) {
+      if (p < 0.22) return 1;
+      // At p=1.0, tree trunk would be H*0.68, with branches it reaches ~1.5x that
+      // So we need to scale to fit everything in H*0.85 (leaving room for ground/text)
+      return Math.max(0.28, 1 - p * 0.72);
+    }
+
+    function drawBranch(ctx, x, y, len, angle, depth, maxD, p, wind) {
+      if (depth > maxD || len < 2.5) return;
+      const ex = x + Math.sin(angle + wind*0.015) * len;
+      const ey = y - Math.cos(angle) * len;
+      const dr = depth / maxD;
+      const w = Math.max(0.8, (maxD - depth + 1) * 1.6 * (1 - dr*0.25));
+
+      // Color: rich brown trunk → warm green at tips
+      const gr = Math.min(1, dr * 1.3);
+      const r = Math.round(95 - gr*45);
+      const g = Math.round(52 + gr*88);
+      const b = Math.round(18 + gr*22);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey);
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.93)`;
+      ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.stroke();
+
+      // Leaf blobs at tips
+      if (depth >= maxD - 1 && p > 0.45) {
+        const leafP = (p - 0.45) / 0.55;
+        const lc = Math.floor(5 + leafP * 10);
+        for (let i = 0; i < lc; i++) {
+          const lx = ex + (Math.random()-0.5)*24*leafP;
+          const ly = ey + (Math.random()-0.5)*24*leafP;
+          const lr = 3 + Math.random()*6*leafP;
+          ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI*2);
+          const hue = 90 + Math.random()*35;
+          const sat = 40 + leafP*35;
+          const lit = 18 + leafP*22;
+          ctx.fillStyle = `hsla(${hue},${sat}%,${lit}%,${0.55+leafP*0.3})`;
           ctx.fill();
         }
       }
-      const spread = 0.38 + depthRatio * 0.12;
-      const lenDecay = 0.66;
-      drawTreeBranch(ctx, endX, endY, len*lenDecay, angle-spread, depth+1, maxDepth, progress, windOff);
-      drawTreeBranch(ctx, endX, endY, len*lenDecay, angle+spread, depth+1, maxDepth, progress, windOff);
-      if (depth <= 2 && progress > 0.4) {
-        drawTreeBranch(ctx, endX, endY, len*lenDecay*0.75, angle-spread*0.3, depth+1, maxDepth, progress, windOff);
+
+      const spread = 0.36 + dr*0.1;
+      drawBranch(ctx, ex, ey, len*0.67, angle-spread, depth+1, maxD, p, wind);
+      drawBranch(ctx, ex, ey, len*0.67, angle+spread, depth+1, maxD, p, wind);
+      if (depth <= 2 && p > 0.35) {
+        drawBranch(ctx, ex, ey, len*0.5, angle-spread*0.25, depth+1, maxD, p, wind);
       }
     }
 
-    function drawScene(t) {
-      // Smooth animation
-      animProgress += (targetProgress - animProgress) * 0.04;
+    function drawFrame(t) {
+      animProgress += (targetProgress - animProgress) * 0.035;
       const p = animProgress;
+      const scale = getScale(p);
 
-      ctx.clearRect(0,0,W,H);
-      // Sky
-      const skyGrad = ctx.createLinearGradient(0,0,0,H);
-      const night = Math.max(0, 1-p*1.5);
-      skyGrad.addColorStop(0, night > 0.5 ? '#020608' : `rgba(${Math.round(p*30)},${Math.round(p*45)},${Math.round(20+p*60)},1)`);
-      skyGrad.addColorStop(0.7, `rgb(${Math.round(5+p*15)},${Math.round(10+p*25)},${Math.round(8+p*20)})`);
-      skyGrad.addColorStop(1, '#081008');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0,0,W,H);
+      ctx.clearRect(0, 0, W, H);
+
+      // Sky — deepens as tree grows
+      const sky = ctx.createLinearGradient(0,0,0,H);
+      sky.addColorStop(0, p < 0.5 ? '#020608' : `rgb(${Math.round(2+p*20)},${Math.round(6+p*30)},${Math.round(8+p*25)})`);
+      sky.addColorStop(0.7, `rgb(${Math.round(4+p*12)},${Math.round(8+p*22)},${Math.round(6+p*18)})`);
+      sky.addColorStop(1, '#050a06');
+      ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
 
       // Stars fade with growth
-      if (p < 0.6) {
-        Array.from({length:40}).forEach((_,i) => {
-          const sx = (Math.sin(i*137.5)*0.5+0.5)*W;
-          const sy = (Math.sin(i*97.3)*0.5+0.5)*H*0.7;
-          const a = (1-p*1.5) * (0.3+0.4*Math.abs(Math.sin(t*0.001+i)));
-          if (a <= 0) return;
-          ctx.beginPath(); ctx.arc(sx,sy,0.7+Math.random()*0.8,0,Math.PI*2);
-          ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fill();
-        });
+      if (p < 0.55) {
+        const sa = (1-p/0.55);
+        for (let i=0;i<35;i++) {
+          const sx=(Math.sin(i*137.5)*.5+.5)*W, sy=(Math.sin(i*97.3)*.5+.5)*H*.65;
+          const sa2=sa*(0.3+0.5*Math.abs(Math.sin(t*.001+i)));
+          ctx.beginPath(); ctx.arc(sx,sy,0.8+Math.random()*.8,0,Math.PI*2);
+          ctx.fillStyle=`rgba(255,255,255,${sa2})`; ctx.fill();
+        }
       }
 
-      // Ground
-      const gGrad = ctx.createLinearGradient(0,H*0.78,0,H);
-      const grassG = Math.round(25 + p*55);
-      gGrad.addColorStop(0,`rgb(${Math.round(8+p*12)},${grassG},${Math.round(8+p*10)})`);
-      gGrad.addColorStop(1,`rgb(4,${Math.round(12+p*18)},4)`);
-      ctx.fillStyle = gGrad;
+      // Ground — gets greener
+      const gg = ctx.createLinearGradient(0,H*0.80,0,H);
+      gg.addColorStop(0,`rgb(${Math.round(8+p*14)},${Math.round(28+p*60)},${Math.round(8+p*12)})`);
+      gg.addColorStop(1,`rgb(4,${Math.round(14+p*20)},4)`);
+      ctx.fillStyle=gg;
       ctx.beginPath();
       ctx.moveTo(0,H);
-      ctx.quadraticCurveTo(W*0.3,H*0.80, W*0.5,H*0.80);
-      ctx.quadraticCurveTo(W*0.7,H*0.80, W,H*0.82);
+      ctx.quadraticCurveTo(W*.3,H*.82,W*.5,H*.82);
+      ctx.quadraticCurveTo(W*.7,H*.82,W,H*.84);
       ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
 
       if (p < 0.02) {
-        // Seed
-        ctx.save();
-        const sg = ctx.createRadialGradient(W/2,H*0.80,0,W/2,H*0.80,12);
-        sg.addColorStop(0,'rgba(245,200,66,0.8)');
-        sg.addColorStop(1,'rgba(160,100,30,0)');
-        ctx.fillStyle = sg;
-        ctx.beginPath(); ctx.arc(W/2,H*0.80,12,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(W/2,H*0.80,5,3.5,0,0,Math.PI*2);
-        ctx.fillStyle='rgba(140,90,30,0.9)'; ctx.fill();
-        ctx.restore();
+        // Glowing seed
+        const sg = ctx.createRadialGradient(W/2,H*.82,0,W/2,H*.82,15);
+        sg.addColorStop(0,'rgba(245,200,66,0.85)'); sg.addColorStop(1,'transparent');
+        ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(W/2,H*.82,15,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(W/2,H*.82,5,3.5,0,0,Math.PI*2);
+        ctx.fillStyle='rgba(150,95,35,0.95)'; ctx.fill();
       } else {
-        // Tree
-        const windOff = Math.sin(t*0.0008)*5;
-        const maxD = Math.max(2, Math.min(7, Math.floor(p*9)));
-        const trunkLen = Math.min(H*0.62, H*0.08 + p*H*0.62);
+        // Draw tree with scale transform from ground up
+        const wind = Math.sin(t*.0007)*4*p;
+        const groundY = H * 0.82;
+        const maxDepth = Math.max(2, Math.min(7, Math.floor(p*9)));
+        // Scale from ground center
+        const baseLen = H * 0.75 * Math.min(1, p * 1.1);
+
         ctx.save();
-        drawTreeBranch(ctx, W/2, H*0.80, trunkLen, 0, 0, maxD, p, windOff);
+        // Transform: scale from the base of the trunk
+        ctx.translate(W/2, groundY);
+        ctx.scale(scale, scale);
+        ctx.translate(-W/2, -groundY);
+        drawBranch(ctx, W/2, groundY, baseLen, 0, 0, maxDepth, p, wind);
         ctx.restore();
       }
-      requestAnimationFrame(drawScene);
+
+      requestAnimationFrame(drawFrame);
     }
-    requestAnimationFrame(drawScene);
+    requestAnimationFrame(drawFrame);
 
     window.growTap = function() {
-      if (stage >= stages.length - 1) return;
+      if (stage >= stages.length-1) return;
       stage++;
       targetProgress = stages[stage].pct;
       const stEl = document.getElementById('tree-stage');
@@ -4867,163 +4884,250 @@ function wonderGrowSeed(el) {
         setTimeout(() => {
           const rev = document.getElementById('tree-reveal');
           if (rev) rev.style.opacity = '1';
-        }, 1000);
+        }, 1200);
       }
     };
   });
 }
 
-// ─── 4. WATER FLOW ────────────────────────────────────────────
+
+// ─── 4. WATER FLOW ───────────────────────────────────────────
 function wonderWaterFlow(el) {
+  // Rich illustrated icons using inline SVG-style divs
   const steps = [
-    {icon:'🌧️', label:'Rain falls from the sky', clr:'#4a9eff'},
-    {icon:'🏔️', label:'Fills the rivers', clr:'#3a8aee'},
-    {icon:'🐟', label:'Fish live in it', clr:'#2a7add'},
-    {icon:'🐄', label:'Cows drink & give milk', clr:'#5ab0ff'},
-    {icon:'🌳', label:'Trees grow & give fruit', clr:'#4abe6a'},
-    {icon:'🍽️', label:'We eat & are nourished', clr:'#f5c842'},
+    {
+      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
+        <defs>
+          <radialGradient id="cg" cx="50%" cy="30%"><stop offset="0%" stop-color="#b8d4f0"/><stop offset="100%" stop-color="#5a8cc0"/></radialGradient>
+          <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8ab8e8"/><stop offset="100%" stop-color="#3a6aaa"/></linearGradient>
+        </defs>
+        <ellipse cx="24" cy="18" rx="18" ry="10" fill="url(#cg)" opacity=".9"/>
+        <ellipse cx="16" cy="22" rx="12" ry="7" fill="url(#cg)" opacity=".85"/>
+        <ellipse cx="32" cy="20" rx="14" ry="8" fill="url(#cg)" opacity=".8"/>
+        <line x1="18" y1="28" x2="15" y2="38" stroke="url(#rg)" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+        <line x1="24" y1="30" x2="24" y2="42" stroke="url(#rg)" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+        <line x1="30" y1="28" x2="33" y2="38" stroke="url(#rg)" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+      </svg>`,
+      label:'Rain falls from the sky', clr:'#6aaeff'
+    },
+    {
+      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
+        <defs><linearGradient id="mg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#8090a0"/><stop offset="100%" stop-color="#3a4a5a"/></linearGradient>
+        <linearGradient id="wg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4a8aee"/><stop offset="100%" stop-color="#2a6acc"/></linearGradient></defs>
+        <polygon points="24,4 38,36 10,36" fill="url(#mg)" opacity=".9"/>
+        <ellipse cx="24" cy="38" rx="14" ry="5" fill="url(#wg)" opacity=".75"/>
+        <path d="M12,38 Q24,32 36,38" fill="none" stroke="#6aacff" stroke-width="2.5" opacity=".6"/>
+      </svg>`,
+      label:'Fills the rivers', clr:'#5a9aee'
+    },
+    {
+      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
+        <defs><radialGradient id="fg" cx="45%" cy="40%"><stop offset="0%" stop-color="#7ad0f0"/><stop offset="100%" stop-color="#2a70c0"/></radialGradient></defs>
+        <ellipse cx="24" cy="26" rx="18" ry="12" fill="url(#fg)" opacity=".85"/>
+        <ellipse cx="24" cy="24" rx="10" ry="6" fill="#4abae0" opacity=".5"/>
+        <ellipse cx="20" cy="26" rx="6" ry="4" fill="#3aaad0" opacity=".7"/>
+        <circle cx="20" cy="25" r="2.5" fill="#f0f8ff" opacity=".6"/>
+        <path d="M26,22 Q32,18 36,22 Q32,26 26,22Z" fill="#80d0f0" opacity=".7"/>
+        <circle cx="28" cy="24" r="1.5" fill="#f0f8ff" opacity=".5"/>
+      </svg>`,
+      label:'Fish live in it', clr:'#4aaaf0'
+    },
+    {
+      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
+        <defs><radialGradient id="cow" cx="50%" cy="40%"><stop offset="0%" stop-color="#f0e8d8"/><stop offset="100%" stop-color="#c0a880"/></radialGradient></defs>
+        <ellipse cx="26" cy="26" rx="15" ry="11" fill="url(#cow)" opacity=".95"/>
+        <circle cx="16" cy="22" r="8" fill="url(#cow)" opacity=".9"/>
+        <ellipse cx="16" cy="17" rx="4" ry="5" fill="#e0d0b0" opacity=".9"/>
+        <line x1="20" y1="35" x2="18" y2="44" stroke="#b89060" stroke-width="2.8" stroke-linecap="round"/>
+        <line x1="26" y1="36" x2="25" y2="44" stroke="#b89060" stroke-width="2.8" stroke-linecap="round"/>
+        <line x1="32" y1="35" x2="33" y2="44" stroke="#b89060" stroke-width="2.8" stroke-linecap="round"/>
+        <ellipse cx="22" cy="38" rx="4" ry="2.5" fill="#f0c8c0" opacity=".8"/>
+        <circle cx="14" cy="19" r="2" fill="#1a0808" opacity=".8"/>
+      </svg>`,
+      label:'Cows drink & give milk', clr:'#d0b880'
+    },
+    {
+      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
+        <defs><radialGradient id="tg" cx="50%" cy="30%"><stop offset="0%" stop-color="#60c060"/><stop offset="100%" stop-color="#1a6020"/></radialGradient></defs>
+        <rect x="22" y="24" width="4" height="18" fill="#7a5030" rx="2"/>
+        <circle cx="24" cy="18" r="14" fill="url(#tg)" opacity=".9"/>
+        <circle cx="18" cy="22" r="8" fill="#48a848" opacity=".7"/>
+        <circle cx="30" cy="20" r="9" fill="#50b050" opacity=".7"/>
+        <circle cx="24" cy="13" r="7" fill="#68c068" opacity=".8"/>
+        <circle cx="16" cy="26" r="3.5" fill="#e04040" opacity=".9"/>
+        <circle cx="28" cy="24" r="3" fill="#e86820" opacity=".9"/>
+        <circle cx="22" cy="28" r="2.8" fill="#d8b820" opacity=".9"/>
+      </svg>`,
+      label:'Trees grow & give fruit', clr:'#60c060'
+    },
+    {
+      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
+        <defs><radialGradient id="pg" cx="40%" cy="30%"><stop offset="0%" stop-color="#f8e8b0"/><stop offset="100%" stop-color="#d0a040"/></radialGradient></defs>
+        <path d="M8,14 Q24,8 40,14 L38,38 Q24,44 10,38Z" fill="url(#pg)" opacity=".9"/>
+        <ellipse cx="24" cy="14" rx="16" ry="5" fill="#f0d888" opacity=".7"/>
+        <circle cx="18" cy="24" r="3" fill="#e87030" opacity=".8"/>
+        <circle cx="26" cy="20" r="2.5" fill="#58b848" opacity=".8"/>
+        <circle cx="30" cy="28" r="3" fill="#d84040" opacity=".8"/>
+        <circle cx="20" cy="32" r="2.5" fill="#d8a020" opacity=".8"/>
+      </svg>`,
+      label:'We eat & are nourished', clr:'#f5c842'
+    },
   ];
   let active = 0;
 
   el.innerHTML = `
-    <div style="background:linear-gradient(180deg,#03080f,#060e18);padding:16px 16px 20px">
-      <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:6px">✦ Follow the Water</div>
-      <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,.6);font-style:italic;text-align:center;margin-bottom:14px">Tap each step to follow Allah's gift</div>
-      <div id="wflow-chain" style="display:flex;flex-direction:column;align-items:center;gap:0"></div>
-      <div id="wflow-reveal" style="text-align:center;padding:14px 0 4px;font-family:var(--display);font-size:14px;color:var(--gold);opacity:0;transition:opacity .8s ease;letter-spacing:.5px">
+    <div style="background:linear-gradient(180deg,#020810,#060e1a);padding:14px 14px 18px">
+      <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:5px">✦ Follow the Water</div>
+      <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);font-style:italic;text-align:center;margin-bottom:12px">Tap each step to follow Allah's gift</div>
+      <div id="wflow2-chain" style="display:flex;flex-direction:column;align-items:center;gap:0"></div>
+      <div id="wflow2-reveal" style="text-align:center;padding:12px 0 2px;font-family:var(--display);font-size:13px;color:var(--gold);opacity:0;transition:opacity .8s ease;letter-spacing:.5px">
         One gift. Six blessings. All from Allah. 💧
       </div>
     </div>`;
 
-  const chain = document.getElementById('wflow-chain');
+  const chain = document.getElementById('wflow2-chain');
   if (!chain) return;
 
-  function buildStep(i, isActive) {
+  function makeStep(i, isActive) {
     const s = steps[i];
-    const div = document.createElement('div');
-    div.id = `wfs-${i}`;
-    div.style.cssText = `width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center`;
+    const outer = document.createElement('div');
+    outer.id = `wf2s-${i}`;
+    outer.style.cssText = `width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center`;
+
     const inner = document.createElement('div');
-    inner.id = `wfi-${i}`;
+    inner.id = `wf2i-${i}`;
     inner.style.cssText = `
       display:flex;align-items:center;gap:12px;width:100%;
-      background:${isActive ? 'rgba(245,200,66,0.08)' : 'rgba(255,255,255,0.03)'};
-      border:1.5px solid ${isActive ? 'rgba(245,200,66,0.4)' : 'rgba(255,255,255,0.07)'};
-      border-radius:14px;padding:12px 16px;cursor:pointer;
-      transition:all .4s ease;`;
+      background:${isActive?'rgba(245,200,66,0.08)':'rgba(255,255,255,0.025)'};
+      border:1.5px solid ${isActive?'rgba(245,200,66,0.45)':'rgba(255,255,255,0.06)'};
+      border-radius:14px;padding:10px 14px;cursor:${isActive?'pointer':'default'};
+      transition:all .35s ease;min-height:54px;box-sizing:border-box;`;
     inner.innerHTML = `
-      <div style="font-size:26px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));opacity:${isActive?1:0.3};transition:opacity .4s">${s.icon}</div>
-      <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,${isActive?'0.9':'0.25'});transition:color .4s;flex:1">${s.label}</div>
-      ${isActive ? `<div style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);white-space:nowrap;letter-spacing:1px">Tap →</div>` : ''}`;
-    inner.onclick = () => activateStep(i);
-    div.appendChild(inner);
-    if (i < steps.length - 1) {
+      <div style="flex-shrink:0;opacity:${isActive?1:0.25};transition:opacity .4s;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))">${s.icon}</div>
+      <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,${isActive?'0.9':'0.2'});transition:color .4s;flex:1;line-height:1.4">${s.label}</div>
+      ${isActive?`<div id="wf2t-${i}" style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);white-space:nowrap;letter-spacing:1px;flex-shrink:0">Tap →</div>`:''}`;
+    inner.onclick = () => activateWaterStep(i);
+
+    // Connector line
+    if (i < steps.length-1) {
       const conn = document.createElement('div');
-      conn.id = `wfc-${i}`;
-      conn.style.cssText = `width:2px;height:16px;background:linear-gradient(180deg,${s.clr},transparent);opacity:0;transition:opacity .5s .3s;margin:2px 0`;
-      div.appendChild(conn);
+      conn.id = `wf2c-${i}`;
+      conn.style.cssText = `width:2px;height:14px;background:linear-gradient(180deg,${s.clr},rgba(255,255,255,.05));opacity:0;transition:opacity .5s .2s;margin:1px 0`;
+      outer.appendChild(inner);
+      outer.appendChild(conn);
+    } else {
+      outer.appendChild(inner);
     }
-    return div;
+    return outer;
   }
 
-  function activateStep(i) {
+  function activateWaterStep(i) {
     if (i !== active) return;
-    // Light up current step fully
-    const inner = document.getElementById(`wfi-${i}`);
+    const inner = document.getElementById(`wf2i-${i}`);
     if (inner) {
-      inner.style.background = 'rgba(245,200,66,0.14)';
-      inner.style.borderColor = 'rgba(245,200,66,0.55)';
+      inner.style.background = 'rgba(245,200,66,0.15)';
+      inner.style.borderColor = 'rgba(245,200,66,0.6)';
       inner.style.cursor = 'default';
-      // Remove tap prompt
-      const tap = inner.querySelector('div:last-child');
-      if (tap && tap.style.letterSpacing) tap.style.opacity = '0';
+      const tap = document.getElementById(`wf2t-${i}`);
+      if (tap) tap.style.display = 'none';
+      inner.querySelector('div:first-child').style.opacity = '1';
     }
-    const conn = document.getElementById(`wfc-${i}`);
+    const conn = document.getElementById(`wf2c-${i}`);
     if (conn) conn.style.opacity = '1';
     active++;
     if (active < steps.length) {
-      // Activate next step visually
-      const nextInner = document.getElementById(`wfi-${active}`);
+      const nextInner = document.getElementById(`wf2i-${active}`);
       if (nextInner) {
         nextInner.style.background = 'rgba(245,200,66,0.06)';
         nextInner.style.borderColor = 'rgba(245,200,66,0.3)';
+        nextInner.style.cursor = 'pointer';
         nextInner.querySelector('div:first-child').style.opacity = '1';
         nextInner.querySelector('div:nth-child(2)').style.color = 'rgba(253,246,227,0.85)';
-        // Add tap prompt
-        const prompt = document.createElement('div');
-        prompt.style.cssText = 'font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);white-space:nowrap;letter-spacing:1px';
-        prompt.textContent = 'Tap →';
-        nextInner.appendChild(prompt);
+        const tap = document.createElement('div');
+        tap.id = `wf2t-${active}`;
+        tap.style.cssText = 'font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);white-space:nowrap;letter-spacing:1px;flex-shrink:0';
+        tap.textContent = 'Tap →';
+        nextInner.appendChild(tap);
       }
     }
     if (active >= steps.length) {
-      const rev = document.getElementById('wflow-reveal');
+      const rev = document.getElementById('wflow2-reveal');
       if (rev) rev.style.opacity = '1';
     }
   }
 
-  steps.forEach((_, i) => chain.appendChild(buildStep(i, i === 0)));
+  steps.forEach((_, i) => chain.appendChild(makeStep(i, i === 0)));
 }
 
-// ─── 5. TASTE TESTER ──────────────────────────────────────────
+
+// ─── 5. TASTE TESTER ────────────────────────────────────────
 function wonderTasteTester(el) {
   const fruits = [
-    {e:'🌴', n:'Date', bg:'linear-gradient(160deg,#2a1808,#140c04)', f:'Dates have 77 nutrients. The Prophet ﷺ ate 3 every morning. Perfection in every seed.'},
-    {e:'🍎', n:'Pomegranate', bg:'linear-gradient(160deg,#3a0812,#180406)', f:'Up to 1,400 seeds — each one by Allah\'s precise design.'},
-    {e:'🍯', n:'Honey', bg:'linear-gradient(160deg,#3a2800,#180e00)', f:'Never expires. 3,000-year-old honey was found still perfect.'},
-    {e:'🍋', n:'Lemon', bg:'linear-gradient(160deg,#2c2c00,#0e0e00)', f:'Vitamin C in a golden ball. Bright, sharp, preserving — all at once.'},
-    {e:'🌿', n:'Fig', bg:'linear-gradient(160deg,#14200a,#080e04)', f:'Allah swears by the fig in the Quran. One of the few fruits eaten whole.'},
-    {e:'🫐', n:'Grape', bg:'linear-gradient(160deg,#14083a,#080418)', f:'One vine can fruit for 100+ years. Patience built into the plant.'},
+    {e:'🌴', n:'Date', bg:'linear-gradient(155deg,#2e1a0a,#160c04)', acc:'#c87830', f:'77 nutrients. The Prophet ﷺ ate 3 every morning. Perfection in every seed.'},
+    {e:'🍎', n:'Pomegranate', bg:'linear-gradient(155deg,#3e0a14,#1a0408)', acc:'#e05060', f:'Up to 1,400 seeds — each one by Allah\'s precise design.'},
+    {e:'🍯', n:'Honey', bg:'linear-gradient(155deg,#3c2a00,#160e00)', acc:'#d4a030', f:'Never expires. 3,000-year-old honey found perfectly preserved.'},
+    {e:'🍋', n:'Lemon', bg:'linear-gradient(155deg,#2c2a00,#100e00)', acc:'#d8d040', f:'Bright, sharp, preserving — all at once, in one small golden ball.'},
+    {e:'🌿', n:'Fig', bg:'linear-gradient(155deg,#142008,#080e04)', acc:'#70c050', f:'Allah swears by the fig in the Quran. Eaten whole — skin, seed, all.'},
+    {e:'🫐', n:'Grape', bg:'linear-gradient(155deg,#14083c,#080418)', acc:'#9060e0', f:'One vine can fruit for 100+ years. Patience built into the plant itself.'},
   ];
   let flipped = 0;
 
   el.innerHTML = `
-    <div style="background:linear-gradient(180deg,#030610,#08101a);padding:16px 14px 18px">
-      <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:6px">✦ Taste Tester</div>
-      <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,.6);font-style:italic;text-align:center;margin-bottom:14px">Flip each card — discover what Allah designed</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="fruit-cards"></div>
-      <div id="fruit-final" style="text-align:center;padding:14px 0 4px;font-family:var(--body);font-size:14px;color:rgba(253,246,227,.8);font-style:italic;opacity:0;transition:opacity 1s ease;line-height:1.6">
-        He didn't have to make food taste this good.<br><span style="color:var(--gold)">He did it because He loves you. 💛</span>
+    <div style="background:linear-gradient(180deg,#030610,#06101a);padding:16px 12px 18px">
+      <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:5px">✦ Taste Tester</div>
+      <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);font-style:italic;text-align:center;margin-bottom:14px">Flip each card — discover what Allah designed</div>
+      <div id="tt-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+      <div id="tt-final" style="text-align:center;padding:14px 0 2px;font-family:var(--body);font-size:13px;color:rgba(253,246,227,.8);font-style:italic;opacity:0;transition:opacity 1s ease;line-height:1.65">
+        He didn't have to make food taste this good.<br><span style="color:var(--gold);font-weight:600">He did it because He loves you. 💛</span>
       </div>
     </div>`;
 
-  const grid = document.getElementById('fruit-cards');
-  fruits.forEach((f, i) => {
+  const grid = document.getElementById('tt-grid');
+  fruits.forEach((f) => {
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'perspective:600px;cursor:pointer';
+    wrap.style.cssText = 'perspective:700px;cursor:pointer';
+
     const card = document.createElement('div');
     card.style.cssText = `
-      position:relative;height:130px;transform-style:preserve-3d;
-      transition:transform .65s cubic-bezier(.23,1,.32,1);`;
-    // Front
+      position:relative;height:150px;transform-style:preserve-3d;
+      transition:transform .7s cubic-bezier(.23,1,.32,1);`;
+
+    // Front — dark with question mark
     const front = document.createElement('div');
     front.style.cssText = `
-      position:absolute;inset:0;backface-visibility:hidden;
-      border-radius:16px;border:1px solid rgba(245,200,66,.18);
-      background:linear-gradient(160deg,rgba(18,28,52,.95),rgba(8,14,28,.98));
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px`;
+      position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;
+      background:linear-gradient(155deg,rgba(16,24,48,.97),rgba(8,12,26,.99));
+      border:1px solid rgba(245,200,66,.15);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+      overflow:hidden;`;
     front.innerHTML = `
-      <div style="font-size:26px;opacity:.35">❓</div>
-      <div style="font-family:var(--ui);font-size:9px;color:rgba(245,200,66,.35);letter-spacing:1.5px;text-transform:uppercase">Tap to flip</div>`;
-    // Back
+      <div style="font-size:28px;opacity:.25">❓</div>
+      <div style="font-family:var(--ui);font-size:9px;color:rgba(245,200,66,.3);letter-spacing:1.5px;text-transform:uppercase">Tap to flip</div>`;
+
+    // Back — rich coloured with contained text
     const back = document.createElement('div');
     back.style.cssText = `
       position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);
-      border-radius:16px;border:1px solid rgba(245,200,66,.3);
-      background:${f.bg};overflow:hidden;
-      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:10px 8px`;
+      border-radius:14px;background:${f.bg};
+      border:1px solid ${f.acc}44;overflow:hidden;
+      display:flex;flex-direction:column;align-items:center;padding:10px 8px 8px;`;
+
+    // Glow accent at top
     back.innerHTML = `
-      <div style="font-size:30px;margin-bottom:5px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6))">${f.e}</div>
-      <div style="font-family:var(--display);font-size:11px;color:var(--gold);letter-spacing:.5px;margin-bottom:5px;text-align:center">${f.n}</div>
-      <div style="font-family:var(--body);font-size:10.5px;color:rgba(253,246,227,.75);text-align:center;line-height:1.5;overflow:hidden">${f.f}</div>`;
-    card.appendChild(front); card.appendChild(back);
+      <div style="position:absolute;top:0;left:0;right:0;height:40%;background:radial-gradient(ellipse at 50% 0%,${f.acc}22,transparent);pointer-events:none"></div>
+      <div style="font-size:28px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6));position:relative;z-index:1;flex-shrink:0">${f.e}</div>
+      <div style="font-family:var(--display);font-size:11px;color:${f.acc};letter-spacing:.5px;margin:5px 0 4px;position:relative;z-index:1;flex-shrink:0;text-align:center">${f.n}</div>
+      <div style="font-family:var(--body);font-size:10px;color:rgba(253,246,227,.78);text-align:center;line-height:1.5;position:relative;z-index:1;overflow:hidden;flex:1;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${f.f}</div>`;
+
+    card.appendChild(front);
+    card.appendChild(back);
     card.onclick = () => {
       if (!card.dataset.flipped) {
         card.style.transform = 'rotateY(180deg)';
         card.dataset.flipped = '1';
         flipped++;
         if (flipped >= fruits.length) {
-          const fin = document.getElementById('fruit-final');
+          const fin = document.getElementById('tt-final');
           if (fin) fin.style.opacity = '1';
         }
       }
@@ -5033,12 +5137,13 @@ function wonderTasteTester(el) {
   });
 }
 
+
 // ─── 6. STAR GAZER ────────────────────────────────────────────
 function wonderStarGazer(el) {
   const starFacts = [
     {x:22, y:28, name:'Betelgeuse', fact:'700× bigger than our sun. Replacing our sun, it would swallow Jupiter.', side:'right'},
     {x:68, y:18, name:'Sirius', fact:'Brightest star we can see — 25× more luminous than our sun.', side:'left'},
-    {x:42, y:52, name:'Polaris', fact:'The North Star — Allah\'s compass in the sky for thousands of years.', side:'right'},
+    {x:42, y:52, name:'Polaris', fact:'The North Star — placed by Allah to guide travellers home for thousands of years.', side:'right'},
     {x:75, y:58, name:'Andromeda', fact:'A whole galaxy — 2.5 million light years away, 1 trillion stars.', side:'left'},
     {x:18, y:65, name:'Pleiades', fact:'Mentioned in the Quran (An-Najm). Recognised by civilisations worldwide.', side:'right'},
   ];
@@ -5177,6 +5282,56 @@ function buildSceneBottomBtn(sc, alreadyDone) {
   return `<button class="btn btn-green btn-full" onclick="exitScene()" style="font-size:15px;padding:16px">
     ✓ All Scenes Done — Continue →
   </button>`;
+}
+
+async function testImageLoad() {
+  const worldId = parseInt(document.getElementById('adm-world')?.value);
+  const sceneId = parseInt(document.getElementById('adm-scene')?.value);
+  const resultEl = document.getElementById('adm-test-result');
+  if (!resultEl) return;
+  resultEl.style.display = 'block';
+
+  if (!worldId || !sceneId) {
+    resultEl.innerHTML = '<span style="color:#f87171">❌ Select a world and scene first</span>';
+    return;
+  }
+
+  resultEl.innerHTML = '<span style="color:rgba(245,200,66,.6)">Querying database...</span>';
+
+  try {
+    // 1. Raw query — show everything
+    const prefix = `w${worldId}_s${sceneId}_`;
+    const {data, error} = await sb.from('admin_assets').select('*').like('tag', prefix + '%');
+
+    if (error) {
+      resultEl.innerHTML = `<span style="color:#f87171">❌ DB error: ${error.message}</span>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      // Try without LIKE to see what IS in the table
+      const {data: all} = await sb.from('admin_assets').select('tag,url,public_url').limit(10);
+      const tags = all?.map(r => r.tag).join(', ') || 'empty table';
+      resultEl.innerHTML = `
+        <span style="color:#f87171">❌ No rows found for tag prefix: "${prefix}%"</span><br>
+        <span style="color:rgba(253,246,227,.5)">Tags in table: ${tags}</span>`;
+      return;
+    }
+
+    // Show what was found
+    let html = `<span style="color:#34d399">✅ Found ${data.length} row(s):</span><br>`;
+    data.forEach(r => {
+      const url = r.url || r.public_url;
+      html += `<span style="color:rgba(253,246,227,.7)">tag: <b style="color:var(--gold)">${r.tag}</b></span><br>`;
+      html += `<span style="color:rgba(253,246,227,.5)">url: ${url ? '✅ present' : '❌ MISSING'}</span><br>`;
+      if (url) html += `<a href="${url}" target="_blank" style="color:#60a0ff;font-size:11px">Open image ↗</a><br>`;
+      html += '<br>';
+    });
+    resultEl.innerHTML = html;
+
+  } catch(e) {
+    resultEl.innerHTML = `<span style="color:#f87171">❌ Exception: ${e.message}</span>`;
+  }
 }
 </script>  <!-- Floating home button — shown on inner screens -->
   <button class="home-fab" id="home-fab" onclick="goHome()" title="Home">⌂</button>
