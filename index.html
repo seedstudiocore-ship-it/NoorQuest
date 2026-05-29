@@ -531,6 +531,84 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 .home-fab:active { transform:scale(.92); }
 .home-fab:hover { background:rgba(20,30,55,.95); border-color:rgba(245,200,66,.4); color:var(--gold); }
 
+
+/* ═══════════════════════════════════════
+   WONDER SECTIONS — Cinematic Interactive
+═══════════════════════════════════════ */
+.wonder-wrap {
+  position:relative; width:100%; overflow:hidden;
+  background:var(--navy); border-top:1px solid rgba(245,200,66,.1);
+}
+.wonder-canvas {
+  width:100%; display:block; touch-action:none; cursor:crosshair;
+  position:relative; z-index:1;
+}
+.wonder-label {
+  font-family:var(--display); font-size:10px; color:rgba(245,200,66,.4);
+  letter-spacing:3px; text-transform:uppercase; text-align:center;
+  padding:14px 0 8px; position:relative; z-index:2;
+}
+.wonder-prompt {
+  font-family:var(--body); font-size:15px; color:rgba(253,246,227,.65);
+  text-align:center; padding:0 24px 16px; font-style:italic; line-height:1.7;
+  position:relative; z-index:2;
+}
+.wonder-reveal {
+  font-family:var(--display); font-size:14px; color:var(--gold);
+  text-align:center; padding:14px 24px; line-height:1.6; opacity:0;
+  transition:opacity .8s ease; position:relative; z-index:2;
+  text-shadow:0 0 20px rgba(245,200,66,.4);
+}
+.wonder-reveal.show { opacity:1 }
+.wonder-counter {
+  font-family:var(--display); font-size:13px; color:rgba(245,200,66,.6);
+  text-align:center; padding:8px 0 14px; position:relative; z-index:2;
+  letter-spacing:1px;
+}
+/* Fruit cards */
+.fruit-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px 16px 8px }
+.fruit-card {
+  aspect-ratio:1; border-radius:18px; position:relative;
+  cursor:pointer; transform-style:preserve-3d; transition:transform .6s cubic-bezier(.23,1,.32,1);
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+.fruit-card.flipped { transform:rotateY(180deg) }
+.fruit-front, .fruit-back {
+  position:absolute; inset:0; border-radius:18px;
+  backface-visibility:hidden; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; padding:12px;
+}
+.fruit-front {
+  background:linear-gradient(135deg,rgba(22,40,70,.95),rgba(10,18,36,.98));
+  border:1px solid rgba(245,200,66,.15);
+}
+.fruit-back { transform:rotateY(180deg); border:1px solid rgba(245,200,66,.35) }
+.fruit-question { font-size:28px; margin-bottom:6px }
+.fruit-hint { font-family:var(--ui); font-size:10px; color:rgba(245,200,66,.4); letter-spacing:1.5px; text-transform:uppercase }
+.fruit-emoji { font-size:36px; margin-bottom:8px; filter:drop-shadow(0 4px 12px rgba(0,0,0,.4)) }
+.fruit-name { font-family:var(--display); font-size:13px; color:var(--gold); margin-bottom:4px }
+.fruit-fact { font-family:var(--body); font-size:11px; color:rgba(253,246,227,.7); text-align:center; line-height:1.5 }
+/* Water flow */
+.water-step {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  opacity:.25; transition:all .5s ease; cursor:pointer;
+}
+.water-step.active { opacity:1 }
+.water-step.done { opacity:.7 }
+.water-icon { font-size:32px; filter:drop-shadow(0 4px 12px rgba(100,180,255,.4)) }
+.water-label { font-family:var(--ui); font-size:11px; color:rgba(253,246,227,.7); text-align:center; letter-spacing:.5px }
+.water-arrow { font-size:18px; color:rgba(100,180,255,.4); margin:2px 0 }
+/* Star field */
+.star-field-wrap { position:relative; overflow:hidden }
+.star-tap { position:absolute; cursor:pointer; transition:all .3s }
+.star-tap.revealed .star-fact {
+  background:rgba(10,18,36,.92); border:1px solid rgba(245,200,66,.3);
+  border-radius:10px; padding:8px 10px;
+  font-family:var(--body); font-size:11px; color:var(--cream2); line-height:1.5;
+  position:absolute; width:160px; z-index:10; bottom:120%; left:50%; transform:translateX(-50%);
+  box-shadow:0 8px 24px rgba(0,0,0,.6); backdrop-filter:blur(8px);
+}
+
 </style>
 </head>
 <body>
@@ -906,9 +984,7 @@ const W1 = {
      A:'"Whoa." Zain stops walking so suddenly that Nura bumps right into him. Then she sees it too — and her mouth drops open.',
      B:"A whole golden valley stretches out below them, so wide they can't see the end. The sun is just waking up, painting everything orange and pink and gold. It's like someone tipped a jar of glitter over the whole world.",
      C:'"It\'s not even on the map," Zain whispers. Nura lifts her lantern — but then laughs. "My lantern is so tiny," she giggles. "And Allah\'s lamp up there is..." She looks at the rising sun. "Just a little bit bigger." They both giggle. And then they go quiet. Because WOW.',
-     ix:{type:'REVEAL', items:[
-       {l:'An-Nur — The Light', c:"Allah is An-Nur — the Light. He made the sun, the stars, and every ray of light in this world. And He also puts a special kind of light inside the hearts of those who believe in Him."}
-     ]},
+     ix:{type:'WONDER', wonder:'light_painter'},
      lesson:"Allah is An-Nur — the Light. He made the sun, the stars, and every ray of light in this world. And He also puts a special kind of light inside the hearts of those who believe in Him.",
      dua:{ar:"سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", lat:"Subhaan Allaahi wa bihamdihi", en:"Glory be to Allah, and all praise belongs to Him"},
      ha:5},
@@ -917,9 +993,7 @@ const W1 = {
      A:"Zain tilts his head ALL the way back. Nura tilts hers back too. They stare up at the sky together — just blue, stretching forever in every direction.",
      B:'"Okay," Zain says slowly, "but what\'s HOLDING it up?" Nura squints hard, like she\'s looking for the ropes. "There\'s no rope," she says. "No poles. Nothing." She spins around checking. "It just... STAYS there."',
      C:'Zain sits down on the grass and keeps staring up. "Allah holds it," he says quietly. "Without anything." He thinks about that. That\'s not normal. That\'s extraordinary. That\'s... Allah.',
-     ix:{type:'REVEAL', items:[
-       {l:"No pillars, no ropes", c:"Allah holds the sky up without any pillars or ropes — and He's been doing it since forever! He keeps everything in the whole universe in its exact right place. Not one star ever drifts away without His permission."}
-     ]},
+     ix:{type:'WONDER', wonder:'sky_pillars'},
      lesson:"Allah holds the sky up without any pillars or ropes — and He's been doing it since forever! He keeps everything in the whole universe in its exact right place. Not one star ever drifts away without His permission.",
      dua:{ar:"رَبَّنَا مَا خَلَقْتَ هَٰذَا بَاطِلًا", lat:"Rabbanaa maa khalaqta haadha baatilaa", en:"Our Lord, You did not create all of this without a purpose"},
      ha:5},
@@ -928,9 +1002,7 @@ const W1 = {
      A:'Zain picks something up off the ground. He holds it up to the light. It\'s so small it almost disappears on his fingertip. "What IS this?" he asks.',
      B:'Nura looks at it. Then she looks at the enormous oak tree next to them — the one so big that five children couldn\'t hold hands around its trunk. She looks back at the seed. Then back at the tree. "Zain," she says very carefully, "I think... that tree started as something like THAT."',
      C:'Zain stares at the seed. Then at the tree. Then at the seed again. "No," he says. "NO." He starts laughing. "That\'s IMPOSSIBLE." Nura grins. "And yet... here\'s the tree."',
-     ix:{type:'REVEAL', items:[
-       {l:"The impossible seed", c:"Inside every single tiny seed, Allah placed His command to grow. He packed an entire forest inside something you can barely see! That's how powerful He is — He makes the impossible normal."}
-     ]},
+     ix:{type:'WONDER', wonder:'grow_seed'},
      lesson:"Inside every single tiny seed, Allah placed His command to grow. He packed an entire forest inside something you can barely see! That's how powerful He is — He makes the impossible normal.",
      dua:{ar:"اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا", lat:"Allaahumma innee as'aluka 'ilman naafi'aa", en:"O Allah, I ask You for knowledge that is truly useful"},
      ha:5},
@@ -939,9 +1011,7 @@ const W1 = {
      A:"They follow a sound through the trees — and find the most beautiful river. Crystal clear, cold, sparkly. Cows are drinking peacefully downstream. Silver fish dart around near Nura's feet. A bee buzzes past, heading somewhere important.",
      B:'Zain fills his water bottle and holds it up to the sun. It glitters like a tiny rainbow. "Wait," he says, working something out in his head. "This water came from the sky... then filled the river... then the cows drink it... then the fish live in it... then it waters the trees..." He looks at Nura. "Allah planned ALL of that. With just... water."',
      C:'"Don\'t forget the bees," Nura says without looking up. She is already writing it all down in her journal.',
-     ix:{type:'REVEAL', items:[
-       {l:"One gift, a thousand blessings", c:"Allah arranged EVERYTHING with water — it falls from the sky, fills rivers, feeds fish, nourishes cows who give us milk, and grows every tree that gives us fruit. One amazing gift, a thousand amazing blessings!"}
-     ]},
+     ix:{type:'WONDER', wonder:'water_flow'},
      lesson:"Allah arranged EVERYTHING with water — it falls from the sky, fills rivers, feeds fish, nourishes cows who give us milk, and grows every tree that gives us fruit. One amazing gift, a thousand amazing blessings!",
      dua:{ar:"اللَّهُمَّ بَارِكْ لَنَا فِيمَا رَزَقْتَنَا", lat:"Allaahumma baarik lanaa feemaa razaqtanaa", en:"O Allah, bless us in all that You have given us"},
      ha:5},
@@ -950,9 +1020,7 @@ const W1 = {
      A:"Past the river, they find the orchard. Date palms. Pomegranate trees. Fig trees. A beehive buzzing in the branches. Everything dripping with fruit.",
      B:'Zain reaches up and touches a fat, warm date. He pops it in his mouth. His eyes go wide. "That is — WOW." Nura is already tasting a pomegranate seed. "Crunchy AND sweet," she says, amazed. "How does it do BOTH?"',
      C:'"Allah didn\'t HAVE to make food taste good," Zain says suddenly. "He could have just made it... fuel." Nura looks at her pomegranate. "He made it delicious because He loves us," she says quietly. That feels like a really important thing to understand.',
-     ix:{type:'REVEAL', items:[
-       {l:"Delicious on purpose", c:"Allah made hundreds of different fruits — all different colours, tastes and smells — when He could have just given us plain fuel to survive. He made food DELICIOUS because He loves us and wants us to enjoy this world."}
-     ]},
+     ix:{type:'WONDER', wonder:'taste_tester'},
      lesson:"Allah made hundreds of different fruits — all different colours, tastes and smells — when He could have just given us plain fuel to survive. He made food DELICIOUS because He loves us and wants us to enjoy this world.",
      dua:{ar:"الحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنَا وَسَقَانَا", lat:"Alhamdu lillaahil-ladhee at'amanaa wa saqaanaa", en:"All praise to Allah who fed us and gave us drink"},
      ha:5},
@@ -961,9 +1029,7 @@ const W1 = {
      A:"The sun goes down, and the stars come out — first one, then ten, then a MILLION. Zain and Nura sit on two separate rocks on the hilltop and just... look.",
      B:'"Each one," Zain says slowly, "is its own sun. Some are BIGGER than our sun." He lets that sink in. There are a million suns above him right now, so far away they look like tiny dots. Nura holds up her lantern next to the sky and grins. "My lantern," she says, "versus... that." They both laugh. Then go quiet again.',
      C:"This quiet moment — sitting still, looking at Allah's creation, and just THINKING about who made all of this — this feeling has a name. It's called tafakkur. And the Prophet ﷺ said one hour of tafakkur can be worth more than a whole night of worship. Zain and Nura didn't know that. But they were already doing it.",
-     ix:{type:'REVEAL', items:[
-       {l:"Tafakkur تَفَكُّر", c:"Looking at Allah's creation and thinking deeply about who made it — this is called tafakkur. The Prophet ﷺ taught us that deep reflection on Allah's signs is one of the most powerful forms of worship. You don't need to move a single muscle — just think, and notice, and wonder."}
-     ]},
+     ix:{type:'WONDER', wonder:'star_gazer'},
      lesson:"Looking at Allah's creation and thinking deeply about who made it — this is called tafakkur (تَفَكُّر). The Prophet ﷺ taught us that deep reflection on Allah's signs is one of the most powerful forms of worship. You don't need to move a single muscle — just think, and notice, and wonder.",
      dua:{ar:"اللَّهُمَّ لَكَ الحَمْدُ أَنْتَ نُورُ السَّمَاوَاتِ وَالأَرْضِ", lat:"Allaahumma lakal-hamdu anta noorus-samaawaati wal-ard", en:"O Allah, all praise is Yours — You are the Light of the heavens and the earth"},
      ha:5}
@@ -4270,6 +4336,614 @@ function goHome() {
     SS('s-splash');
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// WONDER INTERACTIONS — World 1 Cinematic Explorations
+// ═══════════════════════════════════════════════════════════════
+function renderWONDER(container, ix, assets) {
+  container.style.background = 'transparent';
+  container.style.borderTop = 'none';
+  container.style.margin = '0';
+  switch(ix.wonder) {
+    case 'light_painter': wonderLightPainter(container); break;
+    case 'sky_pillars':   wonderSkyPillars(container);   break;
+    case 'grow_seed':     wonderGrowSeed(container);     break;
+    case 'water_flow':    wonderWaterFlow(container);     break;
+    case 'taste_tester':  wonderTasteTester(container);  break;
+    case 'star_gazer':    wonderStarGazer(container);    break;
+    default: container.style.display = 'none';
+  }
+}
+
+// ─── 1. LIGHT PAINTER ────────────────────────────────────────
+function wonderLightPainter(el) {
+  el.innerHTML = `
+    <div class="wonder-wrap" style="height:280px">
+      <canvas id="light-canvas" class="wonder-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:20px;pointer-events:none;z-index:3">
+        <div class="wonder-label">✦ Light Painter</div>
+        <div class="wonder-prompt" style="padding:0 24px 4px">Tap anywhere to paint Allah's light</div>
+        <div id="lp-counter" class="wonder-counter">0 sparks lit</div>
+        <div id="lp-reveal" class="wonder-reveal">An-Nur — اَلنُّوْرُ — The Light</div>
+      </div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    const canvas = document.getElementById('light-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    let sparks = 0;
+    const maxSparks = 18;
+    const particles = [];
+
+    // Animate background glow
+    let bgLight = 0;
+    function drawBg() {
+      const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0,
+        canvas.width/2, canvas.height/2, canvas.width * 0.8);
+      const alpha = Math.min(bgLight / maxSparks, 1);
+      grad.addColorStop(0, `rgba(245,190,50,${alpha * 0.18})`);
+      grad.addColorStop(0.5, `rgba(20,40,90,${0.7 - alpha * 0.5})`);
+      grad.addColorStop(1, `rgba(10,14,26,0.95)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function addParticle(x, y) {
+      const count = 14 + Math.floor(Math.random() * 8);
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+        const speed = 1.5 + Math.random() * 3.5;
+        const size = 1.5 + Math.random() * 3;
+        const hue = 35 + Math.random() * 25;
+        particles.push({
+          x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+          life: 1, decay: 0.015 + Math.random() * 0.015,
+          size, hue, trail: [{x, y}]
+        });
+      }
+      // Central burst
+      particles.push({x, y, vx:0, vy:0, life:1, decay:0.008, size:18+Math.random()*14,
+        hue:45, burst:true, trail:[]});
+    }
+
+    function drawParticles() {
+      particles.forEach((p, i) => {
+        if (p.burst) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
+          const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*p.life);
+          g.addColorStop(0, `hsla(${p.hue},100%,80%,${p.life * 0.7})`);
+          g.addColorStop(0.5, `hsla(${p.hue},90%,60%,${p.life * 0.3})`);
+          g.addColorStop(1, `hsla(${p.hue},90%,50%,0)`);
+          ctx.fillStyle = g;
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
+          ctx.fillStyle = `hsla(${p.hue},95%,75%,${p.life})`;
+          ctx.fill();
+          // Tail
+          if (p.trail.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(p.trail[0].x, p.trail[0].y);
+            p.trail.forEach(t => ctx.lineTo(t.x, t.y));
+            ctx.strokeStyle = `hsla(${p.hue},90%,70%,${p.life * 0.3})`;
+            ctx.lineWidth = p.size * 0.5;
+            ctx.stroke();
+          }
+        }
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.04;
+        p.vx *= 0.98;
+        p.life -= p.decay;
+        if (!p.burst) p.trail.push({x:p.x,y:p.y});
+        if (p.trail.length > 8) p.trail.shift();
+      });
+      for (let i = particles.length-1; i >= 0; i--) {
+        if (particles[i].life <= 0) particles.splice(i,1);
+      }
+    }
+
+    function loop() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      drawBg();
+      drawParticles();
+      requestAnimationFrame(loop);
+    }
+    loop();
+
+    function onTap(e) {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches ? e.touches[0] : e;
+      const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+      addParticle(x, y);
+      sparks++;
+      bgLight = sparks;
+      const counterEl = document.getElementById('lp-counter');
+      if (counterEl) {
+        counterEl.textContent = sparks === 1 ? '1 spark lit' : `${sparks} sparks lit`;
+      }
+      if (sparks >= maxSparks) {
+        const rev = document.getElementById('lp-reveal');
+        if (rev) rev.classList.add('show');
+      }
+    }
+
+    canvas.addEventListener('click', onTap);
+    canvas.addEventListener('touchstart', onTap, {passive:false});
+  });
+}
+
+// ─── 2. SKY PILLARS ──────────────────────────────────────────
+function wonderSkyPillars(el) {
+  const items = [
+    {x:15, y:25, label:'Clouds?', resp:'Not clouds...'},
+    {x:45, y:40, label:'Wind?', resp:'Not wind...'},
+    {x:70, y:20, label:'Stars?', resp:'Not stars...'},
+    {x:30, y:55, label:'Air?', resp:'Not air...'},
+    {x:60, y:50, label:'Nothing?', resp:'Yes. Nothing at all. Allah holds it.', final:true},
+  ];
+  let found = 0;
+
+  el.innerHTML = `
+    <div class="wonder-wrap" style="height:300px;position:relative;overflow:hidden">
+      <canvas id="sky-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+      <div style="position:absolute;inset:0;z-index:3;pointer-events:none">
+        <div class="wonder-label">✦ Find the Pillars</div>
+        <div class="wonder-prompt">What holds up the sky? Tap around to find out.</div>
+      </div>
+      <div id="sky-hotspots" style="position:absolute;inset:0;z-index:4"></div>
+      <div id="sky-reveal" class="wonder-reveal" style="position:absolute;bottom:16px;left:0;right:0;z-index:5;font-size:16px">
+        Nothing. Allah holds it. No support needed.
+      </div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    // Draw animated sky on canvas
+    const canvas = document.getElementById('sky-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    const W = canvas.width, H = canvas.height;
+
+    const clouds = Array.from({length:6}, (_, i) => ({
+      x: Math.random()*W, y: 30 + Math.random()*80,
+      w: 60 + Math.random()*80, speed: 0.2 + Math.random()*0.3,
+      alpha: 0.06 + Math.random()*0.1
+    }));
+    const stars2 = Array.from({length:40}, () => ({
+      x: Math.random()*W, y: Math.random()*H*0.5,
+      r: 0.5+Math.random()*1.5, a: Math.random()
+    }));
+
+    function drawSky() {
+      const grad = ctx.createLinearGradient(0,0,0,H);
+      grad.addColorStop(0,'#06091a');
+      grad.addColorStop(0.4,'#0d1830');
+      grad.addColorStop(1,'#162040');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,W,H);
+
+      stars2.forEach(s => {
+        s.a = 0.3 + 0.7*Math.abs(Math.sin(Date.now()/1500 + s.x));
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${s.a})`;
+        ctx.fill();
+      });
+
+      clouds.forEach(c => {
+        c.x = (c.x + c.speed) % (W + c.w);
+        ctx.save();
+        ctx.globalAlpha = c.alpha;
+        const cg = ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.w/2);
+        cg.addColorStop(0,'rgba(255,255,255,1)');
+        cg.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.fillStyle=cg;
+        ctx.beginPath();
+        ctx.ellipse(c.x,c.y,c.w/2,c.w/4,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      });
+      requestAnimationFrame(drawSky);
+    }
+    drawSky();
+
+    // Add hotspot buttons
+    const hotspotWrap = document.getElementById('sky-hotspots');
+    if (!hotspotWrap) return;
+    items.forEach((item, idx) => {
+      const btn = document.createElement('button');
+      btn.style.cssText = `position:absolute;left:${item.x}%;top:${item.y}%;
+        transform:translate(-50%,-50%);
+        background:rgba(245,200,66,0.12);border:1.5px solid rgba(245,200,66,0.3);
+        border-radius:50px;padding:7px 14px;font-family:var(--display);font-size:11px;
+        color:rgba(245,200,66,0.8);cursor:pointer;letter-spacing:1px;
+        backdrop-filter:blur(4px);transition:all .3s;white-space:nowrap`;
+      btn.textContent = item.label;
+      btn.onclick = () => {
+        btn.style.background = 'rgba(245,200,66,0.06)';
+        btn.style.color = 'rgba(245,200,66,0.4)';
+        btn.textContent = item.resp;
+        btn.style.fontSize = '10px';
+        btn.disabled = true;
+        if (item.final) {
+          btn.style.background = 'rgba(245,200,66,0.25)';
+          btn.style.color = 'var(--gold)';
+          btn.style.border = '1.5px solid rgba(245,200,66,0.7)';
+          const rev = document.getElementById('sky-reveal');
+          if (rev) rev.classList.add('show');
+        }
+      };
+      hotspotWrap.appendChild(btn);
+    });
+  });
+}
+
+// ─── 3. GROW SEED ────────────────────────────────────────────
+function wonderGrowSeed(el) {
+  const stages = [
+    {label:'Seed', desc:'Tap to plant...'},
+    {label:'Sprout', desc:"Something's happening..."},
+    {label:'Sapling', desc:'Growing...'},
+    {label:'Young tree', desc:'It knows what to do...'},
+    {label:'Oak tree', desc:"It's enormous!"},
+    {label:'Ancient oak', desc:'All from that tiny seed — Allahu Akbar!'}
+  ];
+  let stage = 0;
+
+  el.innerHTML = `
+    <div class="wonder-wrap" style="height:320px;position:relative;overflow:hidden;cursor:pointer" onclick="growNextStage()">
+      <canvas id="grow-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:16px">
+        <div class="wonder-label">✦ Grow It</div>
+        <div id="grow-stage" class="wonder-counter" style="font-size:16px">Tap to plant the seed</div>
+        <div id="grow-desc" class="wonder-prompt" style="padding:4px 24px 0">One tap. One word from Allah: Be.</div>
+        <div id="grow-reveal" class="wonder-reveal">Be — كُنْ — And it is.</div>
+      </div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    const canvas = document.getElementById('grow-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    const W = canvas.width, H = canvas.height;
+
+    window.growNextStage = function() {
+      if (stage >= stages.length - 1) return;
+      stage++;
+      drawTree(stage / (stages.length - 1));
+      const stEl = document.getElementById('grow-stage');
+      const dEl = document.getElementById('grow-desc');
+      if (stEl) stEl.textContent = stages[stage].label;
+      if (dEl) dEl.textContent = stages[stage].desc;
+      if (stage === stages.length - 1) {
+        const rev = document.getElementById('grow-reveal');
+        if (rev) rev.classList.add('show');
+      }
+    };
+
+    function drawGround() {
+      const grad = ctx.createLinearGradient(0, H*0.75, 0, H);
+      grad.addColorStop(0,'rgba(30,50,20,0.9)');
+      grad.addColorStop(1,'rgba(15,25,10,0.95)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, H*0.75, W, H*0.25);
+    }
+
+    function drawTree(progress) {
+      ctx.clearRect(0,0,W,H);
+      // Sky gradient
+      const skyGrad = ctx.createLinearGradient(0,0,0,H);
+      skyGrad.addColorStop(0,'#050810');
+      skyGrad.addColorStop(0.7,'#0d1830');
+      skyGrad.addColorStop(1,'#0a120a');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0,0,W,H);
+      drawGround();
+
+      if (progress < 0.01) {
+        // Just a seed
+        ctx.beginPath();
+        ctx.ellipse(W/2, H*0.76, 6, 4, 0, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(160,120,60,0.8)';
+        ctx.fill();
+        ctx.shadowColor = 'rgba(245,200,66,0.5)';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        return;
+      }
+
+      // Draw fractal-style tree
+      ctx.save();
+      ctx.translate(W/2, H*0.75);
+      const trunkH = H * 0.55 * progress;
+      const trunkW = 4 + progress * 14;
+
+      function branch(len, angle, depth, width) {
+        if (depth === 0 || len < 4) return;
+        ctx.save();
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        ctx.lineTo(0, -len);
+        const g = ctx.createLinearGradient(0,0,0,-len);
+        const greenAlpha = Math.min(progress * 1.5, 1);
+        g.addColorStop(0, `rgba(100,70,30,${0.9})`);
+        g.addColorStop(1, `rgba(60,100,40,${greenAlpha * 0.9})`);
+        ctx.strokeStyle = g;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        ctx.translate(0,-len);
+        if (progress > 0.3) {
+          branch(len*0.67, 0.45, depth-1, width*0.65);
+          branch(len*0.67, -0.45, depth-1, width*0.65);
+        }
+        if (progress > 0.6 && depth === 1) {
+          // Leaves
+          const leafCount = 5 + Math.floor(progress * 8);
+          for (let i = 0; i < leafCount; i++) {
+            const lx = (Math.random()-0.5)*20*progress;
+            const ly = (Math.random()-0.5)*20*progress;
+            const lr = 3 + Math.random()*5*progress;
+            ctx.beginPath();
+            ctx.arc(lx, ly, lr, 0, Math.PI*2);
+            ctx.fillStyle = `hsla(${110+Math.random()*30},${50+progress*40}%,${25+progress*20}%,${0.6+progress*0.3})`;
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
+      const depth = Math.max(2, Math.floor(progress * 7));
+      branch(trunkH, 0, depth, trunkW);
+      ctx.restore();
+    }
+
+    drawTree(0);
+  });
+}
+
+// ─── 4. WATER FLOW ───────────────────────────────────────────
+function wonderWaterFlow(el) {
+  const steps = [
+    {icon:'🌧️', label:'Rain falls from the sky', color:'#4a9eff'},
+    {icon:'🏔️', label:'Fills the rivers', color:'#3a8aee'},
+    {icon:'🐟', label:'Fish live in it', color:'#2a7add'},
+    {icon:'🐄', label:'Cows drink & give milk', color:'#5ab0ff'},
+    {icon:'🌳', label:'Trees grow & give fruit', color:'#4abe6a'},
+    {icon:'🍎', label:'We eat & are nourished', color:'#f5c842'},
+  ];
+  let active = 0;
+
+  el.innerHTML = `
+    <div class="wonder-wrap" style="padding:20px 16px 16px;background:linear-gradient(180deg,#050d1a,#0a1428)">
+      <div class="wonder-label">✦ Follow the Water</div>
+      <div class="wonder-prompt" style="margin-bottom:16px">Tap each step to follow Allah's gift</div>
+      <div id="water-chain" style="display:flex;flex-direction:column;align-items:center;gap:0"></div>
+      <div id="water-reveal" class="wonder-reveal" style="margin-top:12px">One gift. Six blessings. All from Allah. 💧</div>
+    </div>`;
+
+  const chain = document.getElementById('water-chain');
+  if (!chain) return;
+
+  steps.forEach((step, i) => {
+    const stepEl = document.createElement('div');
+    stepEl.className = 'water-step' + (i === 0 ? ' active' : '');
+    stepEl.id = `wstep-${i}`;
+    stepEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);
+        border:1px solid rgba(${i===0?'245,200,66':'255,255,255'},${i===0?'0.3':'0.08'});
+        border-radius:14px;padding:12px 16px;width:100%;max-width:320px;
+        cursor:pointer;transition:all .4s;backdrop-filter:blur(4px)"
+        onclick="waterStep(${i})" id="wstep-inner-${i}">
+        <div style="font-size:28px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))">${step.icon}</div>
+        <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,${i===0?'0.9':'0.3'});transition:color .4s">${step.label}</div>
+        ${i===0?'<div style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);margin-left:auto;white-space:nowrap">Tap →</div>':''}
+      </div>
+      ${i < steps.length-1 ? `<div style="width:2px;height:14px;background:linear-gradient(180deg,${step.color},transparent);margin:2px 0;opacity:0;transition:opacity .5s .2s" id="wconnector-${i}"></div>` : ''}`;
+    chain.appendChild(stepEl);
+  });
+
+  window.waterStep = function(idx) {
+    if (idx !== active) return;
+    const inner = document.getElementById(`wstep-inner-${idx}`);
+    if (inner) {
+      inner.style.background = 'rgba(245,200,66,0.12)';
+      inner.style.borderColor = 'rgba(245,200,66,0.4)';
+      inner.querySelector('div:nth-child(2)').style.color = 'rgba(253,246,227,0.9)';
+    }
+    const connector = document.getElementById(`wconnector-${idx}`);
+    if (connector) connector.style.opacity = '1';
+    active++;
+    if (active < steps.length) {
+      const nextInner = document.getElementById(`wstep-inner-${active}`);
+      if (nextInner) {
+        nextInner.style.borderColor = 'rgba(245,200,66,0.25)';
+        nextInner.innerHTML += '<div style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);margin-left:auto;white-space:nowrap">Tap →</div>';
+        nextInner.querySelector('div:nth-child(2)').style.color = 'rgba(253,246,227,0.75)';
+      }
+    }
+    if (active >= steps.length) {
+      const rev = document.getElementById('water-reveal');
+      if (rev) rev.classList.add('show');
+    }
+  };
+}
+
+// ─── 5. TASTE TESTER ─────────────────────────────────────────
+function wonderTasteTester(el) {
+  const fruits = [
+    {emoji:'🌴', name:'Date', bg:'linear-gradient(135deg,#3a2010,#1a0c05)', fact:'Dates have 77 nutrients. The Prophet ﷺ ate 3 every morning. Allah designed each one to perfection.'},
+    {emoji:'🍎', name:'Pomegranate', bg:'linear-gradient(135deg,#4a0a1a,#1a0508)', fact:'Each pomegranate has up to 1,400 seeds. Every single one by Allah\'s design.'},
+    {emoji:'🍯', name:'Honey', bg:'linear-gradient(135deg,#4a3000,#1a1000)', fact:'Honey never spoils. Archaeologists found 3000-year-old honey still perfect. Allah made it eternal.'},
+    {emoji:'🍋', name:'Lemon', bg:'linear-gradient(135deg,#3a3a00,#141400)', fact:'Sour, bright, preserving — Allah packed vitamin C into a yellow ball you can hold in one hand.'},
+    {emoji:'🌿', name:'Fig', bg:'linear-gradient(135deg,#1a2a10,#0a1005)', fact:'Allah swears by the fig in the Quran. It\'s one of the few fruits eaten whole — skin, seed, all.'},
+    {emoji:'🫐', name:'Grape', bg:'linear-gradient(135deg,#1a0a3a,#0a0518)', fact:'One grape vine can produce fruit for over 100 years. Allah built patience into the plant itself.'},
+  ];
+
+  el.innerHTML = `
+    <div class="wonder-wrap" style="padding:16px;background:linear-gradient(180deg,#050810,#0d1428)">
+      <div class="wonder-label">✦ Taste Tester</div>
+      <div class="wonder-prompt" style="margin-bottom:14px">Flip each card — discover what Allah designed</div>
+      <div class="fruit-grid" style="padding:0"></div>
+      <div id="fruit-reveal" class="wonder-reveal" style="margin-top:10px;font-size:13px">He didn't have to make food taste this good. He did it because He loves you. 💛</div>
+    </div>`;
+
+  const grid = el.querySelector('.fruit-grid');
+  let flipped = 0;
+
+  fruits.forEach((f, i) => {
+    const card = document.createElement('div');
+    card.className = 'fruit-card';
+    card.innerHTML = `
+      <div class="fruit-front">
+        <div class="fruit-question" style="font-size:22px">?</div>
+        <div class="fruit-hint">Tap to flip</div>
+      </div>
+      <div class="fruit-back" style="background:${f.bg}">
+        <div class="fruit-emoji">${f.emoji}</div>
+        <div class="fruit-name">${f.name}</div>
+        <div class="fruit-fact">${f.fact}</div>
+      </div>`;
+    card.onclick = () => {
+      if (!card.classList.contains('flipped')) {
+        card.classList.add('flipped');
+        flipped++;
+        if (flipped >= fruits.length) {
+          const rev = document.getElementById('fruit-reveal');
+          if (rev) rev.classList.add('show');
+        }
+      }
+    };
+    grid.appendChild(card);
+  });
+}
+
+// ─── 6. STAR GAZER ───────────────────────────────────────────
+function wonderStarGazer(el) {
+  const starFacts = [
+    {x:20,y:25, name:'Betelgeuse', fact:'700x bigger than our sun. If it replaced our sun, it would reach Jupiter.'},
+    {x:65,y:15, name:'Sirius', fact:'The brightest star — 25x more luminous than our sun. Visible to the naked eye.'},
+    {x:40,y:45, name:'Polaris', fact:'The North Star — has guided travellers for thousands of years. Allah\'s compass in the sky.'},
+    {x:75,y:55, name:'Andromeda', fact:'A whole other galaxy — 2.5 million light years away. Contains 1 trillion stars.'},
+    {x:15,y:65, name:'Pleiades', fact:'Mentioned in the Quran (An-Najm). Ancient civilisations worldwide recognised them.'},
+  ];
+  let revealed = 0;
+
+  el.innerHTML = `
+    <div class="wonder-wrap star-field-wrap" style="height:320px;overflow:hidden;position:relative">
+      <canvas id="sg-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+      <div id="sg-hotspots" style="position:absolute;inset:0;z-index:3"></div>
+      <div style="position:absolute;inset:0;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;padding-top:12px">
+        <div class="wonder-label">✦ Star Gazer</div>
+        <div class="wonder-prompt" style="font-size:13px">Tap the glowing stars to explore</div>
+      </div>
+      <div id="sg-tafakkur" class="wonder-reveal" style="position:absolute;bottom:16px;left:0;right:0;z-index:5;font-size:13px;padding:0 20px;text-align:center">
+        This quiet wonder — it has a name: <span style="font-family:var(--arabic);font-size:20px;color:var(--gold)">تَفَكُّر</span> Tafakkur.
+      </div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    const canvas = document.getElementById('sg-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    const W = canvas.width, H = canvas.height;
+
+    const bgStars = Array.from({length:180}, () => ({
+      x: Math.random()*W, y: Math.random()*H,
+      r: 0.4+Math.random()*1.8, phase:Math.random()*Math.PI*2
+    }));
+
+    function drawBg(t) {
+      const grad = ctx.createLinearGradient(0,0,0,H);
+      grad.addColorStop(0,'#020408');
+      grad.addColorStop(0.5,'#060c18');
+      grad.addColorStop(1,'#0a1020');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,W,H);
+
+      // Nebula hint
+      const ng = ctx.createRadialGradient(W*0.5,H*0.4,0,W*0.5,H*0.4,W*0.5);
+      ng.addColorStop(0,'rgba(30,20,80,0.2)');
+      ng.addColorStop(0.5,'rgba(20,10,50,0.08)');
+      ng.addColorStop(1,'transparent');
+      ctx.fillStyle = ng;
+      ctx.fillRect(0,0,W,H);
+
+      bgStars.forEach(s => {
+        const twinkle = 0.3 + 0.7*Math.abs(Math.sin(t*0.001 + s.phase));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${twinkle})`;
+        ctx.fill();
+      });
+
+      // Glowing hotspot stars
+      starFacts.forEach((sf, i) => {
+        const sx = sf.x/100*W, sy = sf.y/100*H;
+        const pulse = 0.5 + 0.5*Math.sin(t*0.002 + i*1.2);
+        const glow = ctx.createRadialGradient(sx,sy,0,sx,sy,18+pulse*8);
+        glow.addColorStop(0,`rgba(245,200,66,${0.7+pulse*0.2})`);
+        glow.addColorStop(0.3,`rgba(245,200,66,${0.2+pulse*0.1})`);
+        glow.addColorStop(1,'transparent');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(sx,sy,18+pulse*8,0,Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx,sy,2.5,0,Math.PI*2);
+        ctx.fillStyle = `rgba(255,245,200,${0.9+pulse*0.1})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(drawBg);
+    }
+    requestAnimationFrame(t => drawBg(t));
+
+    // Hotspot overlays
+    const hotWrap = document.getElementById('sg-hotspots');
+    if (!hotWrap) return;
+    starFacts.forEach((sf, i) => {
+      const btn = document.createElement('div');
+      btn.style.cssText = `position:absolute;left:${sf.x}%;top:${sf.y}%;
+        width:44px;height:44px;transform:translate(-50%,-50%);cursor:pointer;z-index:4`;
+      btn.onclick = () => {
+        if (btn.dataset.revealed) return;
+        btn.dataset.revealed = '1';
+        revealed++;
+        // Show fact popup
+        const popup = document.createElement('div');
+        popup.style.cssText = `position:absolute;bottom:110%;left:50%;transform:translateX(-50%);
+          background:rgba(8,14,30,0.96);border:1px solid rgba(245,200,66,0.35);
+          border-radius:12px;padding:10px 12px;width:170px;z-index:10;
+          box-shadow:0 8px 32px rgba(0,0,0,0.7);backdrop-filter:blur(10px);
+          animation:fadeInUp .3s ease;`;
+        popup.innerHTML = `
+          <div style="font-family:var(--display);font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:5px">${sf.name}</div>
+          <div style="font-family:var(--body);font-size:11px;color:rgba(253,246,227,0.8);line-height:1.55">${sf.fact}</div>`;
+        btn.appendChild(popup);
+        if (revealed >= starFacts.length) {
+          const rev = document.getElementById('sg-tafakkur');
+          if (rev) rev.classList.add('show');
+        }
+      };
+      hotWrap.appendChild(btn);
+    });
+  });
+}
+
 </script>  <!-- Floating home button — shown on inner screens -->
   <button class="home-fab" id="home-fab" onclick="goHome()" title="Home">⌂</button>
 </body></html>
