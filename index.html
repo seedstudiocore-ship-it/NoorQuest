@@ -135,11 +135,13 @@ body { font-family:var(--body); color:var(--cream); display:flex; justify-conten
 .card-teal { background:var(--teal); border:1px solid rgba(255,255,255,.08) }
 
 /* ── Inputs ── */
-.input { width:100%; padding:14px 18px; background:rgba(255,255,255,.07); border:1.5px solid rgba(255,255,255,.14); border-radius:14px; color:var(--cream); font-family:var(--ui); font-size:15px; outline:none; transition:border-color .2s }
+.input { width:100%; padding:14px 18px; background:rgba(15,22,40,.95); border:1.5px solid rgba(255,255,255,.14); border-radius:14px; color:var(--cream); font-family:var(--ui); font-size:15px; outline:none; transition:border-color .2s }
 .input::placeholder { color:rgba(253,246,227,.35) }
-.input:focus { border-color:var(--gold); background:rgba(255,255,255,.1) }
+.input:focus { border-color:var(--gold); background:rgba(20,30,55,.98) }
 textarea.input { resize:vertical; min-height:90px; line-height:1.6 }
-select.input { appearance:none; cursor:pointer }
+select.input { appearance:none; cursor:pointer; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23F5C842' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:calc(100% - 14px) 50%; padding-right:36px }
+/* Force native dropdown to dark bg + white text everywhere */
+select.input option { background:#0f1628; color:#FDF6E3 }
 
 /* ── Badges ── */
 .badge { display:inline-flex; align-items:center; gap:5px; padding:5px 13px; border-radius:50px; font-size:12px; font-weight:700; font-family:var(--ui) }
@@ -823,7 +825,7 @@ select.input { appearance:none; cursor:pointer }
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <span class="lbl" style="font-size:10px">World</span>
-            <select id="ix-world" class="input" style="padding:10px 12px;font-family:var(--ui)" onchange="loadIxItems()">
+            <select id="ix-world" class="input" style="padding:10px 12px;font-family:var(--ui)" onchange="updateIxScenes();loadIxItems()">
               <option value="">Select...</option>
               <option value="1">1 — The Wonder of Allah</option>
               <option value="2">2 — Wonders Inside You</option>
@@ -844,12 +846,6 @@ select.input { appearance:none; cursor:pointer }
             <span class="lbl" style="font-size:10px">Scene</span>
             <select id="ix-scene" class="input" style="padding:10px 12px;font-family:var(--ui)" onchange="loadIxItems()">
               <option value="">Select...</option>
-              <option value="1">Scene 1</option>
-              <option value="2">Scene 2</option>
-              <option value="3">Scene 3</option>
-              <option value="4">Scene 4</option>
-              <option value="5">Scene 5</option>
-              <option value="6">Scene 6</option>
             </select>
           </div>
         </div>
@@ -2973,20 +2969,28 @@ function formatProse(text) {
 async function loadSceneImages(worldId, sceneId) {
   const imgs = {A: null, B: null, C: null};
   try {
-    const {data, error} = await sb.from('admin_assets')
-      .select('beat,url,public_url')
-      .eq('world_id', worldId)
-      .eq('scene_id', sceneId)
-      .eq('type', 'image');
+    // Query by tag prefix: w{worldId}_s{sceneId}_
+    const prefix = `w${worldId}_s${sceneId}_`;
+    const {data} = await sb.from('admin_assets')
+      .select('tag,public_url')
+      .like('tag', prefix + '%');
     if (data) {
       data.forEach(r => {
-        const imgUrl = r.url || r.public_url;
-        if (r.beat && imgUrl) {
-          if (imgs[r.beat] !== undefined) imgs[r.beat] = imgUrl;
+        const url = r.public_url;
+        if (!url || !r.tag) return;
+        // tag format: w1_s1_A_image
+        const parts = r.tag.split('_');
+        // parts: ['w1','s1','A','image']
+        if (parts.length >= 4) {
+          const beat = parts[2];  // A, B, or C
+          const type = parts[3];  // image
+          if (type === 'image' && (beat === 'A' || beat === 'B' || beat === 'C')) {
+            imgs[beat] = url;
+          }
         }
       });
     }
-  } catch(e) { console.warn('loadSceneImages error:', e); }
+  } catch(e) { console.warn('loadSceneImages:', e.message); }
   return imgs;
 }
 
@@ -3636,7 +3640,7 @@ async function adminUpload() {
   const input   = document.getElementById('adm-file');
   const worldId = parseInt(document.getElementById('adm-world')?.value) || null;
   const sceneId = parseInt(document.getElementById('adm-scene')?.value) || null;
-  const beat    = document.getElementById('adm-beat')?.value || null;
+  const beat    = document.getElementById('adm-beat')?.value || 'general';
   const type    = document.getElementById('adm-type')?.value || 'image';
   const desc    = document.getElementById('adm-desc')?.value || '';
   const msgEl   = document.getElementById('adm-msg');
@@ -3646,7 +3650,9 @@ async function adminUpload() {
 
   const file = input.files[0];
   const ext  = file.name.split('.').pop().toLowerCase();
-  const path = `w${worldId}/s${sceneId||0}_${beat||'gen'}_${Date.now()}.${ext}`;
+  // tag encodes all slot info — this is the lookup key
+  const tag  = `w${worldId}_s${sceneId||0}_${beat}_${type}`;
+  const path = `${tag}_${Date.now()}.${ext}`;
 
   if (msgEl) { msgEl.textContent = 'Uploading...'; msgEl.style.color = 'var(--gold)'; }
   setLoading(true);
@@ -3659,33 +3665,29 @@ async function adminUpload() {
     const {data: urlData} = sb.storage.from('noorquest-assets').getPublicUrl(path);
     const url = urlData.publicUrl;
 
-    // Remove existing asset for same slot to avoid duplicates
-    if (worldId && sceneId && beat) {
-      await sb.from('admin_assets').delete()
-        .eq('world_id', worldId).eq('scene_id', sceneId).eq('beat', beat).eq('type', type);
-    }
+    // Delete old entry for same slot
+    await sb.from('admin_assets').delete().eq('tag', tag);
 
+    // Insert with tag as key + public_url (columns that exist in original schema)
     const {error: dbErr} = await sb.from('admin_assets').insert({
-      world_id: worldId,
-      scene_id: sceneId,
-      beat: beat,
-      type: type,
-      url: url,
+      tag:        tag,
       public_url: url,
-      description: desc,
-      file_name: file.name,
+      file_name:  file.name,
+      file_path:  path,
       uploaded_by: A.user?.id
     });
     if (dbErr) throw dbErr;
 
-    if (msgEl) { msgEl.textContent = '✅ Uploaded successfully!'; msgEl.style.color = '#34d399'; }
-    toast('Asset uploaded!', 'success');
+    if (msgEl) { msgEl.textContent = '✅ Uploaded! Children will see this immediately.'; msgEl.style.color = '#34d399'; }
+    toast('Uploaded!', 'success');
     input.value = '';
     document.getElementById('adm-fname').textContent = 'No file selected';
-    setTimeout(loadAdminAssets, 300);
+    setTimeout(loadAdminAssets, 400);
   } catch(e) {
-    if (msgEl) { msgEl.textContent = '❌ ' + (e.message || 'Upload failed'); msgEl.style.color = '#f87171'; }
-    toast('Upload failed: ' + (e.message || e), 'error');
+    const msg = e.message || String(e);
+    if (msgEl) { msgEl.textContent = '❌ ' + msg; msgEl.style.color = '#f87171'; }
+    toast('Upload failed', 'error');
+    console.error('Upload error:', e);
   } finally {
     setLoading(false);
   }
@@ -3754,13 +3756,12 @@ async function initSplash() {
 async function loadSplashVideo() {
   try {
     const {data} = await sb.from('admin_assets')
-      .select('url').eq('type','video').eq('world_id',0).eq('beat','splash_bg').limit(1);
-    if (data && data[0]) {
+      .select('public_url').eq('tag','w0_s0_splash_bg_video').limit(1);
+    if (data && data[0] && data[0].public_url) {
       const vid = document.getElementById('splash-bg-video');
       if (vid) {
-        vid.src = data[0].url;
+        vid.src = data[0].public_url;
         vid.style.opacity = '0.55';
-        // Hide canvas when video loads
         vid.onloadeddata = () => {
           const canvas = document.getElementById('splash-stars-canvas');
           if (canvas) canvas.style.opacity = '0';
@@ -3773,18 +3774,16 @@ async function loadSplashVideo() {
 async function loadIntroVideoUrl() {
   try {
     const {data} = await sb.from('admin_assets')
-      .select('url').eq('type','video').eq('world_id',0).eq('beat','intro_video').limit(1);
-    if (data && data[0]) {
+      .select('public_url').eq('tag','w0_s0_intro_video_video').limit(1);
+    if (data && data[0] && data[0].public_url) {
       const vidEl = document.getElementById('intro-video-el');
       if (vidEl) {
-        vidEl.querySelector('source').src = data[0].url;
-        vidEl.load();
+        const src = vidEl.querySelector('source');
+        if (src) { src.src = data[0].public_url; vidEl.load(); }
       }
-      // Show the intro button
       const btn = document.getElementById('intro-vid-btn');
       if (btn) btn.style.display = 'flex';
     } else {
-      // Hide button if no video uploaded
       const btn = document.getElementById('intro-vid-btn');
       if (btn) btn.style.display = 'none';
     }
@@ -3894,26 +3893,34 @@ function initLanternCanvas() {
 async function loadAdminAssets() {
   const container = document.getElementById('adm-assets-list');
   if (!container) return;
-  container.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(253,246,227,.4);font-family:var(--ui);font-size:13px">Loading assets...</div>';
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(253,246,227,.4);font-family:var(--ui);font-size:13px">Loading...</div>';
   try {
-    const {data, error} = await sb.from('admin_assets').select('*').order('created_at', {ascending:false});
-    if (error || !data || data.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(253,246,227,.35);font-family:var(--ui);font-size:13px">No assets uploaded yet.</div>';
+    const {data, error} = await sb.from('admin_assets')
+      .select('*').order('id', {ascending: false}).limit(50);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:rgba(253,246,227,.3);font-family:var(--ui);font-size:13px">No assets uploaded yet.</div>';
       return;
     }
-    container.innerHTML = data.map(a => `
-      <div class="asset-item">
-        <div class="asset-thumb">
-          ${a.type === 'image' ? `<img src="${a.url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">` : a.type === 'video' ? '🎬' : '🎵'}
-        </div>
-        <div class="asset-info">
-          <div class="asset-name">${a.description || (a.beat === 'splash_bg' ? 'Homepage BG Video' : a.beat === 'intro_video' ? 'Character Intro Video' : `W${a.world_id} S${a.scene_id || '-'} ${a.beat || ''} ${a.type}`)}</div>
-          <div class="asset-meta">World ${a.world_id || 'Global'} · ${a.type}</div>
-        </div>
-        <button onclick="deleteAsset('${a.id}')" style="background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);color:#f87171;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:11px;font-family:var(--ui);font-weight:700">Delete</button>
-      </div>`).join('');
+    container.innerHTML = data.map(a => {
+      const url = a.public_url || a.url || '';
+      const isImg = url.match(/\.(jpg|jpeg|png|webp|gif)/i);
+      const isVid = url.match(/\.(mp4|webm|mov)/i);
+      const thumb = isImg
+        ? `<img src="${url}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;background:#111">`
+        : isVid ? '<div style="font-size:22px">🎬</div>' : '<div style="font-size:22px">🎵</div>';
+      return `
+        <div class="asset-item">
+          <div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">${thumb}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:var(--ui);font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--cream)">${a.file_name || a.tag || 'Asset'}</div>
+            <div style="font-family:var(--ui);font-size:11px;color:rgba(253,246,227,.4);margin-top:2px">${a.tag || '—'}</div>
+          </div>
+          <button onclick="deleteAsset(${a.id})" style="background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);color:#f87171;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:11px;font-family:var(--ui);font-weight:700;flex-shrink:0">Del</button>
+        </div>`;
+    }).join('');
   } catch(e) {
-    container.innerHTML = '<div style="color:#f87171;font-size:13px;padding:10px">Error loading assets.</div>';
+    container.innerHTML = `<div style="color:#f87171;font-size:13px;padding:10px;font-family:var(--ui)">Error: ${e.message}</div>`;
   }
 }
 
@@ -3971,27 +3978,25 @@ async function uploadGlobalVideo(beatType, inputEl) {
   if (!file) return;
   const msgEl = document.getElementById('global-vid-msg');
   if (msgEl) { msgEl.textContent = 'Uploading...'; msgEl.style.color = 'var(--gold)'; }
+  setLoading(true);
   try {
     const ext = file.name.split('.').pop();
-    const path = `global/${beatType}_${Date.now()}.${ext}`;
-    const {data: upData, error: upErr} = await sb.storage.from('noorquest-assets').upload(path, file, {upsert:true});
+    const tag  = `w0_s0_${beatType}_video`;
+    const path = `${tag}_${Date.now()}.${ext}`;
+    const {error: upErr} = await sb.storage.from('noorquest-assets').upload(path, file, {upsert:true});
     if (upErr) throw upErr;
     const {data: urlData} = sb.storage.from('noorquest-assets').getPublicUrl(path);
     const url = urlData.publicUrl;
-    // Remove old entry for this beat type
-    await sb.from('admin_assets').delete().eq('world_id', 0).eq('beat', beatType).eq('type', 'video');
-    // Insert new
+    await sb.from('admin_assets').delete().eq('tag', tag);
     await sb.from('admin_assets').insert({
-      world_id: 0, scene_id: null, beat: beatType,
-      type: 'video', url, description: beatType === 'splash_bg' ? 'Homepage BG Video' : 'Character Intro Video'
+      tag: tag, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
     });
-    if (msgEl) { msgEl.textContent = '✅ Uploaded! Reload splash to see it.'; msgEl.style.color = '#34d399'; }
-    // Reload if relevant
+    if (msgEl) { msgEl.textContent = '✅ Uploaded!'; msgEl.style.color = '#34d399'; }
     if (beatType === 'splash_bg') loadSplashVideo();
     if (beatType === 'intro_video') loadIntroVideoUrl();
   } catch(e) {
-    if (msgEl) { msgEl.textContent = '❌ Upload failed: ' + (e.message || e); msgEl.style.color = '#f87171'; }
-  }
+    if (msgEl) { msgEl.textContent = '❌ ' + (e.message || e); msgEl.style.color = '#f87171'; }
+  } finally { setLoading(false); }
 }
 
 
@@ -4004,50 +4009,70 @@ function loadIxItems() {
   const sceneId = parseInt(document.getElementById('ix-scene')?.value);
   const container = document.getElementById('ix-items-list');
   if (!container) return;
-  if (!worldId || !sceneId) {
-    container.innerHTML = '';
-    return;
-  }
+
+  if (!worldId || !sceneId) { container.innerHTML = ''; return; }
 
   const world = WORLDS[worldId];
   if (!world) { container.innerHTML = '<div style="font-family:var(--ui);font-size:13px;color:rgba(253,246,227,.35)">World not found</div>'; return; }
+
   const scene = world.scenes.find(s => s.id === sceneId);
-  if (!scene || !scene.ix) {
-    container.innerHTML = '<div style="font-family:var(--ui);font-size:13px;color:rgba(253,246,227,.35);padding:10px 0">This scene has no interactive elements.</div>';
+  const ix = scene?.ix;
+
+  // Only TAP and LISTEN have uploadable media per-item
+  // REVEAL/BUILD/BREATHE/SORT are text-only
+  const uploadableTypes = ['TAP', 'LISTEN'];
+
+  if (!ix || !uploadableTypes.includes(ix.type)) {
+    const hasOtherIx = ix ? ` (${ix.type} type — text only, no media needed)` : ' (no interactive element)';
+    container.innerHTML = `
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:20px;margin-bottom:8px;opacity:.5">📝</div>
+        <div style="font-family:var(--ui);font-size:13px;color:rgba(253,246,227,.45)">Scene ${sceneId}${hasOtherIx}</div>
+        <div style="font-family:var(--body);font-size:12px;color:rgba(253,246,227,.3);margin-top:4px;font-style:italic">No per-item media upload needed for this interactive type.</div>
+      </div>`;
     return;
   }
 
-  const ix = scene.ix;
-  const items = ix.items || [];
+  const items = ix.type === 'TAP' ? ix.items : ix.sounds;
 
   container.innerHTML = `
-    <div style="font-family:var(--display);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">
+    <div style="font-family:var(--display);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">
       ${ix.type} — ${items.length} items
     </div>
-    ${items.map((item, idx) => `
-      <div style="background:rgba(22,32,64,.8);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;margin-bottom:10px">
-        <div style="font-family:var(--body);font-weight:600;font-size:14px;color:var(--gold3);margin-bottom:10px">${item.ico || ''} ${item.l || item.n || ('Item ' + (idx+1))}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <div style="flex:1;min-width:120px">
-            <div style="font-family:var(--ui);font-size:10px;color:rgba(253,246,227,.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Image</div>
-            <input type="file" id="ix-img-${idx}" accept="image/*" style="display:none"
-              onchange="uploadIxAsset(${worldId},${sceneId},${idx},'image',this)">
-            <button class="btn btn-glass btn-sm" onclick="document.getElementById('ix-img-${idx}').click()" style="width:100%;font-size:12px">
-              📷 Upload Image
-            </button>
+    ${items.map((item, idx) => {
+      const name = item.n || item.l || `Item ${idx + 1}`;
+      const icon = item.i || item.ico || (ix.type === 'LISTEN' ? '🎵' : '✨');
+      const needsAudio = ix.type === 'LISTEN';
+      const needsImage = ix.type === 'TAP';
+      return `
+        <div style="background:rgba(22,32,64,.8);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;margin-bottom:10px">
+          <div style="font-family:var(--body);font-weight:600;font-size:14px;color:var(--gold3);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:22px">${icon}</span>
+            <span>${name}</span>
           </div>
-          <div style="flex:1;min-width:120px">
-            <div style="font-family:var(--ui);font-size:10px;color:rgba(253,246,227,.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Audio</div>
-            <input type="file" id="ix-aud-${idx}" accept="audio/*" style="display:none"
-              onchange="uploadIxAsset(${worldId},${sceneId},${idx},'audio',this)">
-            <button class="btn btn-glass btn-sm" onclick="document.getElementById('ix-aud-${idx}').click()" style="width:100%;font-size:12px">
-              🎵 Upload Audio
-            </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${needsImage ? `
+              <div style="flex:1;min-width:120px">
+                <div style="font-family:var(--ui);font-size:10px;color:rgba(253,246,227,.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Image</div>
+                <input type="file" id="ix-img-${idx}" accept="image/*" style="display:none"
+                  onchange="uploadIxAsset(${worldId},${sceneId},${idx},'image',this)">
+                <button class="btn btn-glass btn-sm" onclick="document.getElementById('ix-img-${idx}').click()" style="width:100%;font-size:12px">
+                  📷 Upload Image
+                </button>
+              </div>` : ''}
+            ${needsAudio ? `
+              <div style="flex:1;min-width:120px">
+                <div style="font-family:var(--ui);font-size:10px;color:rgba(253,246,227,.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Audio Clip</div>
+                <input type="file" id="ix-aud-${idx}" accept="audio/*" style="display:none"
+                  onchange="uploadIxAsset(${worldId},${sceneId},${idx},'audio',this)">
+                <button class="btn btn-glass btn-sm" onclick="document.getElementById('ix-aud-${idx}').click()" style="width:100%;font-size:12px">
+                  🎵 Upload Audio
+                </button>
+              </div>` : ''}
           </div>
-        </div>
-        <div id="ix-msg-${idx}" style="font-family:var(--ui);font-size:12px;margin-top:8px;min-height:16px;color:rgba(253,246,227,.4)"></div>
-      </div>
-    `).join('')}`;
+          <div id="ix-msg-${idx}" style="font-family:var(--ui);font-size:12px;margin-top:8px;min-height:16px;color:rgba(253,246,227,.4)"></div>
+        </div>`;
+    }).join('')}`;
 }
 
 async function uploadIxAsset(worldId, sceneId, itemIdx, type, inputEl) {
@@ -4055,11 +4080,11 @@ async function uploadIxAsset(worldId, sceneId, itemIdx, type, inputEl) {
   if (!file) return;
   const msgEl = document.getElementById(`ix-msg-${itemIdx}`);
   if (msgEl) { msgEl.textContent = 'Uploading...'; msgEl.style.color = 'var(--gold)'; }
-
+  setLoading(true);
   try {
     const ext  = file.name.split('.').pop();
-    const beat = `ix_item_${itemIdx}`;
-    const path = `w${worldId}/s${sceneId}_${beat}_${type}_${Date.now()}.${ext}`;
+    const tag  = `w${worldId}_s${sceneId}_ix_item_${itemIdx}_${type}`;
+    const path = `${tag}_${Date.now()}.${ext}`;
 
     const {error: upErr} = await sb.storage.from('noorquest-assets').upload(path, file, {upsert:true});
     if (upErr) throw upErr;
@@ -4067,21 +4092,16 @@ async function uploadIxAsset(worldId, sceneId, itemIdx, type, inputEl) {
     const {data: urlData} = sb.storage.from('noorquest-assets').getPublicUrl(path);
     const url = urlData.publicUrl;
 
-    // Remove old entry for same slot
-    await sb.from('admin_assets').delete()
-      .eq('world_id', worldId).eq('scene_id', sceneId).eq('beat', beat).eq('type', type);
-
-    await sb.from('admin_assets').insert({
-      world_id: worldId, scene_id: sceneId,
-      beat: beat, type: type, url: url, public_url: url,
-      description: `W${worldId} S${sceneId} Interactive item ${itemIdx} ${type}`,
-      uploaded_by: A.user?.id
+    await sb.from('admin_assets').delete().eq('tag', tag);
+    const {error: dbErr} = await sb.from('admin_assets').insert({
+      tag: tag, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
     });
+    if (dbErr) throw dbErr;
 
     if (msgEl) { msgEl.textContent = `✅ ${type} uploaded!`; msgEl.style.color = '#34d399'; }
   } catch(e) {
     if (msgEl) { msgEl.textContent = '❌ ' + (e.message || 'Failed'); msgEl.style.color = '#f87171'; }
-  }
+  } finally { setLoading(false); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4090,19 +4110,35 @@ async function uploadIxAsset(worldId, sceneId, itemIdx, type, inputEl) {
 async function loadIxAssets(worldId, sceneId) {
   const result = {};
   try {
+    const prefix = `w${worldId}_s${sceneId}_ix`;
     const {data} = await sb.from('admin_assets')
-      .select('beat,type,url,public_url')
-      .eq('world_id', worldId)
-      .eq('scene_id', sceneId)
-      .like('beat', 'ix_item_%');
+      .select('tag,public_url')
+      .like('tag', prefix + '%');
     if (data) {
       data.forEach(r => {
-        const url = r.url || r.public_url;
-        const key = `${r.beat}_${r.type}`;
-        if (url) result[key] = url;
+        if (r.tag && r.public_url) {
+          // tag: w1_s1_ix_item_0_image → key: ix_item_0_image
+          const keyPart = r.tag.replace(`w${worldId}_s${sceneId}_`, '');
+          result[keyPart] = r.public_url;
+        }
       });
     }
-  } catch(e) {}
+  } catch(e) { console.warn('loadIxAssets:', e.message); }
   return result;
+}
+
+function updateIxScenes() {
+  const worldId = parseInt(document.getElementById('ix-world')?.value);
+  const sceneEl = document.getElementById('ix-scene');
+  if (!sceneEl) return;
+  sceneEl.innerHTML = '<option value="">Select...</option>';
+  if (!worldId || !WORLDS[worldId]) return;
+  const scenes = WORLDS[worldId].scenes || [];
+  scenes.forEach(sc => {
+    const opt = document.createElement('option');
+    opt.value = sc.id;
+    opt.textContent = `Scene ${sc.id}: ${sc.title}`;
+    sceneEl.appendChild(opt);
+  });
 }
 </script></body></html>
