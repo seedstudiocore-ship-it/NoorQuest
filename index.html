@@ -3812,18 +3812,19 @@ async function adminUpload() {
   const input   = document.getElementById('adm-file');
   const worldId = parseInt(document.getElementById('adm-world')?.value) || null;
   const sceneId = parseInt(document.getElementById('adm-scene')?.value) || null;
-  const beat    = document.getElementById('adm-beat')?.value || 'general';
+  const beat    = document.getElementById('adm-beat')?.value || '';
   const type    = document.getElementById('adm-type')?.value || 'image';
   const desc    = document.getElementById('adm-desc')?.value || '';
   const msgEl   = document.getElementById('adm-msg');
 
   if (!input?.files?.length) return toast('Choose a file first', 'error');
   if (!worldId) return toast('Select a world first', 'error');
+  if (!beat && type === 'image') return toast('Select a beat (A, B or C) for images', 'error');
 
   const file = input.files[0];
   const ext  = file.name.split('.').pop().toLowerCase();
   // tag encodes all slot info — this is the lookup key
-  const tag  = `w${worldId}_s${sceneId||0}_${beat}_${type}`;
+  const tag  = `w${worldId}_s${sceneId||0}_${beat||'gen'}_${type}`;
   const path = `${tag}_${Date.now()}.${ext}`;
 
   if (msgEl) { msgEl.textContent = 'Uploading...'; msgEl.style.color = 'var(--gold)'; }
@@ -4354,611 +4355,811 @@ function goHome() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// WONDER INTERACTIONS — World 1 Cinematic Explorations
+// WONDER INTERACTIONS — World 1 Cinematic Explorations v2
 // ═══════════════════════════════════════════════════════════════
 function renderWONDER(container, ix, assets) {
   container.style.background = 'transparent';
   container.style.borderTop = 'none';
   container.style.margin = '0';
   switch(ix.wonder) {
-    case 'light_painter': wonderLightPainter(container); break;
-    case 'sky_pillars':   wonderSkyPillars(container);   break;
-    case 'grow_seed':     wonderGrowSeed(container);     break;
-    case 'water_flow':    wonderWaterFlow(container);     break;
-    case 'taste_tester':  wonderTasteTester(container);  break;
-    case 'star_gazer':    wonderStarGazer(container);    break;
+    case 'light_painter': wonderDawnWatch(container); break;
+    case 'sky_pillars':   wonderSkyPillars(container); break;
+    case 'grow_seed':     wonderGrowSeed(container); break;
+    case 'water_flow':    wonderWaterFlow(container); break;
+    case 'taste_tester':  wonderTasteTester(container); break;
+    case 'star_gazer':    wonderStarGazer(container); break;
     default: container.style.display = 'none';
   }
 }
 
-// ─── 1. LIGHT PAINTER ────────────────────────────────────────
-function wonderLightPainter(el) {
+// ─── 1. DAWN WATCH ───────────────────────────────────────────
+function wonderDawnWatch(el) {
+  const pauses = [
+    {pct:0.15, q:"Who decided the sky would change colour?"},
+    {pct:0.5,  q:"Could it have just stayed... grey?"},
+    {pct:0.88, q:"He made it beautiful. He didn't have to."}
+  ];
+  let phase = 0;
+  let animating = true;
+  let progress = 0;
+  let waiting = false;
+  let raf;
+
   el.innerHTML = `
-    <div class="wonder-wrap" style="height:280px">
-      <canvas id="light-canvas" class="wonder-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:20px;pointer-events:none;z-index:3">
-        <div class="wonder-label">✦ Light Painter</div>
-        <div class="wonder-prompt" style="padding:0 24px 4px">Tap anywhere to paint Allah's light</div>
-        <div id="lp-counter" class="wonder-counter">0 sparks lit</div>
-        <div id="lp-reveal" class="wonder-reveal">An-Nur — اَلنُّوْرُ — The Light</div>
+    <div style="position:relative;overflow:hidden;height:280px;cursor:pointer" onclick="dawnTap()">
+      <canvas id="dawn-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 28px">
+        <div id="dawn-q" style="font-family:var(--body);font-size:17px;color:var(--cream);text-align:center;line-height:1.7;opacity:0;transition:opacity .8s ease;font-style:italic;text-shadow:0 2px 12px rgba(0,0,0,.8)"></div>
+        <div id="dawn-tap" style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:2px;text-transform:uppercase;margin-top:12px;opacity:0;transition:opacity .6s ease">Tap to continue</div>
+      </div>
+      <div id="dawn-reveal" style="position:absolute;bottom:16px;left:0;right:0;z-index:4;text-align:center;pointer-events:none">
+        <div style="font-family:var(--display);font-size:15px;color:var(--gold);letter-spacing:1px;opacity:0;transition:opacity 1.2s ease;text-shadow:0 0 24px rgba(245,200,66,.6)" id="dawn-final">An-Nur — اَلنُّوْرُ — Every sunrise is a signature.</div>
+      </div>
+      <div style="position:absolute;top:12px;left:0;right:0;text-align:center;z-index:4;pointer-events:none">
+        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.35);letter-spacing:3px;text-transform:uppercase">✦ Dawn Watch</div>
       </div>
     </div>`;
 
   requestAnimationFrame(() => {
-    const canvas = document.getElementById('light-canvas');
+    const canvas = document.getElementById('dawn-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
-    let sparks = 0;
-    const maxSparks = 18;
-    const particles = [];
+    const W = canvas.width, H = canvas.height;
 
-    // Animate background glow
-    let bgLight = 0;
-    function drawBg() {
-      const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0,
-        canvas.width/2, canvas.height/2, canvas.width * 0.8);
-      const alpha = Math.min(bgLight / maxSparks, 1);
-      grad.addColorStop(0, `rgba(245,190,50,${alpha * 0.18})`);
-      grad.addColorStop(0.5, `rgba(20,40,90,${0.7 - alpha * 0.5})`);
-      grad.addColorStop(1, `rgba(10,14,26,0.95)`);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Horizon silhouette points
+    const hills = [];
+    for (let x = 0; x <= W; x += W/8) {
+      hills.push({x, y: H * (0.72 + Math.sin(x/W*Math.PI)*0.08 + Math.random()*0.04)});
+    }
+    hills[0].x = 0; hills[hills.length-1].x = W;
+
+    const skyColors = [
+      [6,8,24],    // deep night
+      [18,12,45],  // pre-dawn purple
+      [65,20,40],  // rose
+      [160,70,30], // amber
+      [220,130,40],// gold
+      [245,185,80] // bright gold
+    ];
+
+    function lerp(a, b, t) { return a + (b-a)*t; }
+    function lerpColor(t) {
+      const n = skyColors.length - 1;
+      const i = Math.min(Math.floor(t * n), n - 1);
+      const f = (t * n) - i;
+      const a = skyColors[i], b = skyColors[i+1];
+      return [lerp(a[0],b[0],f), lerp(a[1],b[1],f), lerp(a[2],b[2],f)];
     }
 
-    function addParticle(x, y) {
-      const count = 14 + Math.floor(Math.random() * 8);
-      for (let i = 0; i < count; i++) {
-        const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
-        const speed = 1.5 + Math.random() * 3.5;
-        const size = 1.5 + Math.random() * 3;
-        const hue = 35 + Math.random() * 25;
-        particles.push({
-          x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-          life: 1, decay: 0.015 + Math.random() * 0.015,
-          size, hue, trail: [{x, y}]
+    let stars = Array.from({length:60}, () => ({
+      x:Math.random()*W, y:Math.random()*H*0.7,
+      r:0.5+Math.random()*1.5, phase:Math.random()*Math.PI*2
+    }));
+
+    function draw(t) {
+      const p = Math.min(progress, 1);
+      // Sky gradient
+      const top = lerpColor(p);
+      const mid = lerpColor(Math.max(0, p - 0.2));
+      const hor = lerpColor(Math.min(1, p + 0.15));
+      const grad = ctx.createLinearGradient(0,0,0,H);
+      grad.addColorStop(0, `rgb(${top.map(Math.round).join(',')})`);
+      grad.addColorStop(0.55, `rgb(${mid.map(Math.round).join(',')})`);
+      grad.addColorStop(1, `rgb(${hor.map(Math.round).join(',')})`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,W,H);
+
+      // Stars fade out as dawn rises
+      const starAlpha = Math.max(0, 1 - p * 3);
+      if (starAlpha > 0) {
+        stars.forEach(s => {
+          const tw = 0.5 + 0.5*Math.sin(t*0.001 + s.phase);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+          ctx.fillStyle = `rgba(255,255,255,${tw * starAlpha})`;
+          ctx.fill();
         });
       }
-      // Central burst
-      particles.push({x, y, vx:0, vy:0, life:1, decay:0.008, size:18+Math.random()*14,
-        hue:45, burst:true, trail:[]});
-    }
 
-    function drawParticles() {
-      particles.forEach((p, i) => {
-        if (p.burst) {
+      // Sun glow on horizon
+      if (p > 0.3) {
+        const sunAlpha = (p - 0.3) / 0.7;
+        const sunX = W * 0.5, sunY = H * (0.74 - p * 0.08);
+        const sg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, W * 0.5);
+        sg.addColorStop(0, `rgba(255,220,100,${sunAlpha * 0.6})`);
+        sg.addColorStop(0.3, `rgba(245,160,50,${sunAlpha * 0.25})`);
+        sg.addColorStop(1, 'transparent');
+        ctx.fillStyle = sg;
+        ctx.fillRect(0,0,W,H);
+        // Sun disc
+        if (p > 0.65) {
+          const discAlpha = (p - 0.65) / 0.35;
+          const discR = 18 + discAlpha * 12;
+          const discG = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, discR);
+          discG.addColorStop(0, `rgba(255,245,200,${discAlpha * 0.9})`);
+          discG.addColorStop(0.6, `rgba(255,190,60,${discAlpha * 0.7})`);
+          discG.addColorStop(1, 'transparent');
+          ctx.fillStyle = discG;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
-          const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*p.life);
-          g.addColorStop(0, `hsla(${p.hue},100%,80%,${p.life * 0.7})`);
-          g.addColorStop(0.5, `hsla(${p.hue},90%,60%,${p.life * 0.3})`);
-          g.addColorStop(1, `hsla(${p.hue},90%,50%,0)`);
-          ctx.fillStyle = g;
+          ctx.arc(sunX, sunY, discR, 0, Math.PI*2);
           ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
-          ctx.fillStyle = `hsla(${p.hue},95%,75%,${p.life})`;
-          ctx.fill();
-          // Tail
-          if (p.trail.length > 1) {
-            ctx.beginPath();
-            ctx.moveTo(p.trail[0].x, p.trail[0].y);
-            p.trail.forEach(t => ctx.lineTo(t.x, t.y));
-            ctx.strokeStyle = `hsla(${p.hue},90%,70%,${p.life * 0.3})`;
-            ctx.lineWidth = p.size * 0.5;
-            ctx.stroke();
-          }
         }
-        p.x += p.vx; p.y += p.vy;
-        p.vy += 0.04;
-        p.vx *= 0.98;
-        p.life -= p.decay;
-        if (!p.burst) p.trail.push({x:p.x,y:p.y});
-        if (p.trail.length > 8) p.trail.shift();
+      }
+
+      // Birds (appear near end)
+      if (p > 0.75) {
+        const bAlpha = (p - 0.75) / 0.25;
+        ctx.strokeStyle = `rgba(10,14,26,${bAlpha * 0.6})`;
+        ctx.lineWidth = 1.5;
+        [0.35, 0.5, 0.62, 0.42, 0.55].forEach((bx, i) => {
+          const by = H * (0.38 + i*0.03 - p * 0.1);
+          const bxp = bx + (t * 0.00003 * (0.8 + i*0.1)) % 0.3;
+          const bs = 6 + i * 2;
+          ctx.beginPath();
+          ctx.moveTo(W*bxp - bs, by);
+          ctx.quadraticCurveTo(W*bxp - bs/2, by - 3, W*bxp, by);
+          ctx.quadraticCurveTo(W*bxp + bs/2, by - 3, W*bxp + bs, by);
+          ctx.stroke();
+        });
+      }
+
+      // Silhouette hills
+      const hillDark = Math.max(5, 25 - p * 20);
+      ctx.fillStyle = `rgb(${hillDark},${hillDark + 3},${hillDark + 8})`;
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      hills.forEach((h, i) => {
+        if (i === 0) ctx.moveTo(h.x, h.y);
+        else {
+          const prev = hills[i-1];
+          const cpx = (prev.x + h.x) / 2;
+          ctx.quadraticCurveTo(prev.x, prev.y, cpx, (prev.y+h.y)/2);
+        }
       });
-      for (let i = particles.length-1; i >= 0; i--) {
-        if (particles[i].life <= 0) particles.splice(i,1);
+      ctx.lineTo(W, H);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function checkPause() {
+      if (waiting) return;
+      const currentPause = pauses[phase];
+      if (currentPause && progress >= currentPause.pct) {
+        animating = false;
+        waiting = true;
+        const q = document.getElementById('dawn-q');
+        const tap = document.getElementById('dawn-tap');
+        if (q) { q.textContent = currentPause.q; q.style.opacity = '1'; }
+        if (tap) tap.style.opacity = '1';
+        if (phase === pauses.length - 1) {
+          // Last pause — show final reveal instead of tap prompt
+          setTimeout(() => {
+            const fin = document.getElementById('dawn-final');
+            if (fin) fin.style.opacity = '1';
+            if (tap) tap.style.opacity = '0';
+          }, 1200);
+        }
       }
     }
 
-    function loop() {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      drawBg();
-      drawParticles();
-      requestAnimationFrame(loop);
-    }
-    loop();
+    window.dawnTap = function() {
+      if (!waiting) return;
+      phase++;
+      waiting = false;
+      animating = true;
+      const q = document.getElementById('dawn-q');
+      const tap = document.getElementById('dawn-tap');
+      if (q) q.style.opacity = '0';
+      if (tap) tap.style.opacity = '0';
+    };
 
-    function onTap(e) {
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches ? e.touches[0] : e;
-      const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-      const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
-      addParticle(x, y);
-      sparks++;
-      bgLight = sparks;
-      const counterEl = document.getElementById('lp-counter');
-      if (counterEl) {
-        counterEl.textContent = sparks === 1 ? '1 spark lit' : `${sparks} sparks lit`;
+    let last = 0;
+    function loop(t) {
+      if (animating) {
+        const dt = last ? (t - last) : 16;
+        progress += dt * 0.00018;
+        last = t;
+        draw(t);
+        checkPause();
       }
-      if (sparks >= maxSparks) {
-        const rev = document.getElementById('lp-reveal');
-        if (rev) rev.classList.add('show');
-      }
+      raf = requestAnimationFrame(loop);
     }
+    raf = requestAnimationFrame(loop);
 
-    canvas.addEventListener('click', onTap);
-    canvas.addEventListener('touchstart', onTap, {passive:false});
+    // Cleanup on navigate away
+    window._dawnRaf = raf;
   });
 }
 
 // ─── 2. SKY PILLARS ──────────────────────────────────────────
 function wonderSkyPillars(el) {
   const items = [
-    {x:15, y:25, label:'Clouds?', resp:'Not clouds...'},
-    {x:45, y:40, label:'Wind?', resp:'Not wind...'},
-    {x:70, y:20, label:'Stars?', resp:'Not stars...'},
-    {x:30, y:55, label:'Air?', resp:'Not air...'},
-    {x:60, y:50, label:'Nothing?', resp:'Yes. Nothing at all. Allah holds it.', final:true},
+    {x:18, y:30, label:'Clouds?', resp:'Not clouds...', w:90},
+    {x:70, y:18, label:'Stars?', resp:'Not stars...', w:80},
+    {x:45, y:50, label:'Wind?', resp:'Not wind...', w:80},
+    {x:25, y:65, label:'Air?', resp:'Not air...', w:70},
+    {x:60, y:62, label:'Nothing?', resp:'Nothing. Allah holds it.', final:true, w:100},
   ];
-  let found = 0;
 
   el.innerHTML = `
-    <div class="wonder-wrap" style="height:300px;position:relative;overflow:hidden">
-      <canvas id="sky-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
-      <div style="position:absolute;inset:0;z-index:3;pointer-events:none">
-        <div class="wonder-label">✦ Find the Pillars</div>
-        <div class="wonder-prompt">What holds up the sky? Tap around to find out.</div>
+    <div style="position:relative;overflow:hidden;height:300px">
+      <canvas id="sky2-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+      <!-- Question at top, fixed position -->
+      <div style="position:absolute;top:14px;left:0;right:0;z-index:5;pointer-events:none;text-align:center;padding:0 20px">
+        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">✦ Find the Pillars</div>
+        <div style="font-family:var(--body);font-size:15px;color:rgba(253,246,227,.8);font-style:italic;line-height:1.5;text-shadow:0 2px 8px rgba(0,0,0,.9)">
+          What holds up the sky?
+        </div>
       </div>
-      <div id="sky-hotspots" style="position:absolute;inset:0;z-index:4"></div>
-      <div id="sky-reveal" class="wonder-reveal" style="position:absolute;bottom:16px;left:0;right:0;z-index:5;font-size:16px">
-        Nothing. Allah holds it. No support needed.
+      <!-- Hotspots in lower 60% of canvas -->
+      <div id="sky2-spots" style="position:absolute;inset:0;z-index:4"></div>
+      <div id="sky2-reveal" style="position:absolute;bottom:14px;left:0;right:0;z-index:6;text-align:center;pointer-events:none;padding:0 20px;opacity:0;transition:opacity .8s ease">
+        <div style="background:rgba(10,14,26,.85);border:1px solid rgba(245,200,66,.3);border-radius:14px;padding:12px 18px;display:inline-block;backdrop-filter:blur(8px)">
+          <div style="font-family:var(--display);font-size:14px;color:var(--gold)">Nothing. Allah holds it.</div>
+          <div style="font-family:var(--body);font-size:12px;color:rgba(253,246,227,.6);margin-top:4px;font-style:italic">No ropes. No pillars. His power needs no support.</div>
+        </div>
       </div>
     </div>`;
 
   requestAnimationFrame(() => {
-    // Draw animated sky on canvas
-    const canvas = document.getElementById('sky-canvas');
+    const canvas = document.getElementById('sky2-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     const W = canvas.width, H = canvas.height;
 
-    const clouds = Array.from({length:6}, (_, i) => ({
-      x: Math.random()*W, y: 30 + Math.random()*80,
-      w: 60 + Math.random()*80, speed: 0.2 + Math.random()*0.3,
-      alpha: 0.06 + Math.random()*0.1
-    }));
-    const stars2 = Array.from({length:40}, () => ({
-      x: Math.random()*W, y: Math.random()*H*0.5,
-      r: 0.5+Math.random()*1.5, a: Math.random()
+    const bgStars = Array.from({length:50}, () => ({
+      x:Math.random()*W, y:Math.random()*H*0.7,
+      r:0.5+Math.random()*1.5, phase:Math.random()*Math.PI*2
     }));
 
-    function drawSky() {
+    // Generate cloud shapes as bezier paths
+    function drawCloud(ctx, cx, cy, scale, alpha) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(180,195,220,1)';
+      ctx.beginPath();
+      // Main body
+      ctx.ellipse(cx, cy, 30*scale, 14*scale, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx-18*scale, cy+4*scale, 18*scale, 10*scale, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx+20*scale, cy+4*scale, 20*scale, 11*scale, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx+5*scale, cy-10*scale, 22*scale, 13*scale, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx-10*scale, cy-8*scale, 18*scale, 12*scale, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const clouds = [
+      {cx:0.2, cy:0.35, scale:0.7, speed:0.08},
+      {cx:0.55, cy:0.22, scale:0.9, speed:0.05},
+      {cx:0.85, cy:0.40, scale:0.6, speed:0.1},
+    ];
+
+    function drawSky(t) {
       const grad = ctx.createLinearGradient(0,0,0,H);
       grad.addColorStop(0,'#06091a');
-      grad.addColorStop(0.4,'#0d1830');
-      grad.addColorStop(1,'#162040');
+      grad.addColorStop(0.5,'#0e1a35');
+      grad.addColorStop(1,'#1a2a50');
       ctx.fillStyle = grad;
       ctx.fillRect(0,0,W,H);
-
-      stars2.forEach(s => {
-        s.a = 0.3 + 0.7*Math.abs(Math.sin(Date.now()/1500 + s.x));
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-        ctx.fillStyle=`rgba(255,255,255,${s.a})`;
-        ctx.fill();
+      // Stars
+      bgStars.forEach(s => {
+        const a = 0.3 + 0.7*Math.abs(Math.sin(t*0.001+s.phase));
+        ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fill();
       });
-
+      // Clouds with movement
       clouds.forEach(c => {
-        c.x = (c.x + c.speed) % (W + c.w);
-        ctx.save();
-        ctx.globalAlpha = c.alpha;
-        const cg = ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.w/2);
-        cg.addColorStop(0,'rgba(255,255,255,1)');
-        cg.addColorStop(1,'rgba(255,255,255,0)');
-        ctx.fillStyle=cg;
-        ctx.beginPath();
-        ctx.ellipse(c.x,c.y,c.w/2,c.w/4,0,0,Math.PI*2);
-        ctx.fill();
-        ctx.restore();
+        c.cx = (c.cx + c.speed * 0.00005) % 1.3;
+        drawCloud(ctx, c.cx * W, c.cy * H, c.scale, 0.12);
       });
+      // Ground
+      const hillGrad = ctx.createLinearGradient(0,H*0.78,0,H);
+      hillGrad.addColorStop(0,'#0a1520'); hillGrad.addColorStop(1,'#050a10');
+      ctx.fillStyle = hillGrad;
+      ctx.beginPath();
+      ctx.moveTo(0,H*0.82);
+      ctx.quadraticCurveTo(W*0.25,H*0.76, W*0.5,H*0.8);
+      ctx.quadraticCurveTo(W*0.75,H*0.84, W,H*0.79);
+      ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
       requestAnimationFrame(drawSky);
     }
-    drawSky();
+    requestAnimationFrame(drawSky);
 
-    // Add hotspot buttons
-    const hotspotWrap = document.getElementById('sky-hotspots');
-    if (!hotspotWrap) return;
-    items.forEach((item, idx) => {
+    // Hotspots — positioned in the SKY area (top 75%)
+    const spotsWrap = document.getElementById('sky2-spots');
+    if (!spotsWrap) return;
+    items.forEach((item) => {
       const btn = document.createElement('button');
-      btn.style.cssText = `position:absolute;left:${item.x}%;top:${item.y}%;
+      // Keep buttons in upper 70% so they don't overlap ground
+      const topPct = Math.min(item.y, 68);
+      btn.style.cssText = `position:absolute;left:${item.x}%;top:${topPct}%;
         transform:translate(-50%,-50%);
-        background:rgba(245,200,66,0.12);border:1.5px solid rgba(245,200,66,0.3);
-        border-radius:50px;padding:7px 14px;font-family:var(--display);font-size:11px;
-        color:rgba(245,200,66,0.8);cursor:pointer;letter-spacing:1px;
-        backdrop-filter:blur(4px);transition:all .3s;white-space:nowrap`;
+        background:rgba(10,18,40,0.75);
+        border:1.5px solid rgba(245,200,66,0.35);
+        border-radius:50px;padding:8px 16px;
+        font-family:var(--display);font-size:11px;
+        color:rgba(245,200,66,0.85);cursor:pointer;
+        letter-spacing:1px;backdrop-filter:blur(6px);
+        transition:all .3s;white-space:nowrap;
+        box-shadow:0 4px 16px rgba(0,0,0,.5)`;
       btn.textContent = item.label;
       btn.onclick = () => {
-        btn.style.background = 'rgba(245,200,66,0.06)';
-        btn.style.color = 'rgba(245,200,66,0.4)';
-        btn.textContent = item.resp;
-        btn.style.fontSize = '10px';
+        if (btn.disabled) return;
         btn.disabled = true;
         if (item.final) {
           btn.style.background = 'rgba(245,200,66,0.25)';
+          btn.style.borderColor = 'rgba(245,200,66,0.8)';
           btn.style.color = 'var(--gold)';
-          btn.style.border = '1.5px solid rgba(245,200,66,0.7)';
-          const rev = document.getElementById('sky-reveal');
-          if (rev) rev.classList.add('show');
+          const rev = document.getElementById('sky2-reveal');
+          if (rev) rev.style.opacity = '1';
+        } else {
+          btn.style.background = 'rgba(255,255,255,0.04)';
+          btn.style.borderColor = 'rgba(255,255,255,0.1)';
+          btn.style.color = 'rgba(253,246,227,0.3)';
+          btn.textContent = item.resp;
         }
       };
-      hotspotWrap.appendChild(btn);
+      spotsWrap.appendChild(btn);
     });
   });
 }
 
-// ─── 3. GROW SEED ────────────────────────────────────────────
+// ─── 3. GROW SEED ─────────────────────────────────────────────
 function wonderGrowSeed(el) {
   const stages = [
-    {label:'Seed', desc:'Tap to plant...'},
-    {label:'Sprout', desc:"Something's happening..."},
-    {label:'Sapling', desc:'Growing...'},
-    {label:'Young tree', desc:'It knows what to do...'},
-    {label:'Oak tree', desc:"It's enormous!"},
-    {label:'Ancient oak', desc:'All from that tiny seed — Allahu Akbar!'}
+    {label:'A tiny seed', desc:'Tap to plant...', pct:0},
+    {label:'Germinating', desc:'Something is waking up...', pct:0.12},
+    {label:'Sprout', desc:'It knows exactly what to do...', pct:0.25},
+    {label:'Sapling', desc:'Growing...', pct:0.42},
+    {label:'Young tree', desc:'Getting there...', pct:0.62},
+    {label:'Oak tree', desc:"It's enormous!", pct:0.82},
+    {label:'Ancient oak', desc:'All from that tiny seed — Allahu Akbar!', pct:1.0, final:true}
   ];
   let stage = 0;
+  let animProgress = 0;
+  let targetProgress = 0;
 
   el.innerHTML = `
-    <div class="wonder-wrap" style="height:320px;position:relative;overflow:hidden;cursor:pointer" onclick="growNextStage()">
-      <canvas id="grow-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
-      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:16px">
-        <div class="wonder-label">✦ Grow It</div>
-        <div id="grow-stage" class="wonder-counter" style="font-size:16px">Tap to plant the seed</div>
-        <div id="grow-desc" class="wonder-prompt" style="padding:4px 24px 0">One tap. One word from Allah: Be.</div>
-        <div id="grow-reveal" class="wonder-reveal">Be — كُنْ — And it is.</div>
+    <div style="position:relative;overflow:hidden;height:320px;cursor:pointer;background:linear-gradient(180deg,#020608,#080f10)" onclick="growTap()">
+      <canvas id="tree-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:18px">
+        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.35);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">✦ Grow It</div>
+        <div id="tree-stage" style="font-family:var(--display);font-size:18px;color:var(--gold);letter-spacing:1px;text-shadow:0 0 16px rgba(245,200,66,.4)">A tiny seed</div>
+        <div id="tree-desc" style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);margin-top:4px;font-style:italic">Tap to plant...</div>
+        <div id="tree-reveal" style="font-family:var(--display);font-size:14px;color:var(--gold);margin-top:10px;opacity:0;transition:opacity 1s ease;letter-spacing:.5px;text-align:center;padding:0 20px">كُنْ فَيَكُونُ — "Be, and it is."</div>
       </div>
     </div>`;
 
   requestAnimationFrame(() => {
-    const canvas = document.getElementById('grow-canvas');
+    const canvas = document.getElementById('tree-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     const W = canvas.width, H = canvas.height;
 
-    window.growNextStage = function() {
-      if (stage >= stages.length - 1) return;
-      stage++;
-      drawTree(stage / (stages.length - 1));
-      const stEl = document.getElementById('grow-stage');
-      const dEl = document.getElementById('grow-desc');
-      if (stEl) stEl.textContent = stages[stage].label;
-      if (dEl) dEl.textContent = stages[stage].desc;
-      if (stage === stages.length - 1) {
-        const rev = document.getElementById('grow-reveal');
-        if (rev) rev.classList.add('show');
+    // Procedural tree using L-system inspired branching
+    function drawTreeBranch(ctx, x, y, len, angle, depth, maxDepth, progress, windOff) {
+      if (depth > maxDepth || len < 3) return;
+      const endX = x + Math.sin(angle + windOff * 0.02) * len;
+      const endY = y - Math.cos(angle) * len;
+      const depthRatio = depth / maxDepth;
+      const w = Math.max(1, (maxDepth - depth + 1) * 1.8 * (1 - depthRatio * 0.3));
+      // Colour: brown trunk → green tips
+      const g = Math.min(1, depthRatio * 1.4);
+      const r = Math.round(80 - g * 40);
+      const gr = Math.round(45 + g * 90);
+      const b = Math.round(15 + g * 20);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(endX, endY);
+      ctx.strokeStyle = `rgba(${r},${gr},${b},0.92)`;
+      ctx.lineWidth = w;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      if (depth >= maxDepth - 1 && progress > 0.5) {
+        // Leaf clusters
+        const leafCount = Math.floor(4 + progress * 8);
+        for (let i = 0; i < leafCount; i++) {
+          const lx = endX + (Math.random()-0.5)*22*progress;
+          const ly = endY + (Math.random()-0.5)*22*progress;
+          const lr = 3.5 + Math.random()*6*progress;
+          ctx.beginPath(); ctx.arc(lx,ly,lr,0,Math.PI*2);
+          const lGreen = 30 + Math.floor(progress*55);
+          const lBright = 20 + Math.floor(progress*30);
+          ctx.fillStyle = `rgba(${20+Math.random()*30},${lGreen+Math.random()*40},${lBright},${0.5+progress*0.35})`;
+          ctx.fill();
+        }
       }
-    };
-
-    function drawGround() {
-      const grad = ctx.createLinearGradient(0, H*0.75, 0, H);
-      grad.addColorStop(0,'rgba(30,50,20,0.9)');
-      grad.addColorStop(1,'rgba(15,25,10,0.95)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, H*0.75, W, H*0.25);
+      const spread = 0.38 + depthRatio * 0.12;
+      const lenDecay = 0.66;
+      drawTreeBranch(ctx, endX, endY, len*lenDecay, angle-spread, depth+1, maxDepth, progress, windOff);
+      drawTreeBranch(ctx, endX, endY, len*lenDecay, angle+spread, depth+1, maxDepth, progress, windOff);
+      if (depth <= 2 && progress > 0.4) {
+        drawTreeBranch(ctx, endX, endY, len*lenDecay*0.75, angle-spread*0.3, depth+1, maxDepth, progress, windOff);
+      }
     }
 
-    function drawTree(progress) {
+    function drawScene(t) {
+      // Smooth animation
+      animProgress += (targetProgress - animProgress) * 0.04;
+      const p = animProgress;
+
       ctx.clearRect(0,0,W,H);
-      // Sky gradient
+      // Sky
       const skyGrad = ctx.createLinearGradient(0,0,0,H);
-      skyGrad.addColorStop(0,'#050810');
-      skyGrad.addColorStop(0.7,'#0d1830');
-      skyGrad.addColorStop(1,'#0a120a');
+      const night = Math.max(0, 1-p*1.5);
+      skyGrad.addColorStop(0, night > 0.5 ? '#020608' : `rgba(${Math.round(p*30)},${Math.round(p*45)},${Math.round(20+p*60)},1)`);
+      skyGrad.addColorStop(0.7, `rgb(${Math.round(5+p*15)},${Math.round(10+p*25)},${Math.round(8+p*20)})`);
+      skyGrad.addColorStop(1, '#081008');
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0,0,W,H);
-      drawGround();
 
-      if (progress < 0.01) {
-        // Just a seed
-        ctx.beginPath();
-        ctx.ellipse(W/2, H*0.76, 6, 4, 0, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(160,120,60,0.8)';
-        ctx.fill();
-        ctx.shadowColor = 'rgba(245,200,66,0.5)';
-        ctx.shadowBlur = 12;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        return;
+      // Stars fade with growth
+      if (p < 0.6) {
+        Array.from({length:40}).forEach((_,i) => {
+          const sx = (Math.sin(i*137.5)*0.5+0.5)*W;
+          const sy = (Math.sin(i*97.3)*0.5+0.5)*H*0.7;
+          const a = (1-p*1.5) * (0.3+0.4*Math.abs(Math.sin(t*0.001+i)));
+          if (a <= 0) return;
+          ctx.beginPath(); ctx.arc(sx,sy,0.7+Math.random()*0.8,0,Math.PI*2);
+          ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fill();
+        });
       }
 
-      // Draw fractal-style tree
-      ctx.save();
-      ctx.translate(W/2, H*0.75);
-      const trunkH = H * 0.55 * progress;
-      const trunkW = 4 + progress * 14;
+      // Ground
+      const gGrad = ctx.createLinearGradient(0,H*0.78,0,H);
+      const grassG = Math.round(25 + p*55);
+      gGrad.addColorStop(0,`rgb(${Math.round(8+p*12)},${grassG},${Math.round(8+p*10)})`);
+      gGrad.addColorStop(1,`rgb(4,${Math.round(12+p*18)},4)`);
+      ctx.fillStyle = gGrad;
+      ctx.beginPath();
+      ctx.moveTo(0,H);
+      ctx.quadraticCurveTo(W*0.3,H*0.80, W*0.5,H*0.80);
+      ctx.quadraticCurveTo(W*0.7,H*0.80, W,H*0.82);
+      ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
 
-      function branch(len, angle, depth, width) {
-        if (depth === 0 || len < 4) return;
+      if (p < 0.02) {
+        // Seed
         ctx.save();
-        ctx.rotate(angle);
-        ctx.beginPath();
-        ctx.moveTo(0,0);
-        ctx.lineTo(0, -len);
-        const g = ctx.createLinearGradient(0,0,0,-len);
-        const greenAlpha = Math.min(progress * 1.5, 1);
-        g.addColorStop(0, `rgba(100,70,30,${0.9})`);
-        g.addColorStop(1, `rgba(60,100,40,${greenAlpha * 0.9})`);
-        ctx.strokeStyle = g;
-        ctx.lineWidth = width;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-        ctx.translate(0,-len);
-        if (progress > 0.3) {
-          branch(len*0.67, 0.45, depth-1, width*0.65);
-          branch(len*0.67, -0.45, depth-1, width*0.65);
-        }
-        if (progress > 0.6 && depth === 1) {
-          // Leaves
-          const leafCount = 5 + Math.floor(progress * 8);
-          for (let i = 0; i < leafCount; i++) {
-            const lx = (Math.random()-0.5)*20*progress;
-            const ly = (Math.random()-0.5)*20*progress;
-            const lr = 3 + Math.random()*5*progress;
-            ctx.beginPath();
-            ctx.arc(lx, ly, lr, 0, Math.PI*2);
-            ctx.fillStyle = `hsla(${110+Math.random()*30},${50+progress*40}%,${25+progress*20}%,${0.6+progress*0.3})`;
-            ctx.fill();
-          }
-        }
+        const sg = ctx.createRadialGradient(W/2,H*0.80,0,W/2,H*0.80,12);
+        sg.addColorStop(0,'rgba(245,200,66,0.8)');
+        sg.addColorStop(1,'rgba(160,100,30,0)');
+        ctx.fillStyle = sg;
+        ctx.beginPath(); ctx.arc(W/2,H*0.80,12,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(W/2,H*0.80,5,3.5,0,0,Math.PI*2);
+        ctx.fillStyle='rgba(140,90,30,0.9)'; ctx.fill();
+        ctx.restore();
+      } else {
+        // Tree
+        const windOff = Math.sin(t*0.0008)*5;
+        const maxD = Math.max(2, Math.min(7, Math.floor(p*9)));
+        const trunkLen = Math.min(H*0.62, H*0.08 + p*H*0.62);
+        ctx.save();
+        drawTreeBranch(ctx, W/2, H*0.80, trunkLen, 0, 0, maxD, p, windOff);
         ctx.restore();
       }
-
-      const depth = Math.max(2, Math.floor(progress * 7));
-      branch(trunkH, 0, depth, trunkW);
-      ctx.restore();
+      requestAnimationFrame(drawScene);
     }
+    requestAnimationFrame(drawScene);
 
-    drawTree(0);
+    window.growTap = function() {
+      if (stage >= stages.length - 1) return;
+      stage++;
+      targetProgress = stages[stage].pct;
+      const stEl = document.getElementById('tree-stage');
+      const dEl = document.getElementById('tree-desc');
+      if (stEl) stEl.textContent = stages[stage].label;
+      if (dEl) dEl.textContent = stages[stage].desc;
+      if (stages[stage].final) {
+        setTimeout(() => {
+          const rev = document.getElementById('tree-reveal');
+          if (rev) rev.style.opacity = '1';
+        }, 1000);
+      }
+    };
   });
 }
 
-// ─── 4. WATER FLOW ───────────────────────────────────────────
+// ─── 4. WATER FLOW ────────────────────────────────────────────
 function wonderWaterFlow(el) {
   const steps = [
-    {icon:'🌧️', label:'Rain falls from the sky', color:'#4a9eff'},
-    {icon:'🏔️', label:'Fills the rivers', color:'#3a8aee'},
-    {icon:'🐟', label:'Fish live in it', color:'#2a7add'},
-    {icon:'🐄', label:'Cows drink & give milk', color:'#5ab0ff'},
-    {icon:'🌳', label:'Trees grow & give fruit', color:'#4abe6a'},
-    {icon:'🍎', label:'We eat & are nourished', color:'#f5c842'},
+    {icon:'🌧️', label:'Rain falls from the sky', clr:'#4a9eff'},
+    {icon:'🏔️', label:'Fills the rivers', clr:'#3a8aee'},
+    {icon:'🐟', label:'Fish live in it', clr:'#2a7add'},
+    {icon:'🐄', label:'Cows drink & give milk', clr:'#5ab0ff'},
+    {icon:'🌳', label:'Trees grow & give fruit', clr:'#4abe6a'},
+    {icon:'🍽️', label:'We eat & are nourished', clr:'#f5c842'},
   ];
   let active = 0;
 
   el.innerHTML = `
-    <div class="wonder-wrap" style="padding:20px 16px 16px;background:linear-gradient(180deg,#050d1a,#0a1428)">
-      <div class="wonder-label">✦ Follow the Water</div>
-      <div class="wonder-prompt" style="margin-bottom:16px">Tap each step to follow Allah's gift</div>
-      <div id="water-chain" style="display:flex;flex-direction:column;align-items:center;gap:0"></div>
-      <div id="water-reveal" class="wonder-reveal" style="margin-top:12px">One gift. Six blessings. All from Allah. 💧</div>
+    <div style="background:linear-gradient(180deg,#03080f,#060e18);padding:16px 16px 20px">
+      <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:6px">✦ Follow the Water</div>
+      <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,.6);font-style:italic;text-align:center;margin-bottom:14px">Tap each step to follow Allah's gift</div>
+      <div id="wflow-chain" style="display:flex;flex-direction:column;align-items:center;gap:0"></div>
+      <div id="wflow-reveal" style="text-align:center;padding:14px 0 4px;font-family:var(--display);font-size:14px;color:var(--gold);opacity:0;transition:opacity .8s ease;letter-spacing:.5px">
+        One gift. Six blessings. All from Allah. 💧
+      </div>
     </div>`;
 
-  const chain = document.getElementById('water-chain');
+  const chain = document.getElementById('wflow-chain');
   if (!chain) return;
 
-  steps.forEach((step, i) => {
-    const stepEl = document.createElement('div');
-    stepEl.className = 'water-step' + (i === 0 ? ' active' : '');
-    stepEl.id = `wstep-${i}`;
-    stepEl.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);
-        border:1px solid rgba(${i===0?'245,200,66':'255,255,255'},${i===0?'0.3':'0.08'});
-        border-radius:14px;padding:12px 16px;width:100%;max-width:320px;
-        cursor:pointer;transition:all .4s;backdrop-filter:blur(4px)"
-        onclick="waterStep(${i})" id="wstep-inner-${i}">
-        <div style="font-size:28px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))">${step.icon}</div>
-        <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,${i===0?'0.9':'0.3'});transition:color .4s">${step.label}</div>
-        ${i===0?'<div style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);margin-left:auto;white-space:nowrap">Tap →</div>':''}
-      </div>
-      ${i < steps.length-1 ? `<div style="width:2px;height:14px;background:linear-gradient(180deg,${step.color},transparent);margin:2px 0;opacity:0;transition:opacity .5s .2s" id="wconnector-${i}"></div>` : ''}`;
-    chain.appendChild(stepEl);
-  });
-
-  window.waterStep = function(idx) {
-    if (idx !== active) return;
-    const inner = document.getElementById(`wstep-inner-${idx}`);
-    if (inner) {
-      inner.style.background = 'rgba(245,200,66,0.12)';
-      inner.style.borderColor = 'rgba(245,200,66,0.4)';
-      inner.querySelector('div:nth-child(2)').style.color = 'rgba(253,246,227,0.9)';
+  function buildStep(i, isActive) {
+    const s = steps[i];
+    const div = document.createElement('div');
+    div.id = `wfs-${i}`;
+    div.style.cssText = `width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center`;
+    const inner = document.createElement('div');
+    inner.id = `wfi-${i}`;
+    inner.style.cssText = `
+      display:flex;align-items:center;gap:12px;width:100%;
+      background:${isActive ? 'rgba(245,200,66,0.08)' : 'rgba(255,255,255,0.03)'};
+      border:1.5px solid ${isActive ? 'rgba(245,200,66,0.4)' : 'rgba(255,255,255,0.07)'};
+      border-radius:14px;padding:12px 16px;cursor:pointer;
+      transition:all .4s ease;`;
+    inner.innerHTML = `
+      <div style="font-size:26px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));opacity:${isActive?1:0.3};transition:opacity .4s">${s.icon}</div>
+      <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,${isActive?'0.9':'0.25'});transition:color .4s;flex:1">${s.label}</div>
+      ${isActive ? `<div style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);white-space:nowrap;letter-spacing:1px">Tap →</div>` : ''}`;
+    inner.onclick = () => activateStep(i);
+    div.appendChild(inner);
+    if (i < steps.length - 1) {
+      const conn = document.createElement('div');
+      conn.id = `wfc-${i}`;
+      conn.style.cssText = `width:2px;height:16px;background:linear-gradient(180deg,${s.clr},transparent);opacity:0;transition:opacity .5s .3s;margin:2px 0`;
+      div.appendChild(conn);
     }
-    const connector = document.getElementById(`wconnector-${idx}`);
-    if (connector) connector.style.opacity = '1';
+    return div;
+  }
+
+  function activateStep(i) {
+    if (i !== active) return;
+    // Light up current step fully
+    const inner = document.getElementById(`wfi-${i}`);
+    if (inner) {
+      inner.style.background = 'rgba(245,200,66,0.14)';
+      inner.style.borderColor = 'rgba(245,200,66,0.55)';
+      inner.style.cursor = 'default';
+      // Remove tap prompt
+      const tap = inner.querySelector('div:last-child');
+      if (tap && tap.style.letterSpacing) tap.style.opacity = '0';
+    }
+    const conn = document.getElementById(`wfc-${i}`);
+    if (conn) conn.style.opacity = '1';
     active++;
     if (active < steps.length) {
-      const nextInner = document.getElementById(`wstep-inner-${active}`);
+      // Activate next step visually
+      const nextInner = document.getElementById(`wfi-${active}`);
       if (nextInner) {
-        nextInner.style.borderColor = 'rgba(245,200,66,0.25)';
-        nextInner.innerHTML += '<div style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);margin-left:auto;white-space:nowrap">Tap →</div>';
-        nextInner.querySelector('div:nth-child(2)').style.color = 'rgba(253,246,227,0.75)';
+        nextInner.style.background = 'rgba(245,200,66,0.06)';
+        nextInner.style.borderColor = 'rgba(245,200,66,0.3)';
+        nextInner.querySelector('div:first-child').style.opacity = '1';
+        nextInner.querySelector('div:nth-child(2)').style.color = 'rgba(253,246,227,0.85)';
+        // Add tap prompt
+        const prompt = document.createElement('div');
+        prompt.style.cssText = 'font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);white-space:nowrap;letter-spacing:1px';
+        prompt.textContent = 'Tap →';
+        nextInner.appendChild(prompt);
       }
     }
     if (active >= steps.length) {
-      const rev = document.getElementById('water-reveal');
-      if (rev) rev.classList.add('show');
+      const rev = document.getElementById('wflow-reveal');
+      if (rev) rev.style.opacity = '1';
     }
-  };
+  }
+
+  steps.forEach((_, i) => chain.appendChild(buildStep(i, i === 0)));
 }
 
-// ─── 5. TASTE TESTER ─────────────────────────────────────────
+// ─── 5. TASTE TESTER ──────────────────────────────────────────
 function wonderTasteTester(el) {
   const fruits = [
-    {emoji:'🌴', name:'Date', bg:'linear-gradient(135deg,#3a2010,#1a0c05)', fact:'Dates have 77 nutrients. The Prophet ﷺ ate 3 every morning. Allah designed each one to perfection.'},
-    {emoji:'🍎', name:'Pomegranate', bg:'linear-gradient(135deg,#4a0a1a,#1a0508)', fact:'Each pomegranate has up to 1,400 seeds. Every single one by Allah\'s design.'},
-    {emoji:'🍯', name:'Honey', bg:'linear-gradient(135deg,#4a3000,#1a1000)', fact:'Honey never spoils. Archaeologists found 3000-year-old honey still perfect. Allah made it eternal.'},
-    {emoji:'🍋', name:'Lemon', bg:'linear-gradient(135deg,#3a3a00,#141400)', fact:'Sour, bright, preserving — Allah packed vitamin C into a yellow ball you can hold in one hand.'},
-    {emoji:'🌿', name:'Fig', bg:'linear-gradient(135deg,#1a2a10,#0a1005)', fact:'Allah swears by the fig in the Quran. It\'s one of the few fruits eaten whole — skin, seed, all.'},
-    {emoji:'🫐', name:'Grape', bg:'linear-gradient(135deg,#1a0a3a,#0a0518)', fact:'One grape vine can produce fruit for over 100 years. Allah built patience into the plant itself.'},
+    {e:'🌴', n:'Date', bg:'linear-gradient(160deg,#2a1808,#140c04)', f:'Dates have 77 nutrients. The Prophet ﷺ ate 3 every morning. Perfection in every seed.'},
+    {e:'🍎', n:'Pomegranate', bg:'linear-gradient(160deg,#3a0812,#180406)', f:'Up to 1,400 seeds — each one by Allah\'s precise design.'},
+    {e:'🍯', n:'Honey', bg:'linear-gradient(160deg,#3a2800,#180e00)', f:'Never expires. 3,000-year-old honey was found still perfect.'},
+    {e:'🍋', n:'Lemon', bg:'linear-gradient(160deg,#2c2c00,#0e0e00)', f:'Vitamin C in a golden ball. Bright, sharp, preserving — all at once.'},
+    {e:'🌿', n:'Fig', bg:'linear-gradient(160deg,#14200a,#080e04)', f:'Allah swears by the fig in the Quran. One of the few fruits eaten whole.'},
+    {e:'🫐', n:'Grape', bg:'linear-gradient(160deg,#14083a,#080418)', f:'One vine can fruit for 100+ years. Patience built into the plant.'},
   ];
-
-  el.innerHTML = `
-    <div class="wonder-wrap" style="padding:16px;background:linear-gradient(180deg,#050810,#0d1428)">
-      <div class="wonder-label">✦ Taste Tester</div>
-      <div class="wonder-prompt" style="margin-bottom:14px">Flip each card — discover what Allah designed</div>
-      <div class="fruit-grid" style="padding:0"></div>
-      <div id="fruit-reveal" class="wonder-reveal" style="margin-top:10px;font-size:13px">He didn't have to make food taste this good. He did it because He loves you. 💛</div>
-    </div>`;
-
-  const grid = el.querySelector('.fruit-grid');
   let flipped = 0;
 
-  fruits.forEach((f, i) => {
-    const card = document.createElement('div');
-    card.className = 'fruit-card';
-    card.innerHTML = `
-      <div class="fruit-front">
-        <div class="fruit-question" style="font-size:22px">?</div>
-        <div class="fruit-hint">Tap to flip</div>
+  el.innerHTML = `
+    <div style="background:linear-gradient(180deg,#030610,#08101a);padding:16px 14px 18px">
+      <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:6px">✦ Taste Tester</div>
+      <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,.6);font-style:italic;text-align:center;margin-bottom:14px">Flip each card — discover what Allah designed</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="fruit-cards"></div>
+      <div id="fruit-final" style="text-align:center;padding:14px 0 4px;font-family:var(--body);font-size:14px;color:rgba(253,246,227,.8);font-style:italic;opacity:0;transition:opacity 1s ease;line-height:1.6">
+        He didn't have to make food taste this good.<br><span style="color:var(--gold)">He did it because He loves you. 💛</span>
       </div>
-      <div class="fruit-back" style="background:${f.bg}">
-        <div class="fruit-emoji">${f.emoji}</div>
-        <div class="fruit-name">${f.name}</div>
-        <div class="fruit-fact">${f.fact}</div>
-      </div>`;
+    </div>`;
+
+  const grid = document.getElementById('fruit-cards');
+  fruits.forEach((f, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'perspective:600px;cursor:pointer';
+    const card = document.createElement('div');
+    card.style.cssText = `
+      position:relative;height:130px;transform-style:preserve-3d;
+      transition:transform .65s cubic-bezier(.23,1,.32,1);`;
+    // Front
+    const front = document.createElement('div');
+    front.style.cssText = `
+      position:absolute;inset:0;backface-visibility:hidden;
+      border-radius:16px;border:1px solid rgba(245,200,66,.18);
+      background:linear-gradient(160deg,rgba(18,28,52,.95),rgba(8,14,28,.98));
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px`;
+    front.innerHTML = `
+      <div style="font-size:26px;opacity:.35">❓</div>
+      <div style="font-family:var(--ui);font-size:9px;color:rgba(245,200,66,.35);letter-spacing:1.5px;text-transform:uppercase">Tap to flip</div>`;
+    // Back
+    const back = document.createElement('div');
+    back.style.cssText = `
+      position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);
+      border-radius:16px;border:1px solid rgba(245,200,66,.3);
+      background:${f.bg};overflow:hidden;
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:10px 8px`;
+    back.innerHTML = `
+      <div style="font-size:30px;margin-bottom:5px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6))">${f.e}</div>
+      <div style="font-family:var(--display);font-size:11px;color:var(--gold);letter-spacing:.5px;margin-bottom:5px;text-align:center">${f.n}</div>
+      <div style="font-family:var(--body);font-size:10.5px;color:rgba(253,246,227,.75);text-align:center;line-height:1.5;overflow:hidden">${f.f}</div>`;
+    card.appendChild(front); card.appendChild(back);
     card.onclick = () => {
-      if (!card.classList.contains('flipped')) {
-        card.classList.add('flipped');
+      if (!card.dataset.flipped) {
+        card.style.transform = 'rotateY(180deg)';
+        card.dataset.flipped = '1';
         flipped++;
         if (flipped >= fruits.length) {
-          const rev = document.getElementById('fruit-reveal');
-          if (rev) rev.classList.add('show');
+          const fin = document.getElementById('fruit-final');
+          if (fin) fin.style.opacity = '1';
         }
       }
     };
-    grid.appendChild(card);
+    wrap.appendChild(card);
+    grid.appendChild(wrap);
   });
 }
 
-// ─── 6. STAR GAZER ───────────────────────────────────────────
+// ─── 6. STAR GAZER ────────────────────────────────────────────
 function wonderStarGazer(el) {
   const starFacts = [
-    {x:20,y:25, name:'Betelgeuse', fact:'700x bigger than our sun. If it replaced our sun, it would reach Jupiter.'},
-    {x:65,y:15, name:'Sirius', fact:'The brightest star — 25x more luminous than our sun. Visible to the naked eye.'},
-    {x:40,y:45, name:'Polaris', fact:'The North Star — has guided travellers for thousands of years. Allah\'s compass in the sky.'},
-    {x:75,y:55, name:'Andromeda', fact:'A whole other galaxy — 2.5 million light years away. Contains 1 trillion stars.'},
-    {x:15,y:65, name:'Pleiades', fact:'Mentioned in the Quran (An-Najm). Ancient civilisations worldwide recognised them.'},
+    {x:22, y:28, name:'Betelgeuse', fact:'700× bigger than our sun. Replacing our sun, it would swallow Jupiter.', side:'right'},
+    {x:68, y:18, name:'Sirius', fact:'Brightest star we can see — 25× more luminous than our sun.', side:'left'},
+    {x:42, y:52, name:'Polaris', fact:'The North Star — Allah\'s compass in the sky for thousands of years.', side:'right'},
+    {x:75, y:58, name:'Andromeda', fact:'A whole galaxy — 2.5 million light years away, 1 trillion stars.', side:'left'},
+    {x:18, y:65, name:'Pleiades', fact:'Mentioned in the Quran (An-Najm). Recognised by civilisations worldwide.', side:'right'},
   ];
   let revealed = 0;
+  let activePopup = null;
 
   el.innerHTML = `
-    <div class="wonder-wrap star-field-wrap" style="height:320px;overflow:hidden;position:relative">
-      <canvas id="sg-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
-      <div id="sg-hotspots" style="position:absolute;inset:0;z-index:3"></div>
-      <div style="position:absolute;inset:0;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:center;padding-top:12px">
-        <div class="wonder-label">✦ Star Gazer</div>
-        <div class="wonder-prompt" style="font-size:13px">Tap the glowing stars to explore</div>
+    <div style="position:relative;overflow:hidden;height:300px">
+      <canvas id="sg2-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+      <div id="sg2-spots" style="position:absolute;inset:0;z-index:3"></div>
+      <div id="sg2-popup" style="position:absolute;z-index:10;display:none;pointer-events:none"></div>
+      <div style="position:absolute;top:12px;left:0;right:0;text-align:center;z-index:2;pointer-events:none">
+        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.35);letter-spacing:3px;text-transform:uppercase;margin-bottom:4px">✦ Star Gazer</div>
+        <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.5);font-style:italic">Tap the glowing stars to explore</div>
       </div>
-      <div id="sg-tafakkur" class="wonder-reveal" style="position:absolute;bottom:16px;left:0;right:0;z-index:5;font-size:13px;padding:0 20px;text-align:center">
-        This quiet wonder — it has a name: <span style="font-family:var(--arabic);font-size:20px;color:var(--gold)">تَفَكُّر</span> Tafakkur.
+      <div id="sg2-tafakkur" style="position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:4;pointer-events:none;padding:0 16px;opacity:0;transition:opacity 1s ease">
+        <div style="background:rgba(8,12,24,.9);border:1px solid rgba(245,200,66,.25);border-radius:14px;padding:10px 16px;display:inline-block;backdrop-filter:blur(8px)">
+          <span style="font-family:var(--arabic);font-size:22px;color:var(--gold);display:block;margin-bottom:4px">تَفَكُّر</span>
+          <span style="font-family:var(--body);font-size:12px;color:rgba(253,246,227,.7)">Tafakkur — this quiet wonder is worship.</span>
+        </div>
       </div>
     </div>`;
 
   requestAnimationFrame(() => {
-    const canvas = document.getElementById('sg-canvas');
+    const canvas = document.getElementById('sg2-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     const W = canvas.width, H = canvas.height;
 
-    const bgStars = Array.from({length:180}, () => ({
-      x: Math.random()*W, y: Math.random()*H,
-      r: 0.4+Math.random()*1.8, phase:Math.random()*Math.PI*2
+    const bgStars = Array.from({length:200}, () => ({
+      x:Math.random()*W, y:Math.random()*H,
+      r:0.4+Math.random()*1.8, phase:Math.random()*Math.PI*2
     }));
 
-    function drawBg(t) {
+    function drawStar(t) {
       const grad = ctx.createLinearGradient(0,0,0,H);
-      grad.addColorStop(0,'#020408');
-      grad.addColorStop(0.5,'#060c18');
-      grad.addColorStop(1,'#0a1020');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0,0,W,H);
+      grad.addColorStop(0,'#010205');
+      grad.addColorStop(0.6,'#04070f');
+      grad.addColorStop(1,'#080e1a');
+      ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
 
-      // Nebula hint
-      const ng = ctx.createRadialGradient(W*0.5,H*0.4,0,W*0.5,H*0.4,W*0.5);
-      ng.addColorStop(0,'rgba(30,20,80,0.2)');
-      ng.addColorStop(0.5,'rgba(20,10,50,0.08)');
+      // Nebula
+      const ng = ctx.createRadialGradient(W*.5,H*.3,0,W*.5,H*.3,W*.6);
+      ng.addColorStop(0,'rgba(20,10,60,0.25)');
       ng.addColorStop(1,'transparent');
-      ctx.fillStyle = ng;
-      ctx.fillRect(0,0,W,H);
+      ctx.fillStyle = ng; ctx.fillRect(0,0,W,H);
 
       bgStars.forEach(s => {
-        const twinkle = 0.3 + 0.7*Math.abs(Math.sin(t*0.001 + s.phase));
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-        ctx.fillStyle = `rgba(255,255,255,${twinkle})`;
-        ctx.fill();
+        const a = 0.2+0.8*Math.abs(Math.sin(t*.0008+s.phase));
+        ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fill();
       });
 
-      // Glowing hotspot stars
       starFacts.forEach((sf, i) => {
         const sx = sf.x/100*W, sy = sf.y/100*H;
-        const pulse = 0.5 + 0.5*Math.sin(t*0.002 + i*1.2);
-        const glow = ctx.createRadialGradient(sx,sy,0,sx,sy,18+pulse*8);
-        glow.addColorStop(0,`rgba(245,200,66,${0.7+pulse*0.2})`);
-        glow.addColorStop(0.3,`rgba(245,200,66,${0.2+pulse*0.1})`);
-        glow.addColorStop(1,'transparent');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(sx,sy,18+pulse*8,0,Math.PI*2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(sx,sy,2.5,0,Math.PI*2);
-        ctx.fillStyle = `rgba(255,245,200,${0.9+pulse*0.1})`;
-        ctx.fill();
+        const pulse = 0.5+0.5*Math.sin(t*.0018+i*1.3);
+        const rad = 16+pulse*10;
+        const g = ctx.createRadialGradient(sx,sy,0,sx,sy,rad);
+        g.addColorStop(0,`rgba(245,200,66,${0.8+pulse*.15})`);
+        g.addColorStop(0.4,`rgba(245,180,50,${0.25+pulse*.1})`);
+        g.addColorStop(1,'transparent');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(sx,sy,rad,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx,sy,2.5,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,248,210,0.95)`; ctx.fill();
       });
-      requestAnimationFrame(drawBg);
+      requestAnimationFrame(drawStar);
     }
-    requestAnimationFrame(t => drawBg(t));
+    requestAnimationFrame(drawStar);
 
-    // Hotspot overlays
-    const hotWrap = document.getElementById('sg-hotspots');
-    if (!hotWrap) return;
+    const spotsWrap = document.getElementById('sg2-spots');
+    const popupEl = document.getElementById('sg2-popup');
+    if (!spotsWrap || !popupEl) return;
+
     starFacts.forEach((sf, i) => {
       const btn = document.createElement('div');
       btn.style.cssText = `position:absolute;left:${sf.x}%;top:${sf.y}%;
-        width:44px;height:44px;transform:translate(-50%,-50%);cursor:pointer;z-index:4`;
+        width:48px;height:48px;transform:translate(-50%,-50%);cursor:pointer;z-index:4`;
       btn.onclick = () => {
-        if (btn.dataset.revealed) return;
-        btn.dataset.revealed = '1';
+        if (btn.dataset.done) return;
+        btn.dataset.done = '1';
         revealed++;
-        // Show fact popup
-        const popup = document.createElement('div');
-        popup.style.cssText = `position:absolute;bottom:110%;left:50%;transform:translateX(-50%);
-          background:rgba(8,14,30,0.96);border:1px solid rgba(245,200,66,0.35);
-          border-radius:12px;padding:10px 12px;width:170px;z-index:10;
-          box-shadow:0 8px 32px rgba(0,0,0,0.7);backdrop-filter:blur(10px);
-          animation:fadeInUp .3s ease;`;
-        popup.innerHTML = `
+        // Show popup — contained within canvas
+        const px = sf.x/100*W;
+        const py = sf.y/100*H;
+        // Determine popup position to stay in bounds
+        const popW = 160, popH = 80;
+        let left = px + 20;
+        let top = py - popH/2;
+        if (sf.side === 'left') left = px - popW - 20;
+        if (left < 5) left = 5;
+        if (left + popW > W - 5) left = W - popW - 5;
+        if (top < 5) top = 5;
+        if (top + popH > H - 5) top = H - popH - 5;
+        popupEl.style.cssText = `position:absolute;left:${left}px;top:${top}px;
+          width:${popW}px;background:rgba(6,10,22,.94);
+          border:1px solid rgba(245,200,66,.35);border-radius:12px;
+          padding:10px 12px;pointer-events:none;display:block;
+          box-shadow:0 8px 32px rgba(0,0,0,.8);backdrop-filter:blur(8px);
+          animation:fadeInUp .3s ease;z-index:10`;
+        popupEl.innerHTML = `
           <div style="font-family:var(--display);font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:5px">${sf.name}</div>
-          <div style="font-family:var(--body);font-size:11px;color:rgba(253,246,227,0.8);line-height:1.55">${sf.fact}</div>`;
-        btn.appendChild(popup);
+          <div style="font-family:var(--body);font-size:11px;color:rgba(253,246,227,.8);line-height:1.55">${sf.fact}</div>`;
+        // Hide after 3.5s, show next
+        setTimeout(() => {
+          if (popupEl.innerHTML.includes(sf.name)) popupEl.style.display = 'none';
+        }, 3500);
         if (revealed >= starFacts.length) {
-          const rev = document.getElementById('sg-tafakkur');
-          if (rev) rev.classList.add('show');
+          setTimeout(() => {
+            const rev = document.getElementById('sg2-tafakkur');
+            if (rev) rev.style.opacity = '1';
+          }, 1000);
         }
       };
-      hotWrap.appendChild(btn);
+      spotsWrap.appendChild(btn);
     });
   });
 }
+
 
 
 function buildSceneBottomBtn(sc, alreadyDone) {
