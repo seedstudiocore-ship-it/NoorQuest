@@ -350,7 +350,8 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 /* ═══════════════════════════════════════
    INTERACTIVES
 ═══════════════════════════════════════ */
-.ix-wrap { margin:2px 0; padding:24px 20px; background:linear-gradient(135deg,#0f1a30,#0a1020); border-top:1px solid rgba(255,255,255,.07) }
+.ix-wrap { margin:2px 0; padding:0; background:transparent; }
+.ix-wrap-inner { padding:24px 20px; background:linear-gradient(135deg,#0f1a30,#0a1020); border-top:1px solid rgba(255,255,255,.07) }
 .ix-title { font-family:var(--display); font-size:11px; color:rgba(245,200,66,.5); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:16px }
 
 /* REVEAL */
@@ -519,15 +520,16 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 
 /* ── Floating home button ── */
 .home-fab {
-  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-  z-index:500; background:rgba(10,14,26,.92); border:1.5px solid rgba(245,200,66,.25);
-  border-radius:50px; padding:10px 22px; display:flex; align-items:center; gap:8px;
-  cursor:pointer; backdrop-filter:blur(12px); box-shadow:0 4px 24px rgba(0,0,0,.5);
-  font-family:var(--ui); font-size:13px; font-weight:700; color:rgba(245,200,66,.7);
+  position:fixed; top:14px; right:14px; transform:none;
+  z-index:500; background:rgba(10,14,26,.88); border:1px solid rgba(245,200,66,.2);
+  border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; backdrop-filter:blur(12px); box-shadow:0 2px 12px rgba(0,0,0,.4);
+  font-size:16px; color:rgba(245,200,66,.6);
   transition:all .2s; opacity:0; pointer-events:none;
 }
 .home-fab.visible { opacity:1; pointer-events:all; }
-.home-fab:active { transform:translateX(-50%) scale(.97); }
+.home-fab:active { transform:scale(.92); }
+.home-fab:hover { background:rgba(20,30,55,.95); border-color:rgba(245,200,66,.4); color:var(--gold); }
 
 </style>
 </head>
@@ -2962,13 +2964,22 @@ async function renderFullScene() {
     </div>
     <div class="complete-scene-btn">
       ${alreadyDone
-        ? `<button class="btn btn-glass btn-full" onclick="exitScene()" style="opacity:.7">← Back to World</button>`
+        ? (() => {
+            const nextSc = A.world.scenes.find(s => s.id === sc.id + 1);
+            return nextSc
+              ? `<button class="btn btn-gold btn-full" onclick="startScene(${nextSc.id})" style="font-size:15px;padding:16px">
+                   Next: ${nextSc.title} →
+                 </button>`
+              : `<button class="btn btn-green btn-full" onclick="exitScene()" style="font-size:15px;padding:16px">
+                   ✓ All Scenes Done — Continue →
+                 </button>`;
+          })()
         : `<button class="btn btn-green btn-full" onclick="completeScene()" id="scene-complete-btn" style="font-size:16px;padding:17px">
              ✦ I've Read This Scene! &nbsp;+${sc.ha || 5} Hasanah
            </button>`
       }
       <div style="text-align:center;margin-top:12px">
-        <button class="btn btn-glass btn-sm" onclick="exitScene()">← Other Scenes</button>
+        <button class="btn btn-glass btn-sm" onclick="exitScene()">← All Scenes</button>
       </div>
     </div>`;
 
@@ -3074,14 +3085,30 @@ async function completeScene() {
 function showSceneReward(ha) {
   const wrap = document.getElementById('reward-wrap');
   if (!wrap) { openWorld(A.world.id); return; }
+
+  const nextScene = A.world.scenes.find(s => s.id === A.scene.id + 1);
+  const allDone = !nextScene;
+
   wrap.innerHTML = `
     <div class="srainwrap" id="srainwrap"></div>
-    <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:20px;padding:40px 24px;text-align:center">
-      <div style="font-size:80px;animation:keyrise .7s cubic-bezier(.34,1.56,.64,1) forwards;filter:drop-shadow(0 0 40px rgba(245,200,66,.7))">⭐</div>
-      <div style="font-family:var(--display);font-size:34px;color:var(--gold);font-weight:700;text-shadow:0 0 30px rgba(245,200,66,.4)">+${ha} Hasanah!</div>
-      <div style="font-family:var(--ui);font-size:14px;color:rgba(253,246,227,.55);letter-spacing:1px">Total: ${A.totalHasanah} ⭐</div>
-      <div style="font-family:var(--body);font-size:15px;color:var(--cream2);font-style:italic;line-height:1.7;max-width:260px">Every good deed is recorded. Allah sees every moment of effort. 🌙</div>
-      <button class="btn btn-gold btn-full" onclick="openWorld(A.world.id)" style="font-size:15px;padding:16px">Continue Journey →</button>
+    <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:18px;padding:36px 24px;text-align:center">
+      <div style="font-size:72px;animation:keyrise .7s cubic-bezier(.34,1.56,.64,1) forwards;filter:drop-shadow(0 0 40px rgba(245,200,66,.7))">⭐</div>
+      <div style="font-family:var(--display);font-size:32px;color:var(--gold);font-weight:700;text-shadow:0 0 30px rgba(245,200,66,.4)">+${ha} Hasanah!</div>
+      <div style="font-family:var(--ui);font-size:13px;color:rgba(253,246,227,.5);letter-spacing:1px">Total: ${A.totalHasanah} ⭐</div>
+      <div style="font-family:var(--body);font-size:14px;color:var(--cream2);font-style:italic;line-height:1.7;max-width:260px">
+        ${allDone ? "You've completed all scenes in this world! Time for the quiz!" : 'Every good deed is recorded. Allah sees every moment of effort.'}
+      </div>
+      <div style="width:100%;display:flex;flex-direction:column;gap:10px;max-width:320px">
+        ${nextScene
+          ? `<button class="btn btn-gold btn-full" onclick="startScene(${nextScene.id})" style="font-size:15px;padding:16px">
+               Next: ${nextScene.title} →
+             </button>
+             <button class="btn btn-glass btn-sm btn-full" onclick="openWorld(A.world.id)">↩ All Scenes</button>`
+          : `<button class="btn btn-gold btn-full" onclick="openWorld(A.world.id)" style="font-size:15px;padding:16px">
+               Continue Journey →
+             </button>`
+        }
+      </div>
     </div>`;
   startStarRain();
   SS('s-reward');
@@ -3381,17 +3408,47 @@ function renderInteractive(container, ix) {
 
 // ── REVEAL ──────────────────────────────────────────────────
 function renderREVEAL(container, ix, assets) {
-  container.innerHTML = `
-    <div class="ix-title">✦ Tap each to reveal</div>
-    <div class="rev-items">
-      ${ix.items.map((item, idx) => `
-        <div class="rev-item" onclick="this.classList.toggle('open')">
-          <div class="rev-lbl">
-            <span>${item.l}</span>
-            <span class="rev-arrow">›</span>
+  // Single-item REVEAL: show as a "Wonder Prompt" — think first, then reveal
+  // This avoids duplicating the "What We Learn" section below
+  if (ix.items.length === 1) {
+    const item = ix.items[0];
+    // Remove ix-wrap default styling — wonder prompt has its own bg
+    container.style.background = 'transparent';
+    container.style.borderTop = 'none';
+    container.style.margin = '0';
+    container.innerHTML = `
+      <div style="padding:20px;background:linear-gradient(135deg,rgba(26,42,80,.95),rgba(10,14,26,.98));border-top:1px solid rgba(245,200,66,.12);border-bottom:1px solid rgba(245,200,66,.08)">
+        <div style="font-family:var(--display);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px">✦ Wonder Prompt</div>
+        <div style="font-family:var(--body);font-size:15px;color:rgba(253,246,227,.75);font-style:italic;line-height:1.75;margin-bottom:16px">
+          Before you read the lesson below — <strong style="color:var(--gold3)">what do you think this moment shows us about Allah?</strong>
+        </div>
+        <div id="wonder-reveal-${ix.items[0].l.replace(/\s/g,'')}" 
+             style="background:rgba(245,200,66,.07);border:1.5px solid rgba(245,200,66,.18);border-radius:16px;padding:16px;cursor:pointer;transition:all .3s"
+             onclick="this.querySelector('.wonder-answer').style.display='block';this.querySelector('.wonder-hint').style.display='none';this.style.borderColor='rgba(245,200,66,.45)'">
+          <div class="wonder-hint" style="font-family:var(--display);font-size:13px;color:rgba(245,200,66,.6);text-align:center;padding:4px 0">
+            ✦ ${item.l} — Tap to reveal
           </div>
-          <div class="rev-body">${item.c}</div>
-        </div>`).join('')}
+          <div class="wonder-answer" style="display:none;font-family:var(--body);font-size:14px;color:var(--cream2);line-height:1.75">
+            ${item.c}
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+  // Multi-item REVEAL: standard accordion
+  container.innerHTML = `
+    <div class="ix-wrap" style="padding:20px">
+      <div class="ix-title">✦ Tap each to reveal</div>
+      <div class="rev-items">
+        ${ix.items.map((item, idx) => `
+          <div class="rev-item" onclick="this.classList.toggle('open')">
+            <div class="rev-lbl">
+              <span>${item.l}</span>
+              <span class="rev-arrow">›</span>
+            </div>
+            <div class="rev-body">${item.c}</div>
+          </div>`).join('')}
+      </div>
     </div>`;
 }
 
@@ -4214,7 +4271,5 @@ function goHome() {
   }
 }
 </script>  <!-- Floating home button — shown on inner screens -->
-  <button class="home-fab" id="home-fab" onclick="goHome()">
-    <span style="font-size:16px">⌂</span> Home
-  </button>
+  <button class="home-fab" id="home-fab" onclick="goHome()" title="Home">⌂</button>
 </body></html>
