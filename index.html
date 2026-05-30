@@ -762,10 +762,12 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 
 <!-- WORLD DETAIL -->
 <div id="s-wdetail" class="screen">
-  <div class="back-hdr"><button class="back-btn" onclick="SS('s-map')">←</button><b id="wd-title" style="font-size:17px;flex:1">World</b></div>
-  <div id="wd-hero" class="who-hero"></div>
-  <div id="wd-scenes" style="padding:0 16px;flex:1;overflow-y:auto;padding-bottom:16px"></div>
-  <div id="wd-actions" style="padding:12px 16px 20px;flex-shrink:0;display:flex;flex-direction:column;gap:10px"></div>
+  <div class="back-hdr" style="flex-shrink:0"><button class="back-btn" onclick="SS('s-map')">←</button><div id="wd-title" style="font-family:var(--display);font-size:17px;flex:1;font-weight:700">World</div></div>
+  <div style="flex:1;overflow-y:auto">
+    <div id="wd-hero" class="who-hero"></div>
+    <div id="wd-scenes" style="padding:0 16px 8px"></div>
+    <div id="wd-actions" style="padding:8px 16px 32px;display:flex;flex-direction:column;gap:10px"></div>
+  </div>
 </div>
 
 <!-- SCENE PLAYER -->
@@ -1044,7 +1046,7 @@ const W1 = {
      B:'Zain reaches up and touches a fat, warm date. He pops it in his mouth. His eyes go wide. "That is — WOW." Nura is already tasting a pomegranate seed. "Crunchy AND sweet," she says, amazed. "How does it do BOTH?"',
      C:'"Allah didn\'t HAVE to make food taste good," Zain says suddenly. "He could have just made it... fuel." Nura looks at her pomegranate. "He made it delicious because He loves us," she says quietly. That feels like a really important thing to understand.',
      ix:{type:'WONDER', wonder:'taste_tester'},
-     lesson:"Allah made hundreds of different fruits — all different colours, tastes and smells — when He could have just given us plain fuel to survive. He made food DELICIOUS because He loves us and wants us to enjoy this world.",
+     lesson:"Allah created hundreds of different fruits and foods — all with different colours, tastes, smells, and textures. Every single taste, every crunch, every sweetness is a marvel of His design. He filled the world with flavours we could never have imagined — sweet, juicy, crunchy, creamy, and so much more. Every wonderful taste is a gift from Allah and a sign of His generosity and care. 💛",
      dua:{ar:"الحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنَا وَسَقَانَا", lat:"Alhamdu lillaahil-ladhee at'amanaa wa saqaanaa", en:"All praise to Allah who fed us and gave us drink"},
      ha:5},
 
@@ -1206,7 +1208,7 @@ const W3 = {
        {l:'🌟 You are not an accident', c:'Allah created you on purpose, at this exact time, in this exact place. Nothing about your existence was random.'},
        {l:'🕌 Worship = your whole life', c:'Worship is not just prayer. Every kind word, honest action, and sincere effort done for Allah is worship. Your whole day can be worship.'},
        {l:'💛 Purpose gives meaning', c:'When you know why you exist, every morning has meaning. You are not just waiting for life to happen — you are living your purpose.'},
-       {l:'🤲 Allah chose YOU', c:'Out of all the souls that could have existed, Allah created you — with your face, your gifts, your life. That is not small. That is extraordinary.'}
+       {l:'🤲 Allah chose YOU', c:'Allah created you — this exact you, with your face, your gifts, your life — and called it good. That is not small. That is extraordinary.'}
      ]},
      lesson:"Allah created you with a purpose — to know Him, love Him, and live in a way that pleases Him. That purpose makes every single day of your life meaningful. You are not here by accident. You were created deliberately, by the greatest Creator, for the greatest reason.",
      dua:{ar:"رَبِّ أَعِنِّي وَلَا تُعِنْ عَلَيَّ", lat:"Rabbi a'innee wa laa tu'in 'alayya", en:"My Lord, help me and do not let anyone overpower me"},
@@ -2211,7 +2213,7 @@ const W11 = {
     {id:5, title:"The Prophet as a Person",
      A:"He fixed his own shoes. He mended his own clothes. He helped with household chores — his wife Aisha was asked what he used to do at home and she said: he used to serve his family. He played with children. He let his grandsons Hasan and Husain climb on his back while he was in sujood.",
      B:"He remembered everyone by name. He turned his whole body to face you when you spoke to him — not just his head, his whole body, so you felt like you were the only person in the world. He visited the sick. He attended funerals. He cried when he was moved. He laughed at things that were genuinely funny.",
-     C:"He was the most human of all the prophets — and the most complete example of how a human being can live. He didn't ask us to be angels. He showed us how to be the best possible version of human.",
+     C:"The Prophet ﷺ was the most beloved person to Allah — and the most beloved to the people around him. He visited the sick. He played with children. He helped at home. He stood up for those who were treated unfairly. He fed the hungry, greeted everyone with a smile, and remembered Allah in every single moment. Everything he did was saved for us — a complete guide, from Allah, on how to live the best life in this world and earn the best place in the next.",
      ix:{type:'TAP', items:[
        {i:'🏠', n:'At Home', r:'He fixed his own shoes, helped with chores, never treated household tasks as beneath him. "The best of you is the best to his family."'},
        {i:'😄', n:'His Laughter', r:'He was known to smile often and laugh. He made light of genuine things. Not every moment was gravity.'},
@@ -2893,8 +2895,17 @@ async function selectChild(childId) {
   A.child = A.children.find(c => c.id === childId);
   if (!A.child) return;
   setLoading(true);
-  await loadProgress();
-  setLoading(false);
+  try {
+    await Promise.race([
+      loadProgress(),
+      new Promise(resolve => setTimeout(resolve, 5000)) // 5s timeout
+    ]);
+  } catch(e) {
+    console.warn('loadProgress error:', e);
+  } finally {
+    setLoading(false);
+    SS('s-map');
+  }
 }
 
 async function loadProgress() {
@@ -3101,8 +3112,34 @@ async function renderFullScene() {
 
   // Render interactive immediately (text-only, no assets yet)
   const ixEl = document.getElementById('ix-container');
-  if (ixEl && sc.ix) renderInteractive(ixEl, sc.ix, {});
-  else if (ixEl) ixEl.style.display = 'none';
+  if (ixEl && sc.ix) {
+    // Add section divider header before interactive
+    const ixLabel = {
+      WONDER: '✦ Explore',
+      TAP: '✦ Discover',
+      LISTEN: '✦ Listen & Explore',
+      REVEAL: '✦ Think & Reveal',
+      BUILD: '✦ Build It',
+      BREATHE: '✦ Breathe',
+      SORT: '✦ Sort It Out',
+    };
+    ixEl.insertAdjacentHTML('beforebegin', `
+      <div style="
+        padding:16px 20px 0;
+        display:flex;align-items:center;gap:10px;
+        background:linear-gradient(180deg,rgba(10,14,26,0) 0%,rgba(10,14,26,1) 100%);
+        margin-top:-2px;
+      ">
+        <div style="flex:1;height:1px;background:rgba(245,200,66,.15)"></div>
+        <div style="
+          font-family:var(--display);font-size:11px;
+          color:rgba(245,200,66,.7);letter-spacing:2.5px;
+          text-transform:uppercase;white-space:nowrap;
+        ">${ixLabel[sc.ix.type] || '✦ Interactive'}</div>
+        <div style="flex:1;height:1px;background:rgba(245,200,66,.15)"></div>
+      </div>`);
+    renderInteractive(ixEl, sc.ix, {});
+  } else if (ixEl) ixEl.style.display = 'none';
 
   // Now load admin images in background — only apply if still on same scene
   try {
@@ -3128,7 +3165,7 @@ async function renderFullScene() {
     });
 
     // Re-render interactive with real assets if any loaded
-    if (Object.keys(ixAssets).length > 0 && ixEl && sc.ix) {
+    if (ixEl && sc.ix) {
       renderInteractive(ixEl, sc.ix, ixAssets);
     }
   } catch(e) {
@@ -3701,7 +3738,7 @@ function renderTAP(container, ix, assets) {
       + '</div>';
   });
   container.innerHTML = '<div style="padding:18px 16px 16px">'
-    + '<div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.45);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px">✦ Tap each to explore</div>'
+    + '<div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.85);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px">✦ Tap each to explore</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + rows + '</div>'
     + '</div>';
   window.tapItem = function(el) {
@@ -3927,7 +3964,7 @@ function renderLISTEN(container, ix, assets) {
       + '</div>';
   });
   container.innerHTML = '<div style="padding:18px 16px 16px">'
-    + '<div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.45);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px">✦ Tap each sound to explore</div>'
+    + '<div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.85);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px">✦ Tap each sound to explore</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + rows + '</div>'
     + '</div>';
   window.listenTap2 = function(el, audioUrl) {
@@ -4558,7 +4595,7 @@ function wonderDawnWatch(el) {
           The light was already here. Tap to find it.
         </div>
         <div id="lp-reveal" style="font-family:var(--body);font-size:15px;color:var(--gold);font-style:italic;text-align:center;padding:0 24px;opacity:0;transition:opacity 1.2s ease;line-height:1.7;text-shadow:0 0 20px rgba(245,200,66,.4)">
-          He gave you light to see.<br>Then He made it beautiful so you'd look up.
+          Allah gave you light to see the world — and made that world beautiful to look at. 🌈✨
         </div>
       </div>
     </div>`;
@@ -4669,25 +4706,26 @@ function wonderDawnWatch(el) {
     let animFrame;
 
     function spawnRays(x, y) {
-      const count = 12;
+      const count = 16;
       for (let i = 0; i < count; i++) {
-        const angle = (Math.PI*2 * i/count) + (Math.random()-0.5)*0.25;
+        const angle = (Math.PI*2 * i/count) + (Math.random()-0.5)*0.2;
         rays.push({
           x, y, angle,
-          speed: 3.5 + Math.random()*3,
+          speed: 4 + Math.random()*4,
           len: 0,
-          maxLen: 80 + Math.random()*100,
-          width: 2 + Math.random()*3,
+          maxLen: 100 + Math.random()*120,
+          width: 3 + Math.random()*4,
           life: 1
         });
       }
-      // Central burst glow
-      const grad = lCtx.createRadialGradient(x,y,0,x,y,60);
-      grad.addColorStop(0,'rgba(255,255,255,0.95)');
-      grad.addColorStop(0.4,'rgba(255,255,255,0.5)');
+      // Large central burst — much more visible
+      const grad = lCtx.createRadialGradient(x,y,0,x,y,90);
+      grad.addColorStop(0,'rgba(255,255,255,1)');
+      grad.addColorStop(0.3,'rgba(255,255,255,0.9)');
+      grad.addColorStop(0.7,'rgba(255,255,255,0.4)');
       grad.addColorStop(1,'rgba(255,255,255,0)');
       lCtx.fillStyle = grad;
-      lCtx.beginPath(); lCtx.arc(x,y,60,0,Math.PI*2); lCtx.fill();
+      lCtx.beginPath(); lCtx.arc(x,y,90,0,Math.PI*2); lCtx.fill();
     }
 
     function animateRays() {
@@ -4750,11 +4788,11 @@ function wonderDawnWatch(el) {
 // ─── 2. SKY PILLARS ──────────────────────────────────────────
 function wonderSkyPillars(el) {
   const items = [
-    {x:18, y:30, label:'Clouds?', resp:'Not clouds...', w:90},
-    {x:70, y:18, label:'Stars?', resp:'Not stars...', w:80},
-    {x:45, y:50, label:'Wind?', resp:'Not wind...', w:80},
-    {x:25, y:65, label:'Air?', resp:'Not air...', w:70},
-    {x:60, y:62, label:'Nothing?', resp:'Nothing. Allah holds it.', final:true, w:100},
+    {x:15, y:58, label:'Clouds?', resp:'Not clouds...', w:90},
+    {x:78, y:12, label:'Stars?', resp:'Not stars...', w:80},
+    {x:48, y:35, label:'Wind?', resp:'Not wind...', w:80},
+    {x:22, y:80, label:'Air?', resp:'Not air...', w:70},
+    {x:65, y:70, label:'Nothing?', resp:'Nothing. Allah holds it.', final:true, w:100},
   ];
 
   el.innerHTML = `
@@ -4924,56 +4962,54 @@ function wonderGrowSeed(el) {
     canvas.height = canvas.offsetHeight || 300;
     const W = canvas.width, H = canvas.height;
 
-    // Dynamic zoom: as tree grows, we scale down so it always fits
+    // Dynamic zoom — keeps tree visible and fills screen at full growth
     function getScale(p) {
-      if (p < 0.22) return 1;
-      // At p=1.0, tree trunk would be H*0.68, with branches it reaches ~1.5x that
-      // So we need to scale to fit everything in H*0.85 (leaving room for ground/text)
-      return Math.max(0.28, 1 - p * 0.72);
+      if (p < 0.3) return 1;
+      // Scale down gently — at p=1.0, scale = 0.45 so tree is BIG but fits
+      return Math.max(0.42, 1 - p * 0.58);
     }
 
     function drawBranch(ctx, x, y, len, angle, depth, maxD, p, wind) {
-      if (depth > maxD || len < 2.5) return;
-      const ex = x + Math.sin(angle + wind*0.015) * len;
+      if (depth > maxD || len < 2) return;
+      const ex = x + Math.sin(angle + wind*0.012) * len;
       const ey = y - Math.cos(angle) * len;
       const dr = depth / maxD;
-      const w = Math.max(0.8, (maxD - depth + 1) * 1.6 * (1 - dr*0.25));
-
-      // Color: rich brown trunk → warm green at tips
-      const gr = Math.min(1, dr * 1.3);
-      const r = Math.round(95 - gr*45);
-      const g = Math.round(52 + gr*88);
-      const b = Math.round(18 + gr*22);
+      // Thick trunk tapers to branches — rainforest style
+      const w = Math.max(1, (maxD - depth + 1) * 3.5 * (1 - dr * 0.5));
+      const gr = Math.min(1, dr * 1.2);
+      const r = Math.round(110 - gr*60);
+      const g = Math.round(60 + gr*95);
+      const b = Math.round(20 + gr*25);
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey);
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.93)`;
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.95)`;
       ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.stroke();
 
-      // Leaf clusters at tips — use seeded positions to avoid worm trails
-      if (depth >= maxD - 1 && p > 0.45) {
-        const leafP = (p - 0.45) / 0.55;
-        const seed = Math.round(ex * 10 + ey * 10); // deterministic seed from position
-        const lc = Math.floor(5 + leafP * 8);
+      // Dense canopy at final stage — large blobs
+      if (depth >= maxD - 1 && p > 0.4) {
+        const leafP = Math.min(1, (p - 0.4) / 0.6);
+        const seed = Math.round(ex * 7 + ey * 13);
+        const lc = Math.floor(6 + leafP * 12);
         for (let li = 0; li < lc; li++) {
-          // Pseudo-random but deterministic: no Math.random()
-          const angle2 = (li / lc) * Math.PI * 2 + seed * 0.1;
-          const dist = (4 + (li % 5) * 3) * leafP;
-          const lx = ex + Math.cos(angle2) * dist;
-          const ly = ey + Math.sin(angle2) * dist - dist * 0.3;
-          const lr = 2.5 + (li % 3) * 2 * leafP;
+          const a2 = (li / lc) * Math.PI * 2 + (seed % 628) * 0.01;
+          const dist = (6 + (li % 6) * 4) * leafP;
+          const lx = ex + Math.cos(a2) * dist;
+          const ly = ey + Math.sin(a2) * dist * 0.7 - dist * 0.2;
+          const lr = 4 + (li % 4) * 2.5 * leafP;
           ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI*2);
-          const hue = 95 + (li % 4) * 12;
-          const sat = 45 + leafP * 30;
-          const lit = 20 + leafP * 20;
-          ctx.fillStyle = `hsla(${hue},${sat}%,${lit}%,${0.6 + leafP * 0.3})`;
+          const hue = 100 + (li % 5) * 10;
+          const sat = 55 + leafP * 30;
+          const lit = 22 + leafP * 22;
+          ctx.fillStyle = `hsla(${hue},${sat}%,${lit}%,${0.65 + leafP * 0.3})`;
           ctx.fill();
         }
       }
 
-      const spread = 0.36 + dr*0.1;
-      drawBranch(ctx, ex, ey, len*0.67, angle-spread, depth+1, maxD, p, wind);
-      drawBranch(ctx, ex, ey, len*0.67, angle+spread, depth+1, maxD, p, wind);
-      if (depth <= 2 && p > 0.35) {
-        drawBranch(ctx, ex, ey, len*0.5, angle-spread*0.25, depth+1, maxD, p, wind);
+      const spread = 0.4 + dr * 0.08;
+      drawBranch(ctx, ex, ey, len*0.68, angle-spread, depth+1, maxD, p, wind);
+      drawBranch(ctx, ex, ey, len*0.68, angle+spread, depth+1, maxD, p, wind);
+      // Extra centre branch for fuller crown
+      if (depth <= 3 && p > 0.3) {
+        drawBranch(ctx, ex, ey, len*0.55, angle + (Math.sin(depth)*0.15), depth+1, maxD, p, wind);
       }
     }
 
@@ -5026,7 +5062,7 @@ function wonderGrowSeed(el) {
         const groundY = H * 0.82;
         const maxDepth = Math.max(2, Math.min(7, Math.floor(p*9)));
         // Scale from ground center
-        const baseLen = H * 0.75 * Math.min(1, p * 1.1);
+        const baseLen = H * 0.88 * Math.min(1, p * 1.05);
 
         ctx.save();
         // Transform: scale from the base of the trunk
@@ -5060,169 +5096,105 @@ function wonderGrowSeed(el) {
 }
 
 
-// ─── 4. WATER FLOW ───────────────────────────────────────────
+// ─── 4. WATER FLOW ─────────────────────────────────────────
 function wonderWaterFlow(el) {
-  // Rich illustrated icons using inline SVG-style divs
+  // Clean emoji + description approach — clear, natural, no UFO SVGs
   const steps = [
-    {
-      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
-        <defs><linearGradient id="cg1" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c8dff5"/><stop offset="100%" stop-color="#6a9ed8"/></linearGradient></defs>
-        <ellipse cx="24" cy="20" rx="14" ry="9" fill="url(#cg1)"/>
-        <ellipse cx="15" cy="23" rx="9" ry="7" fill="#b0ccee"/>
-        <ellipse cx="33" cy="22" rx="10" ry="7" fill="#b8d4f2"/>
-        <ellipse cx="24" cy="24" rx="15" ry="7" fill="#c0d8f5"/>
-        <line x1="18" y1="32" x2="16" y2="40" stroke="#6a9ed8" stroke-width="2" stroke-linecap="round"/>
-        <line x1="24" y1="33" x2="24" y2="42" stroke="#6a9ed8" stroke-width="2" stroke-linecap="round"/>
-        <line x1="30" y1="32" x2="32" y2="40" stroke="#6a9ed8" stroke-width="2" stroke-linecap="round"/>
-      </svg>`,
-      label:'Rain falls from the sky', clr:'#6aaeff'
-    },
-    {
-      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
-        <defs>
-          <linearGradient id="mg1" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#788a9a"/><stop offset="100%" stop-color="#3a4e62"/></linearGradient>
-          <linearGradient id="mg2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#5a7080"/><stop offset="100%" stop-color="#2a3e50"/></linearGradient>
-        </defs>
-        <polygon points="24,5 42,38 6,38" fill="url(#mg1)"/>
-        <polygon points="36,15 46,38 26,38" fill="url(#mg2)" opacity=".7"/>
-        <polygon points="24,5 28,13 20,13" fill="white" opacity=".7"/>
-        <path d="M6,40 Q16,35 24,40 Q32,45 42,40" fill="none" stroke="#4a88ee" stroke-width="2.5" opacity=".9" stroke-linecap="round"/>
-        <path d="M6,43 Q16,38 24,43 Q32,48 42,43" fill="#4a88ee" opacity=".3"/>
-      </svg>`,
-      label:'Fills the rivers', clr:'#5a9aee'
-    },
-    {
-      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
-        <defs><linearGradient id="fw" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#5ab8ee"/><stop offset="100%" stop-color="#2870c0"/></linearGradient></defs>
-        <ellipse cx="24" cy="30" rx="20" ry="10" fill="url(#fw)" opacity=".4"/>
-        <ellipse cx="22" cy="26" rx="11" ry="7" fill="#f0a060"/>
-        <path d="M33,26 Q42,18 44,26 Q42,34 33,26Z" fill="#e08040"/>
-        <circle cx="18" cy="24" r="2.5" fill="#1a0808" opacity=".9"/>
-        <circle cx="17.5" cy="23.5" r="1" fill="white" opacity=".8"/>
-        <path d="M22,22 Q26,20 30,22" fill="none" stroke="#c06030" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>`,
-      label:'Fish live in it', clr:'#4aaaf0'
-    },
-    {
-      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
-        <defs><radialGradient id="cow" cx="50%" cy="40%"><stop offset="0%" stop-color="#f0e8d8"/><stop offset="100%" stop-color="#c0a880"/></radialGradient></defs>
-        <ellipse cx="26" cy="26" rx="15" ry="11" fill="url(#cow)" opacity=".95"/>
-        <circle cx="16" cy="22" r="8" fill="url(#cow)" opacity=".9"/>
-        <ellipse cx="16" cy="17" rx="4" ry="5" fill="#e0d0b0" opacity=".9"/>
-        <line x1="20" y1="35" x2="18" y2="44" stroke="#b89060" stroke-width="2.8" stroke-linecap="round"/>
-        <line x1="26" y1="36" x2="25" y2="44" stroke="#b89060" stroke-width="2.8" stroke-linecap="round"/>
-        <line x1="32" y1="35" x2="33" y2="44" stroke="#b89060" stroke-width="2.8" stroke-linecap="round"/>
-        <ellipse cx="22" cy="38" rx="4" ry="2.5" fill="#f0c8c0" opacity=".8"/>
-        <circle cx="14" cy="19" r="2" fill="#1a0808" opacity=".8"/>
-      </svg>`,
-      label:'Cows drink & give milk', clr:'#d0b880'
-    },
-    {
-      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
-        <defs><radialGradient id="tg" cx="50%" cy="30%"><stop offset="0%" stop-color="#60c060"/><stop offset="100%" stop-color="#1a6020"/></radialGradient></defs>
-        <rect x="22" y="24" width="4" height="18" fill="#7a5030" rx="2"/>
-        <circle cx="24" cy="18" r="14" fill="url(#tg)" opacity=".9"/>
-        <circle cx="18" cy="22" r="8" fill="#48a848" opacity=".7"/>
-        <circle cx="30" cy="20" r="9" fill="#50b050" opacity=".7"/>
-        <circle cx="24" cy="13" r="7" fill="#68c068" opacity=".8"/>
-        <circle cx="16" cy="26" r="3.5" fill="#e04040" opacity=".9"/>
-        <circle cx="28" cy="24" r="3" fill="#e86820" opacity=".9"/>
-        <circle cx="22" cy="28" r="2.8" fill="#d8b820" opacity=".9"/>
-      </svg>`,
-      label:'Trees grow & give fruit', clr:'#60c060'
-    },
-    {
-      icon:`<svg viewBox="0 0 48 48" width="36" height="36">
-        <defs><radialGradient id="pg" cx="40%" cy="30%"><stop offset="0%" stop-color="#f8e8b0"/><stop offset="100%" stop-color="#d0a040"/></radialGradient></defs>
-        <path d="M8,14 Q24,8 40,14 L38,38 Q24,44 10,38Z" fill="url(#pg)" opacity=".9"/>
-        <ellipse cx="24" cy="14" rx="16" ry="5" fill="#f0d888" opacity=".7"/>
-        <circle cx="18" cy="24" r="3" fill="#e87030" opacity=".8"/>
-        <circle cx="26" cy="20" r="2.5" fill="#58b848" opacity=".8"/>
-        <circle cx="30" cy="28" r="3" fill="#d84040" opacity=".8"/>
-        <circle cx="20" cy="32" r="2.5" fill="#d8a020" opacity=".8"/>
-      </svg>`,
-      label:'We eat & are nourished', clr:'#f5c842'
-    },
+    {ico:'🌧️', label:'Rain falls from the sky',        clr:'#6aaeff', desc:'Water droplets fall from clouds, soaking into the earth and filling streams.'},
+    {ico:'🏞️', label:'Fills the rivers',                clr:'#4a8ee0', desc:'Rivers fill up and flow, carrying fresh water across the land.'},
+    {ico:'🐟', label:'Fish and life thrive in it',      clr:'#3a7acc', desc:'Countless creatures make the water their home.'},
+    {ico:'🐄', label:'Animals drink & give milk',       clr:'#88c0a0', desc:'Cows, camels and animals drink — and give us nourishing milk in return.'},
+    {ico:'🌿', label:'Trees and crops grow',            clr:'#58b858', desc:'Roots drink deep. Trees grow tall. Crops rise from the earth.'},
+    {ico:'🍽️', label:'We eat & are nourished',         clr:'#f5c842', desc:'Food reaches our table. One cycle of water feeds the whole world.'},
   ];
   let active = 0;
 
-  el.innerHTML = `
-    <div style="background:linear-gradient(180deg,#020810,#060e1a);padding:14px 14px 18px">
-      <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:5px">✦ Follow the Water</div>
-      <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);font-style:italic;text-align:center;margin-bottom:12px">Tap each step to follow Allah's gift</div>
-      <div id="wflow2-chain" style="display:flex;flex-direction:column;align-items:center;gap:0"></div>
-      <div id="wflow2-reveal" style="text-align:center;padding:12px 0 2px;font-family:var(--display);font-size:13px;color:var(--gold);opacity:0;transition:opacity .8s ease;letter-spacing:.5px">
-        One gift. Six blessings. All from Allah. 💧
-      </div>
-    </div>`;
+  el.innerHTML = `<div style="background:linear-gradient(180deg,#020810,#060e1a);padding:14px 14px 18px">
+    <div style="font-family:var(--display);font-size:11px;color:rgba(245,200,66,.75);letter-spacing:2.5px;text-transform:uppercase;text-align:center;margin-bottom:6px">✦ Follow the Water</div>
+    <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,.8);font-style:italic;text-align:center;margin-bottom:14px">Tap each step to follow Allah's gift</div>
+    <div id="wflow3-chain" style="display:flex;flex-direction:column;align-items:center;gap:0"></div>
+    <div id="wflow3-reveal" style="text-align:center;padding:14px 0 2px;font-family:var(--display);font-size:13px;color:var(--gold);opacity:0;transition:opacity .8s ease;letter-spacing:.5px">
+      One gift. Six blessings. All from Allah. 💧
+    </div>
+  </div>`;
 
-  const chain = document.getElementById('wflow2-chain');
+  const chain = document.getElementById('wflow3-chain');
   if (!chain) return;
 
   function makeStep(i, isActive) {
     const s = steps[i];
     const outer = document.createElement('div');
-    outer.id = `wf2s-${i}`;
-    outer.style.cssText = `width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center`;
-
+    outer.id = 'wf3s-' + i;
+    outer.style.cssText = 'width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center';
     const inner = document.createElement('div');
-    inner.id = `wf2i-${i}`;
-    inner.style.cssText = `
-      display:flex;align-items:center;gap:12px;width:100%;
-      background:${isActive?'rgba(245,200,66,0.08)':'rgba(255,255,255,0.025)'};
-      border:1.5px solid ${isActive?'rgba(245,200,66,0.45)':'rgba(255,255,255,0.06)'};
-      border-radius:14px;padding:10px 14px;cursor:${isActive?'pointer':'default'};
-      transition:all .35s ease;min-height:54px;box-sizing:border-box;`;
-    inner.innerHTML = `
-      <div style="flex-shrink:0;opacity:${isActive?1:0.25};transition:opacity .4s;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))">${s.icon}</div>
-      <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,${isActive?'0.9':'0.2'});transition:color .4s;flex:1;line-height:1.4">${s.label}</div>
-      ${isActive?`<div id="wf2t-${i}" style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);white-space:nowrap;letter-spacing:1px;flex-shrink:0">Tap →</div>`:''}`;
-    inner.onclick = () => activateWaterStep(i);
-
-    // Connector line
-    if (i < steps.length-1) {
+    inner.id = 'wf3i-' + i;
+    inner.style.cssText = [
+      'display:flex;align-items:center;gap:12px;width:100%;',
+      'background:' + (isActive ? 'rgba(245,200,66,0.08)' : 'rgba(255,255,255,0.025)') + ';',
+      'border:1.5px solid ' + (isActive ? 'rgba(245,200,66,0.45)' : 'rgba(255,255,255,0.06)') + ';',
+      'border-radius:14px;padding:12px 14px;cursor:' + (isActive ? 'pointer' : 'default') + ';',
+      'transition:all .35s ease;min-height:54px;box-sizing:border-box;'
+    ].join('');
+    inner.innerHTML = [
+      '<div style="font-size:28px;flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));',
+        'opacity:' + (isActive ? '1' : '0.2') + ';transition:opacity .4s">' + s.ico + '</div>',
+      '<div style="flex:1;min-width:0">',
+        '<div style="font-family:var(--body);font-size:13px;font-weight:600;',
+          'color:rgba(253,246,227,' + (isActive ? '0.9' : '0.2') + ');transition:color .4s;line-height:1.4">' + s.label + '</div>',
+        '<div id="wf3d-' + i + '" style="font-family:var(--body);font-size:11px;',
+          'color:rgba(253,246,227,.55);margin-top:3px;display:none;line-height:1.5">' + s.desc + '</div>',
+      '</div>',
+      isActive ? '<div id="wf3t-' + i + '" style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);white-space:nowrap;letter-spacing:1px;flex-shrink:0">Tap →</div>' : ''
+    ].join('');
+    inner.onclick = function() { activateWF3(i); };
+    outer.appendChild(inner);
+    if (i < steps.length - 1) {
       const conn = document.createElement('div');
-      conn.id = `wf2c-${i}`;
-      conn.style.cssText = `width:2px;height:14px;background:linear-gradient(180deg,${s.clr},rgba(255,255,255,.05));opacity:0;transition:opacity .5s .2s;margin:1px 0`;
-      outer.appendChild(inner);
+      conn.id = 'wf3c-' + i;
+      conn.style.cssText = 'width:2px;height:14px;background:linear-gradient(180deg,' + s.clr + ',rgba(255,255,255,.05));opacity:0;transition:opacity .5s .2s;margin:1px 0';
       outer.appendChild(conn);
-    } else {
-      outer.appendChild(inner);
     }
     return outer;
   }
 
-  function activateWaterStep(i) {
+  function activateWF3(i) {
     if (i !== active) return;
-    const inner = document.getElementById(`wf2i-${i}`);
+    const inner = document.getElementById('wf3i-' + i);
+    const desc = document.getElementById('wf3d-' + i);
+    const tap = document.getElementById('wf3t-' + i);
+    const conn = document.getElementById('wf3c-' + i);
     if (inner) {
       inner.style.background = 'rgba(245,200,66,0.15)';
       inner.style.borderColor = 'rgba(245,200,66,0.6)';
       inner.style.cursor = 'default';
-      const tap = document.getElementById(`wf2t-${i}`);
-      if (tap) tap.style.display = 'none';
-      inner.querySelector('div:first-child').style.opacity = '1';
+      const ico = inner.querySelector('div:first-child');
+      if (ico) ico.style.opacity = '1';
+      const lbl = inner.querySelector('div:nth-child(2) > div:first-child');
+      if (lbl) lbl.style.color = 'rgba(253,246,227,0.95)';
     }
-    const conn = document.getElementById(`wf2c-${i}`);
+    if (desc) desc.style.display = 'block';
+    if (tap) tap.style.display = 'none';
     if (conn) conn.style.opacity = '1';
     active++;
     if (active < steps.length) {
-      const nextInner = document.getElementById(`wf2i-${active}`);
+      const nextInner = document.getElementById('wf3i-' + active);
       if (nextInner) {
         nextInner.style.background = 'rgba(245,200,66,0.06)';
         nextInner.style.borderColor = 'rgba(245,200,66,0.3)';
         nextInner.style.cursor = 'pointer';
-        nextInner.querySelector('div:first-child').style.opacity = '1';
-        nextInner.querySelector('div:nth-child(2)').style.color = 'rgba(253,246,227,0.85)';
-        const tap = document.createElement('div');
-        tap.id = `wf2t-${active}`;
-        tap.style.cssText = 'font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);white-space:nowrap;letter-spacing:1px;flex-shrink:0';
-        tap.textContent = 'Tap →';
-        nextInner.appendChild(tap);
+        const ico = nextInner.querySelector('div:first-child');
+        if (ico) ico.style.opacity = '1';
+        const lbl = nextInner.querySelector('div:nth-child(2) > div:first-child');
+        if (lbl) lbl.style.color = 'rgba(253,246,227,0.85)';
+        const tap2 = document.createElement('div');
+        tap2.id = 'wf3t-' + active;
+        tap2.style.cssText = 'font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);white-space:nowrap;letter-spacing:1px;flex-shrink:0';
+        tap2.textContent = 'Tap →';
+        nextInner.appendChild(tap2);
       }
     }
     if (active >= steps.length) {
-      const rev = document.getElementById('wflow2-reveal');
+      const rev = document.getElementById('wflow3-reveal');
       if (rev) rev.style.opacity = '1';
     }
   }
@@ -5246,10 +5218,17 @@ function wonderTasteTester(el) {
   el.innerHTML = `
     <div style="background:linear-gradient(180deg,#030610,#06101a);padding:16px 12px 18px">
       <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:5px">✦ Taste Tester</div>
-      <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);font-style:italic;text-align:center;margin-bottom:14px">Flip each card — discover what Allah designed</div>
+      <div style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.8);font-style:italic;text-align:center;margin-bottom:14px">Flip each card — discover what Allah designed</div>
       <div id="tt-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
-      <div id="tt-final" style="text-align:center;padding:14px 0 2px;font-family:var(--body);font-size:13px;color:rgba(253,246,227,.8);font-style:italic;opacity:0;transition:opacity 1s ease;line-height:1.65">
-        He didn't have to make food taste this good.<br><span style="color:var(--gold);font-weight:600">He did it because He loves you. 💛</span>
+      <div id="tt-final" style="padding:14px 4px 2px;opacity:0;transition:opacity 1s ease">
+        <div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.2);border-radius:18px;padding:18px 16px;text-align:center">
+          <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,.85);line-height:1.75;font-style:italic">
+            Every delicious taste is a gift from Allah — sweet mangoes, juicy oranges, crunchy apples, and so much more. 🍎🍊🥭
+          </div>
+          <div style="font-family:var(--body);font-size:13px;color:rgba(245,200,66,.7);line-height:1.7;margin-top:10px;font-style:italic">
+            He filled the world with tastes beyond anything we could have imagined — each one a beautiful gift. ✨
+          </div>
+        </div>
       </div>
     </div>`;
 
@@ -5314,9 +5293,9 @@ function wonderStarGazer(el) {
   const starFacts = [
     {x:22, y:28, name:'Betelgeuse', fact:'700× bigger than our sun. Replacing our sun, it would swallow Jupiter.', side:'right'},
     {x:68, y:18, name:'Sirius', fact:'Brightest star we can see — 25× more luminous than our sun.', side:'left'},
-    {x:42, y:52, name:'Polaris', fact:'The North Star — placed by Allah to guide travellers home for thousands of years.', side:'right'},
+    {x:42, y:52, name:'Polaris', fact:'The North Star. For thousands of years, travellers looked up to find it and know which way was north. Allah filled the sky with signs that help people find their way. 🌙', side:'right'},
     {x:75, y:58, name:'Andromeda', fact:'A whole galaxy — 2.5 million light years away, 1 trillion stars.', side:'left'},
-    {x:18, y:65, name:'Pleiades', fact:'Mentioned in the Quran (An-Najm). Recognised by civilisations worldwide.', side:'right'},
+    {x:18, y:65, name:'Pleiades', fact:'Many people long ago used this famous group of stars to find directions and track the seasons. Allah placed them in the sky as one of His amazing signs. ✨', side:'right'},
   ];
   let revealed = 0;
   let activePopup = null;
