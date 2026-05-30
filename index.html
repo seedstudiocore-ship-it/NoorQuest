@@ -3124,19 +3124,10 @@ async function renderFullScene() {
       SORT: '✦ Sort It Out',
     };
     ixEl.insertAdjacentHTML('beforebegin', `
-      <div style="
-        padding:16px 20px 0;
-        display:flex;align-items:center;gap:10px;
-        background:linear-gradient(180deg,rgba(10,14,26,0) 0%,rgba(10,14,26,1) 100%);
-        margin-top:-2px;
-      ">
-        <div style="flex:1;height:1px;background:rgba(245,200,66,.15)"></div>
-        <div style="
-          font-family:var(--display);font-size:11px;
-          color:rgba(245,200,66,.7);letter-spacing:2.5px;
-          text-transform:uppercase;white-space:nowrap;
-        ">${ixLabel[sc.ix.type] || '✦ Interactive'}</div>
-        <div style="flex:1;height:1px;background:rgba(245,200,66,.15)"></div>
+      <div style="padding:18px 20px 6px;background:linear-gradient(135deg,rgba(22,32,64,.6),rgba(10,14,26,.8));border-top:1px solid rgba(255,255,255,.06)">
+        <div style="font-family:var(--display);font-size:11px;color:rgba(245,200,66,.85);letter-spacing:2.5px;text-transform:uppercase">
+          ${ixLabel[sc.ix.type] || '✦ Interactive'}
+        </div>
       </div>`);
     renderInteractive(ixEl, sc.ix, {});
   } else if (ixEl) ixEl.style.display = 'none';
@@ -4615,80 +4606,141 @@ function wonderDawnWatch(el) {
     const lCtx = lightCanvas.getContext('2d');
 
     // ── Draw the hidden scene on bgCanvas ──────────────────
-    // Everything is drawn at full colour — light canvas reveals it
     function drawHiddenScene() {
-      // Sky gradient (dawn)
+      // Rich dawn sky
       const sky = bgCtx.createLinearGradient(0,0,0,H);
-      sky.addColorStop(0,'#0a0510');
-      sky.addColorStop(0.45,'#1a0d25');
-      sky.addColorStop(0.75,'#3d1a0a');
-      sky.addColorStop(1,'#1a0805');
+      sky.addColorStop(0,'#0d0520');
+      sky.addColorStop(0.3,'#2a0e30');
+      sky.addColorStop(0.55,'#8c3010');
+      sky.addColorStop(0.75,'#d86820');
+      sky.addColorStop(0.88,'#f0a030');
+      sky.addColorStop(1,'#f5b840');
       bgCtx.fillStyle = sky; bgCtx.fillRect(0,0,W,H);
 
       // Stars
-      for (let i = 0; i < 60; i++) {
-        const sx = (Math.sin(i*137.5)*0.5+0.5)*W;
-        const sy = (Math.sin(i*97.3)*0.5+0.5)*H*0.6;
-        bgCtx.beginPath(); bgCtx.arc(sx,sy,0.6+Math.random()*1.2,0,Math.PI*2);
-        bgCtx.fillStyle=`rgba(255,255,255,${0.4+Math.random()*0.5})`; bgCtx.fill();
+      for (let i = 0; i < 55; i++) {
+        const sx = (Math.sin(i*137.5)*.5+.5)*W;
+        const sy = (Math.sin(i*97.3)*.5+.5)*H*0.55;
+        bgCtx.beginPath(); bgCtx.arc(sx,sy,0.7+Math.random()*.9,0,Math.PI*2);
+        bgCtx.fillStyle=`rgba(255,255,255,${0.5+Math.random()*.4})`; bgCtx.fill();
       }
 
-      // Horizon glow
-      const hg = bgCtx.createRadialGradient(W*0.5,H*0.72,0,W*0.5,H*0.72,W*0.55);
-      hg.addColorStop(0,'rgba(220,120,30,0.7)');
-      hg.addColorStop(0.35,'rgba(180,70,15,0.3)');
-      hg.addColorStop(1,'transparent');
-      bgCtx.fillStyle = hg; bgCtx.fillRect(0,0,W,H);
+      // Clouds — layered, soft
+      function cloud(cx,cy,sc,alpha) {
+        bgCtx.save(); bgCtx.globalAlpha = alpha;
+        const cg = bgCtx.createRadialGradient(cx,cy,0,cx,cy,40*sc);
+        cg.addColorStop(0,'rgba(255,180,100,1)');
+        cg.addColorStop(0.5,'rgba(220,140,80,.7)');
+        cg.addColorStop(1,'rgba(180,100,60,0)');
+        [[0,0,30,14],[-18,6,20,10],[20,6,22,11],[6,-10,20,12]].forEach(([ox,oy,rw,rh]) => {
+          bgCtx.beginPath();
+          bgCtx.ellipse(cx+ox*sc, cy+oy*sc, rw*sc, rh*sc, 0,0,Math.PI*2);
+          bgCtx.fillStyle = cg; bgCtx.fill();
+        });
+        bgCtx.restore();
+      }
+      cloud(W*0.18, H*0.18, 1.1, 0.55);
+      cloud(W*0.55, H*0.12, 0.85, 0.45);
+      cloud(W*0.82, H*0.22, 0.95, 0.5);
+      cloud(W*0.35, H*0.25, 0.7, 0.35);
 
-      // Sun disc peeking
-      const sunG = bgCtx.createRadialGradient(W*0.5,H*0.73,0,W*0.5,H*0.73,22);
-      sunG.addColorStop(0,'rgba(255,230,150,0.95)');
-      sunG.addColorStop(0.5,'rgba(245,160,50,0.7)');
-      sunG.addColorStop(1,'transparent');
-      bgCtx.fillStyle=sunG; bgCtx.beginPath(); bgCtx.arc(W*0.5,H*0.73,22,0,Math.PI*2); bgCtx.fill();
+      // Strong sun glow
+      const sunX = W*0.5, sunY = H*0.72;
+      const sg1 = bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,W*0.65);
+      sg1.addColorStop(0,'rgba(255,230,120,.9)');
+      sg1.addColorStop(0.15,'rgba(255,160,50,.7)');
+      sg1.addColorStop(0.4,'rgba(240,100,20,.35)');
+      sg1.addColorStop(1,'transparent');
+      bgCtx.fillStyle=sg1; bgCtx.fillRect(0,0,W,H);
+      // Sun disc
+      const sdg = bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,28);
+      sdg.addColorStop(0,'rgba(255,248,200,1)');
+      sdg.addColorStop(0.5,'rgba(255,200,80,.95)');
+      sdg.addColorStop(1,'rgba(255,140,40,.5)');
+      bgCtx.beginPath(); bgCtx.arc(sunX,sunY,28,0,Math.PI*2);
+      bgCtx.fillStyle=sdg; bgCtx.fill();
 
-      // Birds
-      bgCtx.strokeStyle='rgba(10,5,20,0.7)'; bgCtx.lineWidth=1.5;
-      [[0.3,0.38],[0.42,0.33],[0.55,0.36],[0.65,0.31],[0.72,0.40]].forEach(([bx,by]) => {
-        const bs=7, cx=bx*W, cy=by*H;
-        bgCtx.beginPath(); bgCtx.moveTo(cx-bs,cy);
-        bgCtx.quadraticCurveTo(cx-bs/2,cy-3,cx,cy);
-        bgCtx.quadraticCurveTo(cx+bs/2,cy-3,cx+bs,cy); bgCtx.stroke();
-      });
-
-      // Valley hills silhouette
-      bgCtx.fillStyle='rgba(8,4,16,0.85)';
-      bgCtx.beginPath(); bgCtx.moveTo(0,H*0.78);
-      bgCtx.quadraticCurveTo(W*0.15,H*0.68, W*0.28,H*0.73);
-      bgCtx.quadraticCurveTo(W*0.42,H*0.78, W*0.5,H*0.75);
-      bgCtx.quadraticCurveTo(W*0.65,H*0.70, W*0.78,H*0.76);
-      bgCtx.quadraticCurveTo(W*0.9,H*0.82, W,H*0.78);
+      // Rolling green hills — GROUNDED
+      // Far hill (lighter green)
+      bgCtx.fillStyle='rgba(45,80,20,.85)';
+      bgCtx.beginPath(); bgCtx.moveTo(0,H*0.74);
+      bgCtx.quadraticCurveTo(W*.2,H*0.62, W*.45,H*0.70);
+      bgCtx.quadraticCurveTo(W*.7,H*0.78, W,H*0.68);
       bgCtx.lineTo(W,H); bgCtx.lineTo(0,H); bgCtx.closePath(); bgCtx.fill();
+      // Near hill (darker green)
+      bgCtx.fillStyle='rgba(28,65,15,.95)';
+      bgCtx.beginPath(); bgCtx.moveTo(0,H*0.82);
+      bgCtx.quadraticCurveTo(W*.25,H*0.74, W*.5,H*0.80);
+      bgCtx.quadraticCurveTo(W*.75,H*0.76, W,H*0.82);
+      bgCtx.lineTo(W,H); bgCtx.lineTo(0,H); bgCtx.closePath(); bgCtx.fill();
+      // Valley floor
+      bgCtx.fillStyle='rgba(20,55,12,.98)';
+      bgCtx.fillRect(0,H*0.88,W,H*0.12);
 
-      // Trees on hillside
-      [[0.18,0.72],[0.32,0.71],[0.58,0.73],[0.80,0.74]].forEach(([tx,ty]) => {
-        const x=tx*W, y=ty*H;
-        bgCtx.strokeStyle='rgba(5,12,4,0.9)'; bgCtx.lineWidth=2;
-        bgCtx.beginPath(); bgCtx.moveTo(x,y); bgCtx.lineTo(x,y-22); bgCtx.stroke();
-        bgCtx.beginPath(); bgCtx.arc(x,y-26,10,0,Math.PI*2);
-        bgCtx.fillStyle='rgba(8,22,6,0.85)'; bgCtx.fill();
+      // Trees — ROOTED to hill (no floating)
+      function treeAt(tx,ty,h,dense) {
+        // Trunk rooted at ty
+        const tg = bgCtx.createLinearGradient(tx,ty,tx,ty-h);
+        tg.addColorStop(0,'rgba(60,35,10,.95)');
+        tg.addColorStop(1,'rgba(45,70,15,.9)');
+        bgCtx.beginPath(); bgCtx.moveTo(tx-5,ty); bgCtx.lineTo(tx+5,ty);
+        bgCtx.lineTo(tx+3,ty-h); bgCtx.lineTo(tx-3,ty-h); bgCtx.closePath();
+        bgCtx.fillStyle=tg; bgCtx.fill();
+        // Canopy layers
+        for (let l=0;l<3;l++) {
+          const ly = ty - h*0.55 - l*h*0.18;
+          const lr = (dense?22:16) - l*4;
+          const lg = bgCtx.createRadialGradient(tx,ly,0,tx,ly,lr);
+          lg.addColorStop(0,`rgba(${40+l*10},${100+l*20},${25+l*8},.92)`);
+          lg.addColorStop(1,`rgba(20,60,10,0)`);
+          bgCtx.beginPath(); bgCtx.arc(tx,ly,lr,0,Math.PI*2);
+          bgCtx.fillStyle=lg; bgCtx.fill();
+        }
+      }
+      // Trees sitting ON the hill surface
+      treeAt(W*0.08, H*0.795, 38, false);
+      treeAt(W*0.18, H*0.780, 44, true);
+      treeAt(W*0.28, H*0.770, 36, false);
+      treeAt(W*0.72, H*0.778, 40, true);
+      treeAt(W*0.83, H*0.790, 35, false);
+      treeAt(W*0.92, H*0.800, 42, true);
+
+      // Zain & Nura silhouettes — on hilltop
+      const fx = W*0.46, fy = H*0.788;
+      bgCtx.fillStyle='rgba(8,4,18,.92)';
+      // Nura (with headscarf shape)
+      bgCtx.beginPath(); bgCtx.arc(fx-9,fy-20,5.5,0,Math.PI*2); bgCtx.fill();
+      bgCtx.beginPath(); bgCtx.ellipse(fx-9,fy-16,7,5,0,0,Math.PI*2); bgCtx.fill();
+      bgCtx.beginPath(); bgCtx.moveTo(fx-9,fy-12); bgCtx.lineTo(fx-14,fy); bgCtx.lineTo(fx-4,fy); bgCtx.closePath(); bgCtx.fill();
+      // Zain
+      bgCtx.beginPath(); bgCtx.arc(fx+9,fy-20,5,0,Math.PI*2); bgCtx.fill();
+      bgCtx.beginPath(); bgCtx.moveTo(fx+9,fy-15); bgCtx.lineTo(fx+4,fy); bgCtx.lineTo(fx+14,fy); bgCtx.closePath(); bgCtx.fill();
+      // Lantern glow
+      const lg2 = bgCtx.createRadialGradient(fx-9,fy-8,0,fx-9,fy-8,18);
+      lg2.addColorStop(0,'rgba(255,210,80,.7)');
+      lg2.addColorStop(1,'transparent');
+      bgCtx.fillStyle=lg2; bgCtx.beginPath(); bgCtx.arc(fx-9,fy-8,18,0,Math.PI*2); bgCtx.fill();
+
+      // Birds — clearly visible V shapes
+      bgCtx.strokeStyle='rgba(8,4,18,.85)'; bgCtx.lineWidth=2;
+      [[0.28,0.30],[0.38,0.25],[0.48,0.28],[0.58,0.23],[0.66,0.31]].forEach(([bx,by],i) => {
+        const cx=bx*W, cy=by*H, bs=7+i%2*3;
+        bgCtx.beginPath();
+        bgCtx.moveTo(cx-bs,cy);
+        bgCtx.quadraticCurveTo(cx-bs/2,cy-4,cx,cy);
+        bgCtx.quadraticCurveTo(cx+bs/2,cy-4,cx+bs,cy);
+        bgCtx.stroke();
       });
 
-      // Nura & Zain silhouettes on hilltop
-      const fx=W*0.46, fy=H*0.73;
-      bgCtx.fillStyle='rgba(5,3,12,0.9)';
-      // Nura
-      bgCtx.beginPath(); bgCtx.arc(fx-8,fy-18,5,0,Math.PI*2); bgCtx.fill();
-      bgCtx.beginPath(); bgCtx.moveTo(fx-8,fy-13); bgCtx.lineTo(fx-8,fy); bgCtx.lineWidth=3;
-      bgCtx.strokeStyle='rgba(5,3,12,0.9)'; bgCtx.stroke();
-      // Zain
-      bgCtx.beginPath(); bgCtx.arc(fx+8,fy-18,5,0,Math.PI*2); bgCtx.fill();
-      bgCtx.beginPath(); bgCtx.moveTo(fx+8,fy-13); bgCtx.lineTo(fx+8,fy); bgCtx.stroke();
-      // Lantern glow
-      const lg = bgCtx.createRadialGradient(fx-8,fy-6,0,fx-8,fy-6,14);
-      lg.addColorStop(0,'rgba(245,200,66,0.5)');
-      lg.addColorStop(1,'transparent');
-      bgCtx.fillStyle=lg; bgCtx.beginPath(); bgCtx.arc(fx-8,fy-6,14,0,Math.PI*2); bgCtx.fill();
+      // Small animal on hill — sheep/goat silhouette
+      const ax=W*0.62, ay=H*0.806;
+      bgCtx.fillStyle='rgba(200,190,175,.7)';
+      bgCtx.beginPath(); bgCtx.ellipse(ax,ay-4,8,5,0,0,Math.PI*2); bgCtx.fill();
+      bgCtx.beginPath(); bgCtx.arc(ax+7,ay-6,4,0,Math.PI*2); bgCtx.fill();
+      bgCtx.fillStyle='rgba(8,4,18,.6)';
+      [[ax-4,ay],[ax-1,ay],[ax+4,ay],[ax+7,ay]].forEach(([lx,ly])=>{
+        bgCtx.fillRect(lx-1,ly,2,5);
+      });
     }
     drawHiddenScene();
 
@@ -4788,11 +4840,11 @@ function wonderDawnWatch(el) {
 // ─── 2. SKY PILLARS ──────────────────────────────────────────
 function wonderSkyPillars(el) {
   const items = [
-    {x:15, y:58, label:'Clouds?', resp:'Not clouds...', w:90},
-    {x:78, y:12, label:'Stars?', resp:'Not stars...', w:80},
-    {x:48, y:35, label:'Wind?', resp:'Not wind...', w:80},
-    {x:22, y:80, label:'Air?', resp:'Not air...', w:70},
-    {x:65, y:70, label:'Nothing?', resp:'Nothing. Allah holds it.', final:true, w:100},
+    {x:14, y:22, label:'Ropes?', resp:'No ropes anywhere...', w:90},
+    {x:72, y:18, label:'Poles?', resp:'No poles either...', w:85},
+    {x:42, y:42, label:'Bricks?', resp:'Not bricks...', w:85},
+    {x:20, y:62, label:'Clouds?', resp:'Not clouds...', w:90},
+    {x:62, y:62, label:'Nothing?', resp:'Nothing. Allah holds it.', final:true, w:100},
   ];
 
   el.innerHTML = `
@@ -4962,11 +5014,11 @@ function wonderGrowSeed(el) {
     canvas.height = canvas.offsetHeight || 300;
     const W = canvas.width, H = canvas.height;
 
-    // Dynamic zoom — keeps tree visible and fills screen at full growth
+    // Camera zooms out as tree grows — fills canvas at every stage
     function getScale(p) {
-      if (p < 0.3) return 1;
-      // Scale down gently — at p=1.0, scale = 0.45 so tree is BIG but fits
-      return Math.max(0.42, 1 - p * 0.58);
+      if (p < 0.25) return 1;
+      // Gentler zoom: at p=1.0 scale = 0.52, tree still large
+      return Math.max(0.52, 1 - p * 0.48);
     }
 
     function drawBranch(ctx, x, y, len, angle, depth, maxD, p, wind) {
@@ -4975,7 +5027,7 @@ function wonderGrowSeed(el) {
       const ey = y - Math.cos(angle) * len;
       const dr = depth / maxD;
       // Thick trunk tapers to branches — rainforest style
-      const w = Math.max(1, (maxD - depth + 1) * 3.5 * (1 - dr * 0.5));
+      const w = Math.max(1.5, (maxD - depth + 1) * 5.5 * (1 - dr * 0.55));
       const gr = Math.min(1, dr * 1.2);
       const r = Math.round(110 - gr*60);
       const g = Math.round(60 + gr*95);
@@ -4994,7 +5046,7 @@ function wonderGrowSeed(el) {
           const dist = (6 + (li % 6) * 4) * leafP;
           const lx = ex + Math.cos(a2) * dist;
           const ly = ey + Math.sin(a2) * dist * 0.7 - dist * 0.2;
-          const lr = 4 + (li % 4) * 2.5 * leafP;
+          const lr = 6 + (li % 4) * 3.5 * leafP;
           ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI*2);
           const hue = 100 + (li % 5) * 10;
           const sat = 55 + leafP * 30;
@@ -5004,12 +5056,16 @@ function wonderGrowSeed(el) {
         }
       }
 
-      const spread = 0.4 + dr * 0.08;
+      const spread = 0.45 + dr * 0.06;
       drawBranch(ctx, ex, ey, len*0.68, angle-spread, depth+1, maxD, p, wind);
       drawBranch(ctx, ex, ey, len*0.68, angle+spread, depth+1, maxD, p, wind);
-      // Extra centre branch for fuller crown
+      // Extra branches for fuller crown
       if (depth <= 3 && p > 0.3) {
         drawBranch(ctx, ex, ey, len*0.55, angle + (Math.sin(depth)*0.15), depth+1, maxD, p, wind);
+      }
+      if (depth === 1 && p > 0.5) {
+        drawBranch(ctx, ex, ey, len*0.6, angle + 0.7, depth+1, maxD, p, wind);
+        drawBranch(ctx, ex, ey, len*0.6, angle - 0.7, depth+1, maxD, p, wind);
       }
     }
 
@@ -5295,7 +5351,7 @@ function wonderStarGazer(el) {
     {x:68, y:18, name:'Sirius', fact:'Brightest star we can see — 25× more luminous than our sun.', side:'left'},
     {x:42, y:52, name:'Polaris', fact:'The North Star. For thousands of years, travellers looked up to find it and know which way was north. Allah filled the sky with signs that help people find their way. 🌙', side:'right'},
     {x:75, y:58, name:'Andromeda', fact:'A whole galaxy — 2.5 million light years away, 1 trillion stars.', side:'left'},
-    {x:18, y:65, name:'Pleiades', fact:'Many people long ago used this famous group of stars to find directions and track the seasons. Allah placed them in the sky as one of His amazing signs. ✨', side:'right'},
+    {x:18, y:65, name:'Pleiades', fact:'Many people used this famous group of stars to find directions and track the seasons. Allah placed them in the sky as one of His amazing signs. ✨', side:'right'},
   ];
   let revealed = 0;
   let activePopup = null;
