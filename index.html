@@ -4693,15 +4693,16 @@ async function loadIxAssets(worldId, sceneId) {
   const result = {};
   try {
     const prefix = `w${worldId}_s${sceneId}_ix`;
-    const {data} = await sb.from('admin_assets')
+    const {data, error} = await sb.from('admin_assets')
       .select('tag,public_url')
       .like('tag', prefix + '%');
+    console.log(`[NQ] loadIxAssets W${worldId}S${sceneId}: found ${data?.length||0} rows, error:`, error?.message||'none');
     if (data) {
       data.forEach(r => {
         if (r.tag && r.public_url) {
-          // tag: w1_s1_ix_item_0_image → key: ix_item_0_image
           const keyPart = r.tag.replace(`w${worldId}_s${sceneId}_`, '');
           result[keyPart] = r.public_url;
+          console.log(`[NQ] ix asset: ${keyPart} →`, r.public_url.slice(-30));
         }
       });
     }
@@ -5044,28 +5045,29 @@ function wonderDawnWatch(el) {
 
 // ─── 2. SKY PILLARS ──────────────────────────────────────────
 function wonderSkyPillars(el) {
+  // Buttons positioned to avoid overlapping the question text at top
+  // Question text sits at top-centre, buttons spread around mid and lower sky
   const items = [
-    {x:14, y:22, label:'Ropes?', resp:'No ropes anywhere...', w:90},
-    {x:72, y:18, label:'Poles?', resp:'No poles either...', w:85},
-    {x:42, y:42, label:'Bricks?', resp:'Not bricks...', w:85},
-    {x:20, y:62, label:'Clouds?', resp:'Not clouds...', w:90},
-    {x:62, y:62, label:'Nothing?', resp:'Nothing. Allah holds it.', final:true, w:100},
+    {x:15, y:38, label:'Ropes?',  resp:'No ropes...'},
+    {x:72, y:30, label:'Poles?',  resp:'No poles...'},
+    {x:44, y:55, label:'Bricks?', resp:'Not bricks...'},
+    {x:16, y:68, label:'Clouds?', resp:'Not clouds...'},
+    {x:65, y:68, label:'Nothing?', resp:'Nothing. Allah holds it.', final:true},
   ];
 
   el.innerHTML = `
     <div style="position:relative;overflow:hidden;height:300px">
       <canvas id="sky2-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
-      <!-- Question at top, fixed position -->
-      <div style="position:absolute;top:14px;left:0;right:0;z-index:5;pointer-events:none;text-align:center;padding:0 20px">
-        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">✦ Find the Pillars</div>
-        <div style="font-family:var(--body);font-size:15px;color:rgba(253,246,227,.8);font-style:italic;line-height:1.5;text-shadow:0 2px 8px rgba(0,0,0,.9)">
+      <!-- Question top-left, not centred, won't clash with buttons -->
+      <div style="position:absolute;top:14px;left:16px;z-index:5;pointer-events:none;max-width:55%">
+        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.5);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px">✦ Find the Pillars</div>
+        <div style="font-family:var(--body);font-size:15px;color:rgba(253,246,227,.85);font-style:italic;line-height:1.5;text-shadow:0 2px 8px rgba(0,0,0,.9)">
           What holds up the sky?
         </div>
       </div>
-      <!-- Hotspots in lower 60% of canvas -->
       <div id="sky2-spots" style="position:absolute;inset:0;z-index:4"></div>
       <div id="sky2-reveal" style="position:absolute;bottom:14px;left:0;right:0;z-index:6;text-align:center;pointer-events:none;padding:0 20px;opacity:0;transition:opacity .8s ease">
-        <div style="background:rgba(10,14,26,.85);border:1px solid rgba(245,200,66,.3);border-radius:14px;padding:12px 18px;display:inline-block;backdrop-filter:blur(8px)">
+        <div style="background:rgba(10,14,26,.88);border:1px solid rgba(245,200,66,.3);border-radius:14px;padding:12px 18px;display:inline-block;backdrop-filter:blur(8px)">
           <div style="font-family:var(--display);font-size:14px;color:var(--gold)">Nothing. Allah holds it.</div>
           <div style="font-family:var(--body);font-size:12px;color:rgba(253,246,227,.6);margin-top:4px;font-style:italic">No ropes. No pillars. His power needs no support.</div>
         </div>
@@ -5085,34 +5087,20 @@ function wonderSkyPillars(el) {
       r:0.5+Math.random()*1.5, phase:Math.random()*Math.PI*2
     }));
 
-    // Generate cloud shapes as bezier paths
     function drawCloud(ctx, cx, cy, scale, alpha) {
-      ctx.save();
-      ctx.globalAlpha = alpha;
+      ctx.save(); ctx.globalAlpha = alpha;
       ctx.fillStyle = 'rgba(180,195,220,1)';
-      ctx.beginPath();
-      // Main body
-      ctx.ellipse(cx, cy, 30*scale, 14*scale, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(cx-18*scale, cy+4*scale, 18*scale, 10*scale, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(cx+20*scale, cy+4*scale, 20*scale, 11*scale, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(cx+5*scale, cy-10*scale, 22*scale, 13*scale, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(cx-10*scale, cy-8*scale, 18*scale, 12*scale, 0, 0, Math.PI*2);
-      ctx.fill();
+      [[0,0,30,14],[-18,4,18,10],[20,4,20,11],[5,-10,22,13]].forEach(([ox,oy,rw,rh]) => {
+        ctx.beginPath();
+        ctx.ellipse(cx+ox*scale, cy+oy*scale, rw*scale, rh*scale, 0,0,Math.PI*2);
+        ctx.fill();
+      });
       ctx.restore();
     }
 
     const clouds = [
-      {cx:0.2, cy:0.35, scale:0.7, speed:0.08},
-      {cx:0.55, cy:0.22, scale:0.9, speed:0.05},
-      {cx:0.85, cy:0.40, scale:0.6, speed:0.1},
+      {cx:0.35, cy:0.38, scale:0.7, speed:0.05},
+      {cx:0.68, cy:0.24, scale:0.85, speed:0.04},
     ];
 
     function drawSky(t) {
@@ -5120,48 +5108,38 @@ function wonderSkyPillars(el) {
       grad.addColorStop(0,'#06091a');
       grad.addColorStop(0.5,'#0e1a35');
       grad.addColorStop(1,'#1a2a50');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0,0,W,H);
-      // Stars
+      ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
       bgStars.forEach(s => {
-        const a = 0.3 + 0.7*Math.abs(Math.sin(t*0.001+s.phase));
+        const a = 0.3+0.7*Math.abs(Math.sin(t*.001+s.phase));
         ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
         ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fill();
       });
-      // Clouds with movement
       clouds.forEach(c => {
-        c.cx = (c.cx + c.speed * 0.00005) % 1.3;
-        drawCloud(ctx, c.cx * W, c.cy * H, c.scale, 0.12);
+        c.cx = (c.cx + c.speed*0.00004) % 1.3;
+        drawCloud(ctx, c.cx*W, c.cy*H, c.scale, 0.14);
       });
-      // Ground
       const hillGrad = ctx.createLinearGradient(0,H*0.78,0,H);
       hillGrad.addColorStop(0,'#0a1520'); hillGrad.addColorStop(1,'#050a10');
       ctx.fillStyle = hillGrad;
       ctx.beginPath();
-      ctx.moveTo(0,H*0.82);
-      ctx.quadraticCurveTo(W*0.25,H*0.76, W*0.5,H*0.8);
-      ctx.quadraticCurveTo(W*0.75,H*0.84, W,H*0.79);
+      ctx.moveTo(0,H*0.82); ctx.quadraticCurveTo(W*0.25,H*0.76,W*0.5,H*0.8);
+      ctx.quadraticCurveTo(W*0.75,H*0.84,W,H*0.79);
       ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
       requestAnimationFrame(drawSky);
     }
     requestAnimationFrame(drawSky);
 
-    // Hotspots — positioned in the SKY area (top 75%)
     const spotsWrap = document.getElementById('sky2-spots');
     if (!spotsWrap) return;
-    items.forEach((item) => {
+    items.forEach(item => {
       const btn = document.createElement('button');
-      // Keep buttons in upper 70% so they don't overlap ground
-      const topPct = Math.min(item.y, 68);
-      btn.style.cssText = `position:absolute;left:${item.x}%;top:${topPct}%;
+      btn.style.cssText = `position:absolute;left:${item.x}%;top:${item.y}%;
         transform:translate(-50%,-50%);
-        background:rgba(10,18,40,0.75);
+        background:rgba(10,18,40,0.78);
         border:1.5px solid rgba(245,200,66,0.35);
-        border-radius:50px;padding:8px 16px;
-        font-family:var(--display);font-size:11px;
-        color:rgba(245,200,66,0.85);cursor:pointer;
-        letter-spacing:1px;backdrop-filter:blur(6px);
-        transition:all .3s;white-space:nowrap;
+        border-radius:50px;padding:8px 16px;font-family:var(--display);font-size:11px;
+        color:rgba(245,200,66,0.85);cursor:pointer;letter-spacing:1px;
+        backdrop-filter:blur(6px);transition:all .3s;white-space:nowrap;
         box-shadow:0 4px 16px rgba(0,0,0,.5)`;
       btn.textContent = item.label;
       btn.onclick = () => {
@@ -5178,6 +5156,7 @@ function wonderSkyPillars(el) {
           btn.style.borderColor = 'rgba(255,255,255,0.1)';
           btn.style.color = 'rgba(253,246,227,0.3)';
           btn.textContent = item.resp;
+          btn.style.fontSize = '10px';
         }
       };
       spotsWrap.appendChild(btn);
@@ -5794,9 +5773,18 @@ async function inlineUploadBeat(beat, inputEl) {
       setTimeout(() => flash.remove(), 1200);
     }
     toast('✅ Beat ' + beat + ' uploaded!', 'success');
+    // Re-check DB to confirm persistence
+    setTimeout(async () => {
+      if (A.scene && A.world) {
+        const freshImgs = await loadSceneImages(A.world.id, A.scene.id);
+        if (freshImgs[beat]) console.log('[NQ] Beat', beat, 'confirmed in DB ✅');
+        else console.warn('[NQ] Beat', beat, 'NOT found in DB after upload ⚠️');
+      }
+    }, 800);
   } catch(e) {
     if (zone) { const ov = zone.querySelector('.uploading-overlay'); if (ov) ov.remove(); }
     toast('Upload failed: ' + (e.message || e), 'error');
+    console.error('[NQ] inlineUploadBeat error:', e);
   }
   inputEl.value = '';
 }
@@ -5808,7 +5796,6 @@ async function inlineUploadIxItem(itemIdx, type, inputEl) {
   const sceneId = A.scene?.id;
   if (!worldId || !sceneId) return toast('No scene loaded', 'error');
 
-  // Find the parent card to show progress
   const btn = inputEl.nextElementSibling || inputEl.parentElement;
   const card = btn?.closest('[style*="border-radius:18px"]') || btn?.closest('[style*="border-radius:20px"]');
   if (card) {
@@ -5834,26 +5821,18 @@ async function inlineUploadIxItem(itemIdx, type, inputEl) {
       tag, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
     });
     if (dbErr) throw dbErr;
+    console.log('[NQ] ix upload saved to DB:', tag);
 
-    // Update the icon/audio in the card immediately
+    // Update DOM immediately
     if (type === 'image' && card) {
       const imgEl = card.querySelector('img');
       const emojiEl = card.querySelector('[style*="font-size:3"]') || card.querySelector('[style*="font-size:28"]') || card.querySelector('[style*="font-size:30"]');
-      if (imgEl) {
-        imgEl.src = url;
-      } else if (emojiEl) {
-        emojiEl.outerHTML = '<img src="' + url + '" style="width:52px;height:52px;object-fit:cover;border-radius:50%">';
-      }
+      if (imgEl) imgEl.src = url;
+      else if (emojiEl) emojiEl.outerHTML = '<img src="' + url + '" style="width:52px;height:52px;object-fit:cover;border-radius:50%">';
     } else if (type === 'audio' && card) {
-      // Update the onclick with new audio URL
-      const oldOnclick = card.getAttribute('onclick') || '';
       card.setAttribute('onclick', 'listenTap2(this,' + JSON.stringify(url) + ')');
-      // Add audio indicator
-      const existing = card.querySelector('[style*="AUDIO"]');
-      if (existing) existing.style.color = 'rgba(100,200,255,.8)';
     }
 
-    // Success flash
     if (card) {
       const ov = card.querySelector('.uploading-overlay');
       if (ov) ov.remove();
@@ -5865,9 +5844,20 @@ async function inlineUploadIxItem(itemIdx, type, inputEl) {
       setTimeout(() => flash.remove(), 1200);
     }
     toast('✅ ' + (type === 'audio' ? 'Audio' : 'Image') + ' uploaded!', 'success');
+
+    // Re-render interactive from DB to confirm persistence
+    setTimeout(async () => {
+      if (A.scene && A.world) {
+        const fresh = await loadIxAssets(A.world.id, A.scene.id);
+        console.log('[NQ] Fresh ix assets after upload:', Object.keys(fresh));
+        const ixEl = document.getElementById('ix-container');
+        if (ixEl && A.scene.ix) renderInteractive(ixEl, A.scene.ix, fresh);
+      }
+    }, 900);
   } catch(e) {
     if (card) { const ov = card.querySelector('.uploading-overlay'); if (ov) ov.remove(); }
     toast('Upload failed: ' + (e.message || e), 'error');
+    console.error('[NQ] ix upload error:', e);
   }
   inputEl.value = '';
 }
