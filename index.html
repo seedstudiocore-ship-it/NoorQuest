@@ -4250,7 +4250,6 @@ async function adminUpload() {
     // Insert with tag as key + public_url (columns that exist in original schema)
     const {error: dbErr} = await sb.from('admin_assets').insert({
       tag:        tag,
-      url:        url,
       public_url: url,
       file_name:  file.name,
       file_path:  path,
@@ -5776,7 +5775,7 @@ async function inlineUploadBeat(beat, inputEl) {
 
     await sb.from('admin_assets').delete().eq('tag', tag);
     const {error: dbErr} = await sb.from('admin_assets').insert({
-      tag, url, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
+      tag, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
     });
     if (dbErr) throw dbErr;
 
@@ -5832,7 +5831,7 @@ async function inlineUploadIxItem(itemIdx, type, inputEl) {
 
     await sb.from('admin_assets').delete().eq('tag', tag);
     const {error: dbErr} = await sb.from('admin_assets').insert({
-      tag, url, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
+      tag, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
     });
     if (dbErr) throw dbErr;
 
