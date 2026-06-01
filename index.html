@@ -103,7 +103,7 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXEC
 html, body { height:100%; overflow:hidden; background:var(--navy) }
 body { font-family:var(--body); color:var(--cream); display:flex; justify-content:center }
 #app { width:100%; max-width:480px; height:100%; position:relative; overflow:hidden; background:var(--navy) }
-.screen { position:absolute; inset:0; display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; opacity:0; pointer-events:none; transition:opacity .35s ease }
+.screen { position:absolute; inset:0; display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; opacity:0; pointer-events:none; transition:opacity .35s ease; -webkit-overflow-scrolling:touch; }
 .screen.active { opacity:1; pointer-events:all }
 
 /* ── Stars ── */
@@ -265,7 +265,7 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 .player-hchip { background:rgba(245,200,66,.12); border:1px solid rgba(245,200,66,.25); border-radius:50px; padding:5px 12px; font-size:12px; font-weight:700; font-family:var(--ui); color:var(--gold) }
 
 /* Scene scrollable container */
-.scene-scroll { flex:1; overflow-y:auto; }
+.scene-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
 .scene-title-block { padding:28px 20px 20px; text-align:center }
 .scene-num-badge { font-family:var(--ui); font-size:11px; color:rgba(245,200,66,.5); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:8px }
 .scene-title-text { font-family:var(--display); font-size:22px; color:var(--gold); font-weight:700; line-height:1.3 }
@@ -3087,6 +3087,7 @@ async function startScene(sceneId) {
   if (!A.scene) return;
   A.step = 0;
   A.sceneHa = 0;
+  A._ixAssets = {}; // Clear cached assets for new scene
   SS('s-player');
   // Scroll to top immediately
   const sw = document.getElementById('scene-scroll-wrap');
@@ -3185,6 +3186,7 @@ async function renderFullScene() {
 
     // Re-render interactive with real assets if any loaded
     if (ixEl && sc.ix) {
+      A._ixAssets = ixAssets; // Store for interactive renderers to reference
       renderInteractive(ixEl, sc.ix, ixAssets);
     }
   } catch(e) {
@@ -3225,27 +3227,21 @@ async function loadSceneImages(worldId, sceneId) {
   const imgs = {A: null, B: null, C: null};
   try {
     const prefix = `w${worldId}_s${sceneId}_`;
-    // Select all possible URL column names
     const {data, error} = await sb.from('admin_assets')
       .select('*')
       .like('tag', prefix + '%');
 
-    console.log(`[NQ] loadSceneImages W${worldId}S${sceneId}: found ${data?.length || 0} rows, error:`, error?.message || 'none');
-    if (data && data.length > 0) console.log('[NQ] rows:', data.map(r => ({tag:r.tag, url:r.url, pub:r.public_url})));
-
     if (data) {
       data.forEach(r => {
-        // Try every possible URL column name
         const url = r.url || r.public_url || r.file_url || r.asset_url;
         if (!url || !r.tag) return;
         const parts = r.tag.split('_');
-        // Expected: ['w1','s1','A','image'] — beat is parts[2]
         if (parts.length >= 4) {
           const beat = parts[2];
           const type = parts[3];
           if (type === 'image' && (beat === 'A' || beat === 'B' || beat === 'C')) {
-            imgs[beat] = url;
-            console.log(`[NQ] ✅ Found image for beat ${beat}:`, url);
+            // Cache-bust so browser always fetches fresh
+            imgs[beat] = url + '?v=' + (r.id || Date.now());
           }
         }
       });
@@ -3259,16 +3255,21 @@ function updateHaChip() {
   if (chip) chip.textContent = '⭐ ' + (A.totalHasanah || 0);
 }
 
+// Skip to next scene without marking complete
+function skipToNext(sceneId) {
+  startScene(sceneId);
+}
+
 async function completeScene() {
   const wid = A.world.id;
   const sid = A.scene.id;
   const ha = A.scene.ha || 5;
 
-  // Disable button
+  // Disable button immediately
   const btn = document.getElementById('scene-complete-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
 
-  // Update local progress
+  // Update local progress FIRST — don't wait for DB
   if (!A.progress[wid]) A.progress[wid] = {scenes_done:[], hasanah:0, keys:0};
   const p = A.progress[wid];
   if (!p.scenes_done) p.scenes_done = [];
@@ -3281,9 +3282,12 @@ async function completeScene() {
   // Gold particle burst
   goldBurst();
 
-  // Save to Supabase
+  // Show reward immediately — don't wait for DB save
+  showSceneReward(ha);
+
+  // Save to Supabase in background (fire and forget)
   try {
-    await sb.from('progress').upsert({
+    sb.from('progress').upsert({
       child_id: A.child.id,
       world_id: wid,
       scenes_done: p.scenes_done,
@@ -3291,11 +3295,14 @@ async function completeScene() {
       keys: p.keys || 0,
       quiz_done: p.quiz_done || false,
       journal_done: p.journal_done || false
-    }, { onConflict: 'child_id,world_id' });
-  } catch(e) {}
-
-  // Show hasanah reward then return to world
-  showSceneReward(ha);
+    }, { onConflict: 'child_id,world_id' }).then(() => {
+      console.log('[NQ] Progress saved for W' + wid + 'S' + sid);
+    }).catch(e => {
+      console.warn('[NQ] Background save failed:', e.message);
+    });
+  } catch(e) {
+    console.warn('[NQ] completeScene save error:', e);
+  }
 }
 
 function showSceneReward(ha) {
@@ -4694,15 +4701,14 @@ async function loadIxAssets(worldId, sceneId) {
   try {
     const prefix = `w${worldId}_s${sceneId}_ix`;
     const {data, error} = await sb.from('admin_assets')
-      .select('tag,public_url')
+      .select('tag,public_url,id')
       .like('tag', prefix + '%');
-    console.log(`[NQ] loadIxAssets W${worldId}S${sceneId}: found ${data?.length||0} rows, error:`, error?.message||'none');
     if (data) {
       data.forEach(r => {
         if (r.tag && r.public_url) {
           const keyPart = r.tag.replace(`w${worldId}_s${sceneId}_`, '');
-          result[keyPart] = r.public_url;
-          console.log(`[NQ] ix asset: ${keyPart} →`, r.public_url.slice(-30));
+          // Cache-bust so images always reload fresh
+          result[keyPart] = r.public_url + '?v=' + (r.id || Date.now());
         }
       });
     }
@@ -4782,265 +4788,162 @@ function renderWONDER(container, ix, assets) {
 
 // ─── 1. LIGHT PAINTER (An-Nur — reveal what's already there) ─
 function wonderDawnWatch(el) {
+  const adminBg = (A._ixAssets && A._ixAssets['ix_wonder_bg_image']) || null;
+  const isAdmin = A.profile?.is_admin;
+
   el.innerHTML = `
-    <div style="position:relative;overflow:hidden;height:300px;background:#000;cursor:crosshair" id="lp-wrap">
-      <canvas id="lp-bg" style="position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1"></canvas>
-      <canvas id="lp-light" style="position:absolute;inset:0;width:100%;height:100%;display:block;z-index:2"></canvas>
-      <div style="position:absolute;inset:0;z-index:3;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:18px">
-        <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">✦ An-Nur — The Light</div>
-        <div id="lp-hint" style="font-family:var(--body);font-size:15px;color:rgba(253,246,227,.65);font-style:italic;text-align:center;padding:0 24px;transition:opacity .6s ease;text-shadow:0 2px 8px rgba(0,0,0,.9)">
-          The light was already here. Tap to find it.
+    <div style="position:relative;overflow:hidden">
+      ${isAdmin ? `
+        <div style="position:absolute;top:8px;left:8px;z-index:30">
+          <input type="file" id="wonder-bg-file" accept="image/*" style="display:none" onchange="uploadWonderBg(this)">
+          <button onclick="document.getElementById('wonder-bg-file').click()"
+            style="background:rgba(10,14,26,.88);border:1.5px solid rgba(245,200,66,.5);border-radius:50px;
+            padding:6px 12px;font-family:var(--ui);font-size:11px;color:var(--gold);cursor:pointer;
+            backdrop-filter:blur(8px);letter-spacing:.5px">📷 Replace Background</button>
+        </div>` : ''}
+      <div style="position:relative;overflow:hidden;height:300px" id="lp-wrap">
+        ${adminBg
+          ? `<img src="${adminBg}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0">`
+          : `<canvas id="bg-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0"></canvas>`}
+        <canvas id="light-canvas" style="position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1;cursor:crosshair"></canvas>
+        <div id="lp-hint" style="position:absolute;top:14px;left:0;right:0;text-align:center;z-index:5;pointer-events:none;transition:opacity .8s ease">
+          <div style="font-family:var(--display);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px">✦ An-Nur · The Light</div>
+          <div style="font-family:var(--body);font-size:14px;color:rgba(253,246,227,.65);font-style:italic;text-shadow:0 2px 8px rgba(0,0,0,.9)">Tap the darkness to reveal His light</div>
         </div>
-        <div id="lp-reveal" style="font-family:var(--body);font-size:15px;color:var(--gold);font-style:italic;text-align:center;padding:0 24px;opacity:0;transition:opacity 1.2s ease;line-height:1.7;text-shadow:0 0 20px rgba(245,200,66,.4)">
-          Allah gave you light to see the world — and made that world beautiful to look at. 🌈✨
+        <div id="lp-reveal" style="position:absolute;bottom:14px;left:0;right:0;z-index:5;text-align:center;pointer-events:none;padding:0 20px;opacity:0;transition:opacity 1s ease">
+          <div style="font-family:var(--body);font-size:15px;color:var(--cream);line-height:1.75;font-style:italic;text-shadow:0 2px 12px rgba(0,0,0,.9);background:rgba(0,0,0,.4);border-radius:12px;padding:12px 16px;backdrop-filter:blur(4px)">
+            Allah gave you light to see the world — and made that world beautiful to look at. 🌈✨
+          </div>
         </div>
       </div>
     </div>`;
 
   requestAnimationFrame(() => {
-    const bgCanvas = document.getElementById('lp-bg');
-    const lightCanvas = document.getElementById('lp-light');
     const wrap = document.getElementById('lp-wrap');
-    if (!bgCanvas || !lightCanvas || !wrap) return;
-
+    const lightCanvas = document.getElementById('light-canvas');
+    if (!wrap || !lightCanvas) return;
     const W = wrap.offsetWidth || 360;
     const H = wrap.offsetHeight || 300;
-    bgCanvas.width = lightCanvas.width = W;
-    bgCanvas.height = lightCanvas.height = H;
+    lightCanvas.width = W; lightCanvas.height = H;
 
-    const bgCtx = bgCanvas.getContext('2d');
-    const lCtx = lightCanvas.getContext('2d');
-
-    // ── Draw the hidden scene on bgCanvas ──────────────────
-    function drawHiddenScene() {
-      // Rich dawn sky
-      const sky = bgCtx.createLinearGradient(0,0,0,H);
-      sky.addColorStop(0,'#0d0520');
-      sky.addColorStop(0.3,'#2a0e30');
-      sky.addColorStop(0.55,'#8c3010');
-      sky.addColorStop(0.75,'#d86820');
-      sky.addColorStop(0.88,'#f0a030');
-      sky.addColorStop(1,'#f5b840');
-      bgCtx.fillStyle = sky; bgCtx.fillRect(0,0,W,H);
-
-      // Stars
-      for (let i = 0; i < 55; i++) {
-        const sx = (Math.sin(i*137.5)*.5+.5)*W;
-        const sy = (Math.sin(i*97.3)*.5+.5)*H*0.55;
-        bgCtx.beginPath(); bgCtx.arc(sx,sy,0.7+Math.random()*.9,0,Math.PI*2);
-        bgCtx.fillStyle=`rgba(255,255,255,${0.5+Math.random()*.4})`; bgCtx.fill();
-      }
-
-      // Clouds — layered, soft
-      function cloud(cx,cy,sc,alpha) {
-        bgCtx.save(); bgCtx.globalAlpha = alpha;
-        const cg = bgCtx.createRadialGradient(cx,cy,0,cx,cy,40*sc);
-        cg.addColorStop(0,'rgba(255,180,100,1)');
-        cg.addColorStop(0.5,'rgba(220,140,80,.7)');
-        cg.addColorStop(1,'rgba(180,100,60,0)');
-        [[0,0,30,14],[-18,6,20,10],[20,6,22,11],[6,-10,20,12]].forEach(([ox,oy,rw,rh]) => {
-          bgCtx.beginPath();
-          bgCtx.ellipse(cx+ox*sc, cy+oy*sc, rw*sc, rh*sc, 0,0,Math.PI*2);
-          bgCtx.fillStyle = cg; bgCtx.fill();
-        });
-        bgCtx.restore();
-      }
-      cloud(W*0.18, H*0.18, 1.1, 0.55);
-      cloud(W*0.55, H*0.12, 0.85, 0.45);
-      cloud(W*0.82, H*0.22, 0.95, 0.5);
-      cloud(W*0.35, H*0.25, 0.7, 0.35);
-
-      // Strong sun glow
-      const sunX = W*0.5, sunY = H*0.72;
-      const sg1 = bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,W*0.65);
-      sg1.addColorStop(0,'rgba(255,230,120,.9)');
-      sg1.addColorStop(0.15,'rgba(255,160,50,.7)');
-      sg1.addColorStop(0.4,'rgba(240,100,20,.35)');
-      sg1.addColorStop(1,'transparent');
-      bgCtx.fillStyle=sg1; bgCtx.fillRect(0,0,W,H);
-      // Sun disc
-      const sdg = bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,28);
-      sdg.addColorStop(0,'rgba(255,248,200,1)');
-      sdg.addColorStop(0.5,'rgba(255,200,80,.95)');
-      sdg.addColorStop(1,'rgba(255,140,40,.5)');
-      bgCtx.beginPath(); bgCtx.arc(sunX,sunY,28,0,Math.PI*2);
-      bgCtx.fillStyle=sdg; bgCtx.fill();
-
-      // Rolling green hills — GROUNDED
-      // Far hill (lighter green)
-      bgCtx.fillStyle='rgba(45,80,20,.85)';
-      bgCtx.beginPath(); bgCtx.moveTo(0,H*0.74);
-      bgCtx.quadraticCurveTo(W*.2,H*0.62, W*.45,H*0.70);
-      bgCtx.quadraticCurveTo(W*.7,H*0.78, W,H*0.68);
-      bgCtx.lineTo(W,H); bgCtx.lineTo(0,H); bgCtx.closePath(); bgCtx.fill();
-      // Near hill (darker green)
-      bgCtx.fillStyle='rgba(28,65,15,.95)';
-      bgCtx.beginPath(); bgCtx.moveTo(0,H*0.82);
-      bgCtx.quadraticCurveTo(W*.25,H*0.74, W*.5,H*0.80);
-      bgCtx.quadraticCurveTo(W*.75,H*0.76, W,H*0.82);
-      bgCtx.lineTo(W,H); bgCtx.lineTo(0,H); bgCtx.closePath(); bgCtx.fill();
-      // Valley floor
-      bgCtx.fillStyle='rgba(20,55,12,.98)';
-      bgCtx.fillRect(0,H*0.88,W,H*0.12);
-
-      // Trees — ROOTED to hill (no floating)
-      function treeAt(tx,ty,h,dense) {
-        // Trunk rooted at ty
-        const tg = bgCtx.createLinearGradient(tx,ty,tx,ty-h);
-        tg.addColorStop(0,'rgba(60,35,10,.95)');
-        tg.addColorStop(1,'rgba(45,70,15,.9)');
-        bgCtx.beginPath(); bgCtx.moveTo(tx-5,ty); bgCtx.lineTo(tx+5,ty);
-        bgCtx.lineTo(tx+3,ty-h); bgCtx.lineTo(tx-3,ty-h); bgCtx.closePath();
-        bgCtx.fillStyle=tg; bgCtx.fill();
-        // Canopy layers
-        for (let l=0;l<3;l++) {
-          const ly = ty - h*0.55 - l*h*0.18;
-          const lr = (dense?22:16) - l*4;
-          const lg = bgCtx.createRadialGradient(tx,ly,0,tx,ly,lr);
-          lg.addColorStop(0,`rgba(${40+l*10},${100+l*20},${25+l*8},.92)`);
-          lg.addColorStop(1,`rgba(20,60,10,0)`);
-          bgCtx.beginPath(); bgCtx.arc(tx,ly,lr,0,Math.PI*2);
-          bgCtx.fillStyle=lg; bgCtx.fill();
+    if (!adminBg) {
+      const bgCanvas = document.getElementById('bg-canvas');
+      if (bgCanvas) {
+        bgCanvas.width = W; bgCanvas.height = H;
+        const bgCtx = bgCanvas.getContext('2d');
+        const sky = bgCtx.createLinearGradient(0,0,0,H);
+        sky.addColorStop(0,'#06040e'); sky.addColorStop(0.3,'#3a1a08');
+        sky.addColorStop(0.55,'#8c3010'); sky.addColorStop(0.75,'#d86820');
+        sky.addColorStop(0.88,'#f0a030'); sky.addColorStop(1,'#f5b840');
+        bgCtx.fillStyle=sky; bgCtx.fillRect(0,0,W,H);
+        for(let i=0;i<55;i++){
+          const sx=(Math.sin(i*137.5)*.5+.5)*W,sy=(Math.sin(i*97.3)*.5+.5)*H*0.55;
+          bgCtx.beginPath();bgCtx.arc(sx,sy,0.7+Math.random()*.9,0,Math.PI*2);
+          bgCtx.fillStyle=`rgba(255,255,255,${0.5+Math.random()*.4})`;bgCtx.fill();
         }
+        const sunX=W*0.5,sunY=H*0.72;
+        const sg1=bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,W*0.65);
+        sg1.addColorStop(0,'rgba(255,230,120,.9)');sg1.addColorStop(0.15,'rgba(255,160,50,.7)');
+        sg1.addColorStop(0.4,'rgba(240,100,20,.35)');sg1.addColorStop(1,'transparent');
+        bgCtx.fillStyle=sg1;bgCtx.fillRect(0,0,W,H);
+        const sdg=bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,28);
+        sdg.addColorStop(0,'rgba(255,248,200,1)');sdg.addColorStop(0.5,'rgba(255,200,80,.95)');
+        sdg.addColorStop(1,'rgba(255,140,40,.5)');
+        bgCtx.beginPath();bgCtx.arc(sunX,sunY,28,0,Math.PI*2);bgCtx.fillStyle=sdg;bgCtx.fill();
+        bgCtx.fillStyle='rgba(45,80,20,.85)';
+        bgCtx.beginPath();bgCtx.moveTo(0,H*0.74);
+        bgCtx.quadraticCurveTo(W*.2,H*0.62,W*.45,H*0.70);bgCtx.quadraticCurveTo(W*.7,H*0.78,W,H*0.68);
+        bgCtx.lineTo(W,H);bgCtx.lineTo(0,H);bgCtx.closePath();bgCtx.fill();
+        bgCtx.fillStyle='rgba(28,65,15,.95)';
+        bgCtx.beginPath();bgCtx.moveTo(0,H*0.82);
+        bgCtx.quadraticCurveTo(W*.25,H*0.74,W*.5,H*0.80);bgCtx.quadraticCurveTo(W*.75,H*0.76,W,H*0.82);
+        bgCtx.lineTo(W,H);bgCtx.lineTo(0,H);bgCtx.closePath();bgCtx.fill();
+        bgCtx.fillStyle='rgba(20,55,12,.98)';bgCtx.fillRect(0,H*0.88,W,H*0.12);
+        const fx=W*0.46,fy=H*0.788;
+        bgCtx.fillStyle='rgba(8,4,18,.92)';
+        bgCtx.beginPath();bgCtx.arc(fx-9,fy-20,5.5,0,Math.PI*2);bgCtx.fill();
+        bgCtx.beginPath();bgCtx.ellipse(fx-9,fy-16,7,5,0,0,Math.PI*2);bgCtx.fill();
+        bgCtx.beginPath();bgCtx.moveTo(fx-9,fy-12);bgCtx.lineTo(fx-14,fy);bgCtx.lineTo(fx-4,fy);bgCtx.closePath();bgCtx.fill();
+        bgCtx.beginPath();bgCtx.arc(fx+9,fy-20,5,0,Math.PI*2);bgCtx.fill();
+        bgCtx.beginPath();bgCtx.moveTo(fx+9,fy-15);bgCtx.lineTo(fx+4,fy);bgCtx.lineTo(fx+14,fy);bgCtx.closePath();bgCtx.fill();
       }
-      // Trees sitting ON the hill surface
-      treeAt(W*0.08, H*0.795, 38, false);
-      treeAt(W*0.18, H*0.780, 44, true);
-      treeAt(W*0.28, H*0.770, 36, false);
-      treeAt(W*0.72, H*0.778, 40, true);
-      treeAt(W*0.83, H*0.790, 35, false);
-      treeAt(W*0.92, H*0.800, 42, true);
-
-      // Zain & Nura silhouettes — on hilltop
-      const fx = W*0.46, fy = H*0.788;
-      bgCtx.fillStyle='rgba(8,4,18,.92)';
-      // Nura (with headscarf shape)
-      bgCtx.beginPath(); bgCtx.arc(fx-9,fy-20,5.5,0,Math.PI*2); bgCtx.fill();
-      bgCtx.beginPath(); bgCtx.ellipse(fx-9,fy-16,7,5,0,0,Math.PI*2); bgCtx.fill();
-      bgCtx.beginPath(); bgCtx.moveTo(fx-9,fy-12); bgCtx.lineTo(fx-14,fy); bgCtx.lineTo(fx-4,fy); bgCtx.closePath(); bgCtx.fill();
-      // Zain
-      bgCtx.beginPath(); bgCtx.arc(fx+9,fy-20,5,0,Math.PI*2); bgCtx.fill();
-      bgCtx.beginPath(); bgCtx.moveTo(fx+9,fy-15); bgCtx.lineTo(fx+4,fy); bgCtx.lineTo(fx+14,fy); bgCtx.closePath(); bgCtx.fill();
-      // Lantern glow
-      const lg2 = bgCtx.createRadialGradient(fx-9,fy-8,0,fx-9,fy-8,18);
-      lg2.addColorStop(0,'rgba(255,210,80,.7)');
-      lg2.addColorStop(1,'transparent');
-      bgCtx.fillStyle=lg2; bgCtx.beginPath(); bgCtx.arc(fx-9,fy-8,18,0,Math.PI*2); bgCtx.fill();
-
-      // Birds — clearly visible V shapes
-      bgCtx.strokeStyle='rgba(8,4,18,.85)'; bgCtx.lineWidth=2;
-      [[0.28,0.30],[0.38,0.25],[0.48,0.28],[0.58,0.23],[0.66,0.31]].forEach(([bx,by],i) => {
-        const cx=bx*W, cy=by*H, bs=7+i%2*3;
-        bgCtx.beginPath();
-        bgCtx.moveTo(cx-bs,cy);
-        bgCtx.quadraticCurveTo(cx-bs/2,cy-4,cx,cy);
-        bgCtx.quadraticCurveTo(cx+bs/2,cy-4,cx+bs,cy);
-        bgCtx.stroke();
-      });
-
-      // Small animal on hill — sheep/goat silhouette
-      const ax=W*0.62, ay=H*0.806;
-      bgCtx.fillStyle='rgba(200,190,175,.7)';
-      bgCtx.beginPath(); bgCtx.ellipse(ax,ay-4,8,5,0,0,Math.PI*2); bgCtx.fill();
-      bgCtx.beginPath(); bgCtx.arc(ax+7,ay-6,4,0,Math.PI*2); bgCtx.fill();
-      bgCtx.fillStyle='rgba(8,4,18,.6)';
-      [[ax-4,ay],[ax-1,ay],[ax+4,ay],[ax+7,ay]].forEach(([lx,ly])=>{
-        bgCtx.fillRect(lx-1,ly,2,5);
-      });
     }
-    drawHiddenScene();
 
-    // ── Light canvas starts dark, reveals bg through tap ──
-    // Fill light canvas black
-    lCtx.fillStyle = '#000';
-    lCtx.fillRect(0,0,W,H);
+    const lCtx = lightCanvas.getContext('2d');
+    lCtx.fillStyle='#000'; lCtx.fillRect(0,0,W,H);
+    lCtx.globalCompositeOperation='destination-out';
+    let tapCount=0; const maxTaps=6; const rays=[]; let animFrame;
 
-    // Use destination-out to erase holes, revealing background
-    lCtx.globalCompositeOperation = 'destination-out';
-
-    let tapCount = 0;
-    const maxTaps = 16;
-    const rays = [];
-    let animFrame;
-
-    function spawnRays(x, y) {
-      const count = 16;
-      for (let i = 0; i < count; i++) {
-        const angle = (Math.PI*2 * i/count) + (Math.random()-0.5)*0.2;
-        rays.push({
-          x, y, angle,
-          speed: 4 + Math.random()*4,
-          len: 0,
-          maxLen: 100 + Math.random()*120,
-          width: 3 + Math.random()*4,
-          life: 1
-        });
+    function spawnRays(x,y){
+      for(let i=0;i<20;i++){
+        const angle=(Math.PI*2*i/20)+(Math.random()-.5)*0.2;
+        rays.push({x,y,angle,speed:4+Math.random()*4,len:0,maxLen:120+Math.random()*140,width:4+Math.random()*5,life:1});
       }
-      // Large central burst — much more visible
-      const grad = lCtx.createRadialGradient(x,y,0,x,y,90);
-      grad.addColorStop(0,'rgba(255,255,255,1)');
-      grad.addColorStop(0.3,'rgba(255,255,255,0.9)');
-      grad.addColorStop(0.7,'rgba(255,255,255,0.4)');
-      grad.addColorStop(1,'rgba(255,255,255,0)');
-      lCtx.fillStyle = grad;
-      lCtx.beginPath(); lCtx.arc(x,y,90,0,Math.PI*2); lCtx.fill();
+      const grad=lCtx.createRadialGradient(x,y,0,x,y,110);
+      grad.addColorStop(0,'rgba(255,255,255,1)');grad.addColorStop(0.4,'rgba(255,255,255,0.85)');
+      grad.addColorStop(0.8,'rgba(255,255,255,0.3)');grad.addColorStop(1,'rgba(255,255,255,0)');
+      lCtx.fillStyle=grad;lCtx.beginPath();lCtx.arc(x,y,110,0,Math.PI*2);lCtx.fill();
     }
-
-    function animateRays() {
-      // Draw rays on light canvas (erasing darkness)
-      rays.forEach((r, idx) => {
-        r.len += r.speed;
-        r.life = Math.max(0, 1 - r.len/r.maxLen);
-        if (r.len > r.maxLen) return;
-        const ex = r.x + Math.cos(r.angle)*r.len;
-        const ey = r.y + Math.sin(r.angle)*r.len;
-        const sx = r.x + Math.cos(r.angle)*Math.max(0,r.len-20);
-        const sy = r.y + Math.sin(r.angle)*Math.max(0,r.len-20);
-        lCtx.beginPath();
-        lCtx.moveTo(sx,sy); lCtx.lineTo(ex,ey);
-        lCtx.strokeStyle = `rgba(255,255,255,${r.life * 0.7})`;
-        lCtx.lineWidth = r.width * r.life;
-        lCtx.lineCap = 'round';
-        lCtx.stroke();
+    function animateRays(){
+      rays.forEach(r=>{
+        r.len+=r.speed;r.life=Math.max(0,1-r.len/r.maxLen);
+        if(r.len>r.maxLen) return;
+        const ex=r.x+Math.cos(r.angle)*r.len,ey=r.y+Math.sin(r.angle)*r.len;
+        const sx=r.x+Math.cos(r.angle)*Math.max(0,r.len-20),sy=r.y+Math.sin(r.angle)*Math.max(0,r.len-20);
+        lCtx.beginPath();lCtx.moveTo(sx,sy);lCtx.lineTo(ex,ey);
+        lCtx.strokeStyle=`rgba(255,255,255,${r.life*0.8})`;lCtx.lineWidth=r.width*r.life;lCtx.lineCap='round';lCtx.stroke();
       });
-      // Remove dead rays
-      for (let i=rays.length-1;i>=0;i--) if(rays[i].len>=rays[i].maxLen) rays.splice(i,1);
-      if (rays.length > 0) animFrame = requestAnimationFrame(animateRays);
+      for(let i=rays.length-1;i>=0;i--) if(rays[i].len>=rays[i].maxLen) rays.splice(i,1);
+      if(rays.length>0) animFrame=requestAnimationFrame(animateRays);
     }
-
-    function onTap(e) {
+    function onTap(e){
       e.preventDefault();
-      const rect = lightCanvas.getBoundingClientRect();
-      const touch = e.touches ? e.touches[0] : e;
-      const x = (touch.clientX - rect.left) * (W / rect.width);
-      const y = (touch.clientY - rect.top) * (H / rect.height);
-
-      spawnRays(x, y);
-      if (animFrame) cancelAnimationFrame(animFrame);
-      animFrame = requestAnimationFrame(animateRays);
-
+      const rect=lightCanvas.getBoundingClientRect();
+      const touch=e.touches?e.touches[0]:e;
+      const x=(touch.clientX-rect.left)*(W/rect.width);
+      const y=(touch.clientY-rect.top)*(H/rect.height);
+      spawnRays(x,y);
+      if(animFrame) cancelAnimationFrame(animFrame);
+      animFrame=requestAnimationFrame(animateRays);
       tapCount++;
-      if (tapCount === 6) {
-        const hint = document.getElementById('lp-hint');
-        if (hint) hint.style.opacity = '0';
-      }
-      if (tapCount >= maxTaps) {
-        // Fully reveal — fade out the darkness canvas
-        lightCanvas.style.transition = 'opacity 1.8s ease';
-        lightCanvas.style.opacity = '0';
-        setTimeout(() => {
-          const hint = document.getElementById('lp-hint');
-          const rev = document.getElementById('lp-reveal');
-          if (hint) hint.style.display = 'none';
-          if (rev) rev.style.opacity = '1';
-        }, 900);
+      if(tapCount>=maxTaps){
+        lightCanvas.style.transition='opacity 1.8s ease';lightCanvas.style.opacity='0';
+        setTimeout(()=>{
+          const hint=document.getElementById('lp-hint');
+          const rev=document.getElementById('lp-reveal');
+          if(hint) hint.style.display='none';
+          if(rev) rev.style.opacity='1';
+        },900);
       }
     }
-
-    wrap.addEventListener('click', onTap);
-    wrap.addEventListener('touchstart', onTap, {passive:false});
+    wrap.addEventListener('click',onTap);
+    wrap.addEventListener('touchstart',onTap,{passive:false});
   });
 }
+
+async function uploadWonderBg(inputEl) {
+  const file=inputEl.files[0]; if(!file) return;
+  const worldId=A.world?.id, sceneId=A.scene?.id;
+  if(!worldId||!sceneId) return toast('No scene loaded','error');
+  const ext=file.name.split('.').pop().toLowerCase();
+  const tag='w'+worldId+'_s'+sceneId+'_ix_wonder_bg_image';
+  const path=tag+'_'+Date.now()+'.'+ext;
+  try {
+    const {error:upErr}=await sb.storage.from('noorquest-assets').upload(path,file,{upsert:true});
+    if(upErr) throw upErr;
+    const {data:urlData}=sb.storage.from('noorquest-assets').getPublicUrl(path);
+    const url=urlData.publicUrl;
+    await sb.from('admin_assets').delete().eq('tag',tag);
+    await sb.from('admin_assets').insert({tag,public_url:url,file_name:file.name,file_path:path,uploaded_by:A.user?.id});
+    if(!A._ixAssets) A._ixAssets={};
+    A._ixAssets['ix_wonder_bg_image']=url+'?t='+Date.now();
+    const ixEl=document.getElementById('ix-container');
+    if(ixEl&&A.scene?.ix) renderInteractive(ixEl,A.scene.ix,A._ixAssets);
+    toast('✅ Background uploaded!','success');
+  } catch(e){ toast('Upload failed: '+(e.message||e),'error'); }
+  inputEl.value='';
+}
+
 
 
 // ─── 2. SKY PILLARS ──────────────────────────────────────────
@@ -5658,12 +5561,15 @@ function wonderStarGazer(el) {
 
 
 function buildSceneBottomBtn(sc, alreadyDone) {
+  const nextSc = A.world && A.world.scenes ? A.world.scenes.find(s => s.id === sc.id + 1) : null;
   if (!alreadyDone) {
     return `<button class="btn btn-green btn-full" onclick="completeScene()" id="scene-complete-btn" style="font-size:16px;padding:17px">
       ✦ I've Read This Scene! &nbsp;+${sc.ha || 5} Hasanah
-    </button>`;
+    </button>
+    ${nextSc ? `<button class="btn btn-glass btn-sm btn-full" onclick="skipToNext(${nextSc.id})" style="margin-top:8px;opacity:.6">
+      Skip to Next Scene →
+    </button>` : ''}`;
   }
-  const nextSc = A.world && A.world.scenes ? A.world.scenes.find(s => s.id === sc.id + 1) : null;
   if (nextSc) {
     return `<button class="btn btn-gold btn-full" onclick="startScene(${nextSc.id})" style="font-size:15px;padding:16px">
       Next: ${nextSc.title} →
@@ -5737,7 +5643,7 @@ async function inlineUploadBeat(beat, inputEl) {
 
   const zone = document.getElementById('beat-zone-' + beat);
   if (zone) {
-    zone.innerHTML = '<div class="uploading-overlay">Uploading...</div>' + zone.innerHTML;
+    zone.innerHTML = '<div class="uploading-overlay">Uploading...</div>';
   }
 
   try {
@@ -5752,20 +5658,21 @@ async function inlineUploadBeat(beat, inputEl) {
     const {data: urlData} = sb.storage.from('noorquest-assets').getPublicUrl(path);
     const url = urlData.publicUrl;
 
+    // Delete old entry for same tag first
     await sb.from('admin_assets').delete().eq('tag', tag);
     const {error: dbErr} = await sb.from('admin_assets').insert({
       tag, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
     });
     if (dbErr) throw dbErr;
 
-    // Update zone immediately
+    // Update zone immediately with cache-busted URL
+    const cacheBustUrl = url + '?t=' + Date.now();
     if (zone) {
       if (isVideo) {
-        zone.innerHTML = '<video src="' + url + '" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>';
+        zone.innerHTML = '<video src="' + cacheBustUrl + '" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>';
       } else {
-        zone.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;display:block">';
+        zone.innerHTML = '<img src="' + cacheBustUrl + '" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.opacity=.5">';
       }
-      // Success flash
       const flash = document.createElement('div');
       flash.className = 'upload-success-flash';
       flash.textContent = '✓';
@@ -5773,16 +5680,8 @@ async function inlineUploadBeat(beat, inputEl) {
       setTimeout(() => flash.remove(), 1200);
     }
     toast('✅ Beat ' + beat + ' uploaded!', 'success');
-    // Re-check DB to confirm persistence
-    setTimeout(async () => {
-      if (A.scene && A.world) {
-        const freshImgs = await loadSceneImages(A.world.id, A.scene.id);
-        if (freshImgs[beat]) console.log('[NQ] Beat', beat, 'confirmed in DB ✅');
-        else console.warn('[NQ] Beat', beat, 'NOT found in DB after upload ⚠️');
-      }
-    }, 800);
   } catch(e) {
-    if (zone) { const ov = zone.querySelector('.uploading-overlay'); if (ov) ov.remove(); }
+    if (zone) zone.innerHTML = '<div class="beat-image-placeholder"><div class="bip-icon">⚠️</div><div class="bip-label">Upload failed — try again</div></div>';
     toast('Upload failed: ' + (e.message || e), 'error');
     console.error('[NQ] inlineUploadBeat error:', e);
   }
@@ -5790,21 +5689,11 @@ async function inlineUploadBeat(beat, inputEl) {
 }
 
 async function inlineUploadIxItem(itemIdx, type, inputEl) {
-  const file = inputEl.files[0];
+  const file = inputEl.files ? inputEl.files[0] : inputEl;
   if (!file) return;
   const worldId = A.world?.id;
   const sceneId = A.scene?.id;
   if (!worldId || !sceneId) return toast('No scene loaded', 'error');
-
-  const btn = inputEl.nextElementSibling || inputEl.parentElement;
-  const card = btn?.closest('[style*="border-radius:18px"]') || btn?.closest('[style*="border-radius:20px"]');
-  if (card) {
-    const ov = document.createElement('div');
-    ov.className = 'uploading-overlay';
-    ov.textContent = 'Uploading...';
-    ov.style.borderRadius = '18px';
-    card.appendChild(ov);
-  }
 
   try {
     const ext = file.name.split('.').pop().toLowerCase();
@@ -5815,51 +5704,29 @@ async function inlineUploadIxItem(itemIdx, type, inputEl) {
     if (upErr) throw upErr;
     const {data: urlData} = sb.storage.from('noorquest-assets').getPublicUrl(path);
     const url = urlData.publicUrl;
+    const cacheBustUrl = url + '?t=' + Date.now();
 
     await sb.from('admin_assets').delete().eq('tag', tag);
     const {error: dbErr} = await sb.from('admin_assets').insert({
       tag, public_url: url, file_name: file.name, file_path: path, uploaded_by: A.user?.id
     });
     if (dbErr) throw dbErr;
-    console.log('[NQ] ix upload saved to DB:', tag);
 
-    // Update DOM immediately
-    if (type === 'image' && card) {
-      const imgEl = card.querySelector('img');
-      const emojiEl = card.querySelector('[style*="font-size:3"]') || card.querySelector('[style*="font-size:28"]') || card.querySelector('[style*="font-size:30"]');
-      if (imgEl) imgEl.src = url;
-      else if (emojiEl) emojiEl.outerHTML = '<img src="' + url + '" style="width:52px;height:52px;object-fit:cover;border-radius:50%">';
-    } else if (type === 'audio' && card) {
-      card.setAttribute('onclick', 'listenTap2(this,' + JSON.stringify(url) + ')');
-    }
-
-    if (card) {
-      const ov = card.querySelector('.uploading-overlay');
-      if (ov) ov.remove();
-      const flash = document.createElement('div');
-      flash.className = 'upload-success-flash';
-      flash.textContent = '✓';
-      flash.style.borderRadius = '18px';
-      card.appendChild(flash);
-      setTimeout(() => flash.remove(), 1200);
-    }
-    toast('✅ ' + (type === 'audio' ? 'Audio' : 'Image') + ' uploaded!', 'success');
-
-    // Re-render interactive from DB to confirm persistence
+    // Re-render the interactive section with updated assets
     setTimeout(async () => {
       if (A.scene && A.world) {
-        const fresh = await loadIxAssets(A.world.id, A.scene.id);
-        console.log('[NQ] Fresh ix assets after upload:', Object.keys(fresh));
         const ixEl = document.getElementById('ix-container');
+        const fresh = await loadIxAssets(A.world.id, A.scene.id);
         if (ixEl && A.scene.ix) renderInteractive(ixEl, A.scene.ix, fresh);
       }
-    }, 900);
+    }, 300);
+
+    toast('✅ ' + (type === 'audio' ? 'Audio' : 'Image') + ' uploaded!', 'success');
   } catch(e) {
-    if (card) { const ov = card.querySelector('.uploading-overlay'); if (ov) ov.remove(); }
     toast('Upload failed: ' + (e.message || e), 'error');
     console.error('[NQ] ix upload error:', e);
   }
-  inputEl.value = '';
+  if (inputEl.value !== undefined) inputEl.value = '';
 }
 
 // Add admin-mode class to scene player when admin
