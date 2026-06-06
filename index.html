@@ -100,10 +100,10 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXEC
 }
 
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent }
-html, body { height:100%; overflow:hidden; background:var(--navy) }
+html, body { height:100%; overflow:hidden; background:var(--navy); position:fixed; width:100%; }
 body { font-family:var(--body); color:var(--cream); display:flex; justify-content:center }
 #app { width:100%; max-width:480px; height:100%; position:relative; overflow:hidden; background:var(--navy) }
-.screen { position:absolute; inset:0; display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; opacity:0; pointer-events:none; transition:opacity .35s ease; -webkit-overflow-scrolling:touch; }
+.screen { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; opacity:0; pointer-events:none; transition:opacity .35s ease; }
 .screen.active { opacity:1; pointer-events:all }
 
 /* ── Stars ── */
@@ -265,7 +265,14 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 .player-hchip { background:rgba(245,200,66,.12); border:1px solid rgba(245,200,66,.25); border-radius:50px; padding:5px 12px; font-size:12px; font-weight:700; font-family:var(--ui); color:var(--gold) }
 
 /* Scene scrollable container */
-.scene-scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+.scene-scroll {
+  flex:1;
+  overflow-y:scroll;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  height:0; /* forces flex child to scroll rather than expand */
+  touch-action:pan-y;
+}
 .scene-title-block { padding:28px 20px 20px; text-align:center }
 .scene-num-badge { font-family:var(--ui); font-size:11px; color:rgba(245,200,66,.5); letter-spacing:2.5px; text-transform:uppercase; margin-bottom:8px }
 .scene-title-text { font-family:var(--display); font-size:22px; color:var(--gold); font-weight:700; line-height:1.3 }
@@ -540,7 +547,7 @@ select.input option { background:#0f1628; color:#FDF6E3 }
   background:var(--navy); border-top:1px solid rgba(245,200,66,.1);
 }
 .wonder-canvas {
-  width:100%; display:block; touch-action:none; cursor:crosshair;
+  width:100%; display:block; touch-action:pan-y; cursor:crosshair;
   position:relative; z-index:1;
 }
 .wonder-label {
@@ -701,7 +708,7 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 </div>
 <div id="s-setup" class="screen">
   <div class="back-hdr"><button class="back-btn" onclick="SS('s-splash')">←</button><b style="font-size:17px">Setup Guide</b></div>
-  <div style="padding:20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px">
+  <div style="padding:20px;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;flex:1;display:flex;flex-direction:column;gap:16px">
     <div class="card card-gold"><b style="font-size:17px;display:block;margin-bottom:8px">🚀 5-Minute Setup</b><p style="font-size:14px;line-height:1.7;color:rgba(245,240,232,.8)">NoorQuest stores all data in Supabase — no localStorage at all. Follow these steps.</p></div>
     <div><span class="lbl">Step 1 — Supabase Project</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">Go to <b style="color:var(--gold)">supabase.com</b> → New Project. Keep your URL and anon key.</p></div>
     <div><span class="lbl">Step 2 — Run SQL Setup</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">In Supabase → SQL Editor, paste and run the SQL from the HTML file comments at the top.</p></div>
@@ -741,7 +748,7 @@ select.input option { background:#0f1628; color:#FDF6E3 }
   </div>
 
   <!-- Body -->
-  <div style="flex:1;overflow-y:auto">
+  <div style="flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y">
     <!-- Hero banner -->
     <div style="position:relative;overflow:hidden;margin:16px 16px 0;border-radius:24px;background:linear-gradient(135deg,#1a0a40,#0d1a50,#0a1428);border:1px solid rgba(245,200,66,.15)">
       <canvas id="dash-stars" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
@@ -789,13 +796,15 @@ select.input option { background:#0f1628; color:#FDF6E3 }
     <div style="font-family:var(--display);font-size:26px;color:var(--gold2)">13 Worlds of Discovery</div>
     <div style="font-size:13px;color:rgba(245,240,232,.5);margin-top:4px">Complete each world to unlock the next</div>
   </div>
-  <div id="world-grid" class="wgrid"></div>
+  <div style="flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y">
+    <div id="world-grid" class="wgrid"></div>
+  </div>
 </div>
 
 <!-- WORLD DETAIL -->
 <div id="s-wdetail" class="screen">
   <div class="back-hdr" style="flex-shrink:0"><button class="back-btn" onclick="SS('s-map')">←</button><div id="wd-title" style="font-family:var(--display);font-size:17px;flex:1;font-weight:700">World</div></div>
-  <div style="flex:1;overflow-y:auto">
+  <div style="flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y">
     <div id="wd-hero" class="who-hero"></div>
     <div id="wd-scenes" style="padding:0 16px 8px"></div>
     <div id="wd-actions" style="padding:8px 16px 32px;display:flex;flex-direction:column;gap:10px"></div>
@@ -832,7 +841,7 @@ select.input option { background:#0f1628; color:#FDF6E3 }
   </div>
 
   <!-- Question + options scroll area -->
-  <div style="flex:1;overflow-y:auto;padding:0 20px 24px" id="quiz-scroll">
+  <div style="flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 20px 24px" id="quiz-scroll">
     <!-- Question card -->
     <div id="quiz-q-card" style="background:linear-gradient(135deg,var(--teal),rgba(10,14,26,.9));border:1px solid rgba(245,200,66,.15);border-radius:24px;padding:24px 22px;margin-bottom:20px">
       <div style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">✦ Question</div>
@@ -857,7 +866,7 @@ select.input option { background:#0f1628; color:#FDF6E3 }
       <div style="font-family:var(--ui);font-size:12px;color:rgba(245,200,66,.45);letter-spacing:1.5px;text-transform:uppercase">Reflection</div>
     </div>
   </div>
-  <div style="flex:1;overflow-y:auto;padding:0 16px 32px" id="j-prompts"></div>
+  <div style="flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 16px 32px" id="j-prompts"></div>
 </div>
 <div id="s-reward" class="screen">
   <div id="srainwrap" class="stars-rain"></div>
@@ -875,7 +884,7 @@ select.input option { background:#0f1628; color:#FDF6E3 }
     </div>
     <span class="badge badge-purple">Admin</span>
   </div>
-  <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:18px">
+  <div style="flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:16px;display:flex;flex-direction:column;gap:18px">
 
     <!-- Global videos -->
     <div>
@@ -2588,7 +2597,14 @@ let A = {
 function SS(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById(id);
-  if (el) { el.classList.add('active'); window.scrollTo(0,0); }
+  if (el) {
+    el.classList.add('active');
+    // Scroll all inner scrollable divs back to top — never scroll window
+    el.querySelectorAll('[style*="overflow-y"]').forEach(d => { d.scrollTop = 0; });
+    // Also reset the scene-scroll if present
+    const sc = el.querySelector('.scene-scroll');
+    if (sc) sc.scrollTop = 0;
+  }
   if (id === 's-admin') setTimeout(loadAdminAssets, 150);
   if (id === 's-player') setTimeout(applyAdminMode, 50);
   if (id === 's-map') setTimeout(() => renderWorldMap && renderWorldMap(), 50);
