@@ -949,16 +949,9 @@ select.input option { background:#0f1628; color:#FDF6E3 }
    REWARD
 ═══════════════════════════════════════ */
 #s-reward { background:radial-gradient(ellipse at 50% 25%, #1a3520 0%, var(--navy) 65%) }
-.reward-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px; text-align:center; gap:22px; position:relative; z-index:1 }
-.reward-key-ico { font-size:88px; animation:keyrise .8s cubic-bezier(.34,1.56,.64,1) forwards; filter:drop-shadow(0 0 40px rgba(245,200,66,.7)) }
+.reward-wrap { flex:1; display:flex; flex-direction:column; position:relative; overflow:hidden }
+@keyframes rewardBadge { 0%{transform:scale(0) translateY(20px);opacity:0} 70%{transform:scale(1.12) translateY(-4px)} 100%{transform:scale(1) translateY(0);opacity:1} }
 @keyframes keyrise { 0%{transform:scale(0) translateY(30px);opacity:0} 100%{transform:scale(1) translateY(0);opacity:1} }
-.reward-ttl { font-family:var(--display); font-size:32px; color:var(--gold); font-weight:700; line-height:1.2; text-shadow:0 0 30px rgba(245,200,66,.4) }
-.ha-award { background:rgba(22,32,64,.9); border:2px solid rgba(245,200,66,.4); border-radius:24px; padding:22px 32px; text-align:center; box-shadow:0 0 40px rgba(245,200,66,.15) }
-.ha-num { font-family:var(--display); font-size:52px; color:var(--gold); font-weight:900; text-shadow:0 0 20px rgba(245,200,66,.5) }
-.ha-lbl { font-family:var(--ui); font-size:12px; color:rgba(245,200,66,.6); letter-spacing:2.5px; text-transform:uppercase; margin-top:4px }
-.srainwrap { position:absolute; inset:0; pointer-events:none; overflow:hidden }
-.srain { position:absolute; animation:fall var(--fd,2.5s) var(--fdl,0s) ease-in forwards }
-@keyframes fall { 0%{transform:translateY(-30px) rotate(0);opacity:1} 100%{transform:translateY(110vh) rotate(540deg);opacity:0} }
 
 /* ═══════════════════════════════════════
    ADMIN
@@ -1130,132 +1123,28 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 <div id="app">
 
 <!-- SPLASH -->
-<div id="s-splash" class="screen">
-  <!-- Animated background canvas -->
+<!-- WORLD GATE — first view is the world, never a login -->
+<div id="s-splash" class="screen" style="background:#03050f;overflow:hidden">
   <canvas id="lantern-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:0"></canvas>
-  <!-- Gradient overlays for depth -->
-  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,8,22,.3) 0%,rgba(4,8,22,.55) 50%,rgba(4,8,22,.85) 100%);z-index:1;pointer-events:none"></div>
-  <!-- Islamic city silhouette -->
-  <div style="position:absolute;bottom:0;left:0;right:0;z-index:2;pointer-events:none;height:35%;
-    background:linear-gradient(180deg,transparent 0%,rgba(4,8,22,.4) 30%,rgba(4,8,22,.95) 100%)"></div>
-
-  <!-- Content -->
-  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px;gap:18px;position:relative;z-index:3;text-align:center">
-
-    <!-- Logo mark -->
-    <div style="animation:splashTitle .7s .1s ease both">
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px">
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <path d="M14 2C14 2 8 6 8 14C8 18.4 10.8 22.2 14 24C17.2 22.2 20 18.4 20 14C20 6 14 2 14 2Z" fill="rgba(245,200,66,0.9)" opacity="0.8"/>
-          <circle cx="19" cy="7" r="3" fill="rgba(245,200,66,0.6)"/>
-        </svg>
-        <div class="splash-logo">NoorQuest</div>
-      </div>
-      <div class="splash-sub">A Journey to Discover Allah's Signs</div>
+  <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(2,4,12,.15) 0%,rgba(2,4,12,.5) 50%,rgba(2,4,12,.95) 100%);pointer-events:none"></div>
+  <div style="position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 64px">
+    <div style="text-align:center;padding:0 24px 28px;animation:splashTitle .8s .15s ease both">
+      <div style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.4);letter-spacing:4px;text-transform:uppercase;margin-bottom:16px">✦ The Wonder of Allah ✦</div>
+      <div style="font-family:var(--display);font-size:40px;font-weight:900;color:var(--gold);line-height:1;text-shadow:0 0 60px rgba(245,200,66,.55),0 4px 0 rgba(0,0,0,.5);margin-bottom:14px">NoorQuest</div>
+      <div style="font-family:var(--body);font-size:15px;color:rgba(240,230,210,.55);font-style:italic;line-height:1.7">A journey to discover Allah's signs.</div>
     </div>
-
-    <!-- Character illustration area — Nura & Zain -->
-    <div style="animation:splashTitle .7s .25s ease both;position:relative;width:100%;max-width:320px">
-      <!-- Nura & Zain: shows uploaded images if available, SVG fallback otherwise -->
-      <div id="splash-chars" style="height:120px;position:relative;display:flex;align-items:flex-end;justify-content:center;gap:8px">
-        <!-- SVG fallback Nura -->
-        <svg width="64" height="100" viewBox="0 0 64 100" fill="none" style="filter:drop-shadow(0 0 16px rgba(245,180,80,.5))">
-          <ellipse cx="32" cy="72" rx="18" ry="28" fill="#c0785a" opacity="0.85"/>
-          <ellipse cx="32" cy="36" rx="20" ry="24" fill="#d4826a"/>
-          <ellipse cx="32" cy="48" rx="16" ry="12" fill="#c0785a"/>
-          <circle cx="32" cy="28" r="12" fill="#f5c8a0"/>
-          <ellipse cx="14" cy="80" rx="6" ry="8" fill="rgba(245,200,66,.25)"/>
-          <rect x="11" y="74" width="6" height="12" rx="2" fill="rgba(245,170,50,.6)"/>
-        </svg>
-        <!-- SVG fallback Zain -->
-        <svg width="60" height="96" viewBox="0 0 60 96" fill="none" style="filter:drop-shadow(0 0 12px rgba(245,200,66,.3));margin-bottom:4px">
-          <ellipse cx="30" cy="68" rx="16" ry="26" fill="#d4b88a" opacity="0.85"/>
-          <circle cx="30" cy="26" r="13" fill="#f5c8a0"/>
-          <ellipse cx="30" cy="18" rx="13" ry="8" fill="#5a3a1a"/>
-          <rect x="40" y="50" width="8" height="10" rx="3" fill="#8a5a30" opacity="0.7"/>
-        </svg>
-        <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:140px;height:20px;background:radial-gradient(ellipse,rgba(245,200,66,.25) 0%,transparent 70%);pointer-events:none"></div>
-      </div>
-    </div>
-
-    <!-- Title copy -->
-    <div style="animation:splashTitle .7s .4s ease both">
-      <p style="font-family:var(--body);font-size:14px;line-height:1.8;color:rgba(240,230,210,.72);max-width:280px;font-style:italic">
-        Join Nura &amp; Zain through 13 worlds of<br>wonder, reflection, and faith.
-      </p>
-    </div>
-
-    <!-- Trust badges -->
-    <div style="display:flex;gap:14px;align-items:center;animation:splashTitle .7s .55s ease both">
-      <div style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);letter-spacing:.5px;display:flex;align-items:center;gap:4px">
-        <span style="color:var(--gold)">✦</span> Faith-Centered
-      </div>
-      <div style="width:1px;height:12px;background:rgba(255,255,255,.12)"></div>
-      <div style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);letter-spacing:.5px;display:flex;align-items:center;gap:4px">
-        <span style="color:var(--gold)">✦</span> Safe &amp; Ad-Free
-      </div>
-      <div style="width:1px;height:12px;background:rgba(255,255,255,.12)"></div>
-      <div style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.55);letter-spacing:.5px;display:flex;align-items:center;gap:4px">
-        <span style="color:var(--gold)">✦</span> Learn &amp; Grow
-      </div>
-    </div>
-
-    <!-- CTA buttons -->
-    <div id="splash-cta" style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;animation:splashTitle .7s .7s ease both">
-      <button class="btn btn-gold btn-full" onclick="SS('s-auth')" style="font-size:16px;padding:17px 28px;letter-spacing:.4px;font-weight:800">
+    <div style="padding:0 28px;width:100%;max-width:340px;animation:splashTitle .8s .5s ease both">
+      <button onclick="enterWorld()" style="width:100%;background:linear-gradient(135deg,#b8880a,#e8b830,#b8880a);border:none;border-radius:60px;padding:18px 32px;font-family:var(--display);font-size:17px;font-weight:900;color:#06030a;cursor:pointer;letter-spacing:.5px;box-shadow:0 0 50px rgba(245,200,66,.45),0 8px 32px rgba(0,0,0,.6);-webkit-tap-highlight-color:transparent">
         Begin the Journey →
       </button>
-      <button class="btn btn-glass btn-sm btn-full" onclick="playIntroVideo()" style="gap:8px">
-        <span style="font-size:14px">▶</span> Meet Nura &amp; Zain
+    </div>
+    <div style="margin-top:18px;animation:splashTitle .8s .8s ease both">
+      <button onclick="SS('s-auth')" style="background:none;border:1px solid rgba(255,255,255,.12);border-radius:50px;padding:8px 20px;font-family:var(--ui);font-size:11px;color:rgba(255,255,255,.28);cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent">
+        Parent / Guardian sign in
       </button>
     </div>
-
-    <!-- Quran quote -->
-    <div style="animation:splashTitle .7s .9s ease both;background:rgba(8,14,34,.7);border:1px solid rgba(245,200,66,.15);border-radius:16px;padding:14px 18px;max-width:300px;backdrop-filter:blur(8px)">
-      <div style="font-family:var(--ui);font-size:9px;color:rgba(245,200,66,.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">" "</div>
-      <div style="font-family:var(--body);font-size:12px;color:rgba(240,230,210,.7);font-style:italic;line-height:1.7">
-        Indeed in the creation of the heavens and the earth are signs for those of understanding.
-      </div>
-      <div style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.45);margin-top:6px">— Al-Qur'an 3:190</div>
-    </div>
-
-  </div>
-
-  <!-- Setup guide small link -->
-  <div style="padding:12px 16px;text-align:center;position:relative;z-index:3;flex-shrink:0">
-    <button onclick="SS('s-setup')" style="background:none;border:none;font-family:var(--ui);font-size:11px;color:rgba(253,246,227,.2);cursor:pointer;letter-spacing:.5px">Setup Guide</button>
-  </div>
-
-  <!-- Intro video modal -->
-  <div id="intro-modal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.92);z-index:50;flex-direction:column;align-items:center;justify-content:center;padding:24px">
-    <div style="width:100%;max-width:440px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div style="font-family:var(--display);font-size:16px;color:var(--gold)">Meet Your Guides</div>
-        <button onclick="closeIntroVideo()" style="background:rgba(255,255,255,.1);border:none;color:var(--cream);font-size:22px;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center">✕</button>
-      </div>
-      <video id="intro-video-el" controls playsinline
-        style="width:100%;border-radius:20px;background:#000;aspect-ratio:16/9;display:block">
-        <source src="" type="video/mp4">
-      </video>
-      <p style="font-family:var(--body);font-size:13px;color:rgba(253,246,227,.55);text-align:center;margin-top:14px;font-style:italic">Watch how Nura and Zain begin their journey</p>
-      <button class="btn btn-gold btn-full" onclick="closeIntroVideo()" style="margin-top:14px">Start My Journey ✦</button>
-    </div>
   </div>
 </div>
-<div id="s-setup" class="screen">
-  <div class="back-hdr"><button class="back-btn" onclick="SS('s-splash')">←</button><b style="font-size:17px">Setup Guide</b></div>
-  <div style="padding:20px;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;flex:1;display:flex;flex-direction:column;gap:16px">
-    <div class="card card-gold"><b style="font-size:17px;display:block;margin-bottom:8px">🚀 5-Minute Setup</b><p style="font-size:14px;line-height:1.7;color:rgba(245,240,232,.8)">NoorQuest stores all data in Supabase — no localStorage at all. Follow these steps.</p></div>
-    <div><span class="lbl">Step 1 — Supabase Project</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">Go to <b style="color:var(--gold)">supabase.com</b> → New Project. Keep your URL and anon key.</p></div>
-    <div><span class="lbl">Step 2 — Run SQL Setup</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">In Supabase → SQL Editor, paste and run the SQL from the HTML file comments at the top.</p></div>
-    <div><span class="lbl">Step 3 — Update Config</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">Find <code style="color:var(--gold)">SUPABASE_URL</code> and <code style="color:var(--gold)">SUPABASE_KEY</code> in the &lt;script&gt; and replace with yours.</p></div>
-    <div><span class="lbl">Step 4 — Deploy to Vercel</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">Push noorquest.html to GitHub → connect Vercel → done.</p></div>
-    <div><span class="lbl">Step 5 — Become Admin</span><p style="font-size:14px;line-height:1.6;color:rgba(245,240,232,.7)">After signing up, run: <code style="color:var(--gold)">UPDATE profiles SET is_admin=TRUE WHERE email='you@email.com';</code></p></div>
-    <button class="btn btn-gold btn-full" onclick="SS('s-auth')">Start Using NoorQuest →</button>
-  </div>
-</div>
-
-<!-- AUTH -->
 <div id="s-auth" class="screen" style="background:var(--navy)">
   <!-- Starfield bg canvas -->
   <canvas id="auth-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none"></canvas>
@@ -1515,40 +1404,160 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 </div>
 
 <!-- WORLD OVERVIEW — Cinematic -->
-<div id="s-wdetail" class="screen">
-  <!-- Back nav -->
-  <div class="back-hdr" style="flex-shrink:0;background:rgba(6,9,20,.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(245,200,66,.06)">
-    <button class="back-btn" onclick="SS('s-map')">←</button>
-    <div id="wd-title" style="font-family:var(--display);font-size:13px;flex:1;color:rgba(245,200,66,.7);letter-spacing:1px;text-transform:uppercase"></div>
-  </div>
-  <!-- Scrollable body -->
-  <div style="flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y">
-    <!-- Cinematic hero -->
-    <div class="world-ov-hero" id="wd-hero">
-      <div class="world-ov-hero-bg" id="wd-hero-bg"></div>
-      <div class="world-ov-hero-grad"></div>
-      <div class="world-ov-hero-content">
-        <div class="world-ov-world-num" id="wd-world-num">World 1</div>
-        <div class="world-ov-title" id="wd-world-title">The Wonder of Allah</div>
-        <div class="world-ov-tagline" id="wd-world-tagline">Look around. Everything is a sign.</div>
-      </div>
+<!-- WORLD JOURNEY MAP — painted cinematic landscape -->
+<div id="s-wdetail" class="screen" style="background:#03050f;overflow:hidden">
+
+  <!-- ═══ FULL-BLEED PAINTED BACKGROUND ═══ -->
+  <!-- Uploaded world hero bg (if available) -->
+  <!-- BACKGROUND: The actual reference illustration -->
+  <!-- Admin: upload via Admin → Worlds → World 1 hero image -->
+  <!-- Fallback: direct embed of the reference PNG -->
+  <div id="wmap-bg-layer" style="position:absolute;inset:0;z-index:0;
+    background:#050818">
+    <!-- Hero image fills entire screen -->
+    <img id="wmap-bg-img"
+      src=""
+      alt=""
+      style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;display:block;opacity:0;transition:opacity .5s">
+    <!-- Fallback gradient shown until image loads -->
+    <div id="wmap-bg-fallback" style="position:absolute;inset:0;
+      background:linear-gradient(180deg,#0d0820 0%,#2d1555 15%,#7a3520 30%,#e87a20 45%,#f09030 50%,#3a2510 68%,#0d1206 90%)">
     </div>
-    <!-- Progress bar -->
-    <div class="world-ov-prog" id="wd-prog-bar">
-      <div class="world-ov-prog-icon">✦</div>
-      <div class="world-ov-prog-bar-wrap">
-        <div class="world-ov-prog-lbl">Your Progress</div>
-        <div class="world-ov-prog-bar"><div class="world-ov-prog-fill" id="wd-prog-fill" style="width:0%"></div></div>
-      </div>
-      <div class="world-ov-prog-val" id="wd-prog-val">0 / 0</div>
-    </div>
-    <!-- Scenes section label -->
-    <div class="world-ov-section-lbl">✦ Scenes in this world</div>
-    <!-- Scene cards injected here -->
-    <div id="wd-scenes"></div>
-    <!-- Action buttons -->
-    <div class="world-ov-actions" id="wd-actions"></div>
   </div>
+
+  <!-- Twinkling stars overlay (canvas — upper sky only) -->
+  <canvas id="wmap-stars" style="position:absolute;top:0;left:0;width:100%;height:45%;pointer-events:none;z-index:2;opacity:.6"></canvas>
+
+  <!-- Dark gradient top — text readability -->
+  <div style="position:absolute;top:0;left:0;right:0;height:32%;z-index:3;pointer-events:none;
+    background:linear-gradient(180deg,rgba(3,5,15,.65) 0%,transparent 100%)"></div>
+  <!-- Dark gradient bottom — CTA readability -->
+  <div style="position:absolute;bottom:0;left:0;right:0;height:25%;z-index:3;pointer-events:none;
+    background:linear-gradient(0deg,rgba(3,5,15,.92) 0%,rgba(3,5,15,.4) 60%,transparent 100%)"></div>
+
+
+  <!-- ═══ QUICK ADMIN UPLOAD (admin only, shown after login) ═══ -->
+  <div id="wmap-admin-bar" style="display:none;position:absolute;top:0;left:0;right:0;z-index:20;
+    background:rgba(124,58,237,.25);border-bottom:1px solid rgba(124,58,237,.4);
+    padding:8px 12px;backdrop-filter:blur(8px)">
+    <div style="font-family:var(--ui);font-size:10px;color:#c4b5fd;letter-spacing:1px;margin-bottom:6px">
+      ⚙ ADMIN — Upload map background to replace CSS fallback
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label style="background:rgba(124,58,237,.4);border:1px solid rgba(167,139,250,.5);border-radius:8px;
+        padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
+        📷 Upload Map Background
+        <input type="file" accept="image/*" style="display:none" onchange="quickUploadMapBg(this)">
+      </label>
+      <label style="background:rgba(124,58,237,.4);border:1px solid rgba(167,139,250,.5);border-radius:8px;
+        padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
+        🖼 Upload World 1 Hero
+        <input type="file" accept="image/*" style="display:none" onchange="quickUploadWorldHero(1,this)">
+      </label>
+      <button onclick="SS('s-admin')" style="background:rgba(124,58,237,.3);border:1px solid rgba(167,139,250,.4);border-radius:8px;padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
+        Open Full Admin →
+      </button>
+    </div>
+    <div id="wmap-upload-status" style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.7);margin-top:4px;min-height:14px"></div>
+  </div>
+  <canvas id="wmap-path-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none"></canvas>
+  <div id="wmap-nodes" style="position:absolute;inset:0;z-index:5"></div>
+
+  <!-- ═══ TOP BAR ═══ -->
+  <div style="position:absolute;top:0;left:0;right:0;z-index:10;
+    padding:max(env(safe-area-inset-top,14px),14px) 16px 10px;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+    <!-- Back -->
+    <button onclick="SS('s-splash')" style="width:38px;height:38px;border-radius:50%;
+      background:rgba(3,5,15,.7);border:1px solid rgba(255,255,255,.15);
+      color:rgba(255,255,255,.8);font-size:18px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      backdrop-filter:blur(10px);flex-shrink:0;-webkit-tap-highlight-color:transparent">←</button>
+
+    <!-- Title block -->
+    <div style="flex:1;padding:0 4px">
+      <div id="wmap-world-num" style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.7);
+        letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;
+        text-shadow:0 1px 6px rgba(0,0,0,.9)">World 1</div>
+      <div id="wmap-world-title" style="font-family:var(--display);font-size:20px;font-weight:700;
+        color:var(--gold);line-height:1.1;text-shadow:0 0 30px rgba(245,200,66,.4),0 2px 8px rgba(0,0,0,.9)">
+        The Wonder of Allah</div>
+      <div id="wmap-world-desc" style="font-family:var(--body);font-size:12px;
+        color:rgba(240,230,210,.65);margin-top:5px;line-height:1.5;
+        font-style:italic;text-shadow:0 1px 6px rgba(0,0,0,.9);max-width:220px">
+        Discover the beautiful signs of Allah all around us—in the skies, the earth, and within everything He has created.</div>
+    </div>
+
+    <!-- Home button -->
+    <button onclick="SS('s-splash')" style="background:rgba(3,5,15,.7);border:1px solid rgba(255,255,255,.15);
+      border-radius:50px;padding:8px 14px;font-family:var(--ui);font-size:12px;
+      color:rgba(255,255,255,.7);cursor:pointer;backdrop-filter:blur(10px);
+      display:flex;align-items:center;gap:5px;white-space:nowrap;
+      flex-shrink:0;-webkit-tap-highlight-color:transparent">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M6.5 1L12 6H10.5V12H8V8.5H5V12H2.5V6H1Z" fill="rgba(255,255,255,.7)"/>
+      </svg>
+      Home</button>
+  </div>
+
+  <!-- ═══ NURA & ZAIN — left side, facing journey ═══ -->
+  <div id="wmap-chars" style="position:absolute;bottom:32%;left:0;z-index:6;pointer-events:none;
+    display:flex;align-items:flex-end">
+    <!-- Loaded from admin assets if uploaded, otherwise CSS characters -->
+    <div id="wmap-nura-zain" style="display:flex;align-items:flex-end;gap:0;
+      filter:drop-shadow(0 4px 20px rgba(0,0,0,.8))"></div>
+  </div>
+
+  <!-- ═══ WORLD PROGRESS PANEL ═══ -->
+  <div style="position:absolute;bottom:80px;right:16px;z-index:8;
+    background:rgba(3,5,15,.82);border:1px solid rgba(245,200,66,.25);
+    border-radius:16px;padding:12px 14px;min-width:160px;
+    backdrop-filter:blur(14px);
+    box-shadow:0 4px 24px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+      <span style="font-size:14px">⭐</span>
+      <div style="font-family:var(--display);font-size:11px;font-weight:700;
+        color:var(--gold);letter-spacing:.5px;text-transform:uppercase">World Progress</div>
+    </div>
+    <div id="wmap-prog-text" style="font-family:var(--ui);font-size:12px;
+      color:rgba(253,246,227,.6);margin-bottom:8px">0 / 6 Scenes Completed</div>
+    <div style="height:3px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
+      <div id="wmap-prog-bar" style="height:100%;width:0%;
+        background:linear-gradient(90deg,var(--gold),var(--gold2));
+        border-radius:3px;transition:width .8s ease"></div>
+    </div>
+    <!-- Treasure chest -->
+    <div style="position:absolute;right:-12px;top:50%;transform:translateY(-50%);
+      width:44px;height:44px;border-radius:50%;
+      background:linear-gradient(135deg,rgba(180,120,20,.9),rgba(120,80,10,.9));
+      border:2px solid rgba(245,200,66,.5);
+      display:flex;align-items:center;justify-content:center;font-size:20px;
+      box-shadow:0 0 16px rgba(245,200,66,.3)">🎁</div>
+  </div>
+
+  <!-- ═══ BOTTOM CTA ═══ -->
+  <div style="position:absolute;bottom:0;left:0;right:0;z-index:10;
+    padding:12px 20px max(env(safe-area-inset-bottom,24px),24px)">
+    <button id="wmap-next-btn" onclick="wmapStartNext()"
+      style="width:100%;
+        background:linear-gradient(135deg,#8a6008,#c89020,#e8b030,#c89020,#8a6008);
+        border:none;border-radius:60px;padding:18px 24px;
+        font-family:var(--display);font-size:15px;font-weight:900;
+        color:#04020a;cursor:pointer;letter-spacing:.5px;
+        box-shadow:0 0 40px rgba(245,200,66,.5),0 6px 30px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.25);
+        display:flex;align-items:center;justify-content:center;gap:10px;
+        -webkit-tap-highlight-color:transparent">
+      <span style="font-size:13px;opacity:.7">✦</span>
+      <span id="wmap-cta-label">Begin — The Valley of Light</span>
+      <span style="font-size:13px;opacity:.7">→</span>
+    </button>
+    <!-- sparkle decorations -->
+    <div style="position:absolute;left:30px;bottom:calc(max(env(safe-area-inset-bottom,24px),24px) + 14px);
+      font-size:11px;color:rgba(245,200,66,.5);pointer-events:none">✦</div>
+    <div style="position:absolute;right:30px;bottom:calc(max(env(safe-area-inset-bottom,24px),24px) + 14px);
+      font-size:11px;color:rgba(245,200,66,.5);pointer-events:none">✦</div>
+  </div>
+
 </div>
 
 <!-- SCENE PLAYER — Cinematic Stage -->
@@ -1665,10 +1674,9 @@ select.input option { background:#0f1628; color:#FDF6E3 }
   </div>
   <div style="flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 16px 32px" id="j-prompts"></div>
 </div>
-<div id="s-reward" class="screen">
-  <div id="srainwrap" class="stars-rain"></div>
-  <div style="padding:16px;flex-shrink:0;z-index:1"><button class="back-btn" onclick="SS('s-wdetail')" style="background:rgba(255,255,255,.1)">←</button></div>
-  <div id="reward-wrap" class="reward-wrap"></div>
+<div id="s-reward" class="screen" style="background:#01020a;overflow:hidden">
+  <!-- Canvas bg injected by JS -->
+  <div id="reward-wrap" style="flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden"></div>
 </div>
 
 <!-- ADMIN -->
@@ -3276,13 +3284,14 @@ function SS(id) {
     if (sc) sc._running = false;
   }
   if (id === 's-map') setTimeout(() => renderWorldMap && renderWorldMap(), 50);
-  if (id === 's-auth') setTimeout(initAuthCanvas, 50);
+  if (id === 's-auth') { setTimeout(initAuthCanvas, 50); setTimeout(() => authTab('login'), 60); }
   if (id === 's-dash') {
     // Restart the dash canvas if it stopped
     const dc = document.getElementById('dash-stars');
     if (dc) dc._running = false;
     setTimeout(renderDashboard, 50);
   }
+  if (id === 's-wdetail') { const wsc = document.getElementById('wmap-sky-canvas'); if (wsc) wsc._running = false; }
   // Show home FAB on all inner screens except splash/auth/setup
   const hideFab = ['s-splash','s-auth','s-setup'].includes(id);
   const fab = document.getElementById('home-fab');
@@ -3389,24 +3398,19 @@ async function login() {
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
     if (error) {
       setLoading(false);
-      // Friendly iOS-specific message
       if (error.message?.toLowerCase().includes('load failed') ||
           error.message?.toLowerCase().includes('network') ||
           error.message?.toLowerCase().includes('fetch')) {
-        return toast('Network error. Make sure you have internet access and are not on a VPN.', 'error');
+        return toast('Network error — check your internet connection.', 'error');
       }
       return toast(error.message, 'error');
     }
     A.user = data.user;
+    A._fromLogin = true;
     await loadProfile();
   } catch(e) {
     setLoading(false);
-    const msg = e.message || '';
-    if (msg.toLowerCase().includes('load failed') || msg.toLowerCase().includes('network')) {
-      toast('Connection failed. Check your internet connection and try again.', 'error');
-    } else {
-      toast('Login failed: ' + msg, 'error');
-    }
+    toast('Login failed: ' + (e.message || 'Unknown error'), 'error');
   }
 }
 
@@ -3478,12 +3482,17 @@ async function loadChildren() {
   }
   setLoading(false);
   renderDashboard();
-  // If coming from splash/auth flow, go to dash. If returning session, show splash first.
+  updateAdminUI();
   if (A._fromLogin) {
     A._fromLogin = false;
-    SS('s-dash');
+    // Admin users go straight to world map where they can upload
+    if (A.profile?.is_admin) {
+      A.world = WORLDS[1];
+      openWorld(1);
+    } else {
+      SS('s-dash');
+    }
   } else {
-    // Returning user — show splash with "Continue" button
     updateSplashForLoggedIn();
     SS('s-splash');
   }
@@ -4097,221 +4106,311 @@ function closeWorldPanel() {
   if (panel) panel.classList.remove('open');
 }
 
-// ── Open world — Cinematic Overview ──────────────────────────
+// ── World Journey Map — the ONLY way to see scenes ───────────
+
+// Scene destinations for World 1 journey map
+// Each has a position (% of canvas), name, and poetic hook
+// ── World Journey Map — reference-faithful ───────────────────
+
+const SCENE_DESTINATIONS = {
+  1: [
+    { id:1, name:'The Valley\nof Light',       subName:'The Valley of Light',     px:22, py:78, size:88 },
+    { id:2, name:'What Holds\nUp the Sky?',    subName:'What Holds Up the Sky?',  px:38, py:57, size:72 },
+    { id:3, name:"The Tiny Seed's\nSecret",    subName:"The Tiny Seed's Secret",  px:28, py:38, size:68 },
+    { id:4, name:'Follow\nThe Water',          subName:'Follow the Water',        px:62, py:47, size:72 },
+    { id:5, name:'Fruit of\nMany Colours',     subName:'Fruit of Many Colours',   px:50, py:30, size:76 },
+    { id:6, name:'The Star\nThat Guides',      subName:'The Star That Guides',    px:76, py:17, size:70 },
+  ]
+};
+
+const WORLD_DESCRIPTIONS = {
+  1: 'Discover the beautiful signs of Allah all around us—in the skies, the earth, and within everything He has created.'
+};
+
+const NODE_GRADIENTS = [
+  'linear-gradient(160deg,#8a3010 0%,#c06020 30%,#e08030 50%,#804020 70%,#3a1808 100%)',
+  'linear-gradient(160deg,#0a1040 0%,#1a2060 30%,#2a3480 50%,#c0c0e0 70%,#e0e8ff 90%)',
+  'linear-gradient(160deg,#0a1808 0%,#1a3010 30%,#2a4818 60%,#1a2808 100%)',
+  'linear-gradient(160deg,#0a1828 0%,#1a3050 30%,#3060a0 55%,#60a0d0 75%,#80c0e8 100%)',
+  'linear-gradient(160deg,#1a2808 0%,#2a4010 25%,#f0a020 60%,#e07010 80%,#201808 100%)',
+  'linear-gradient(160deg,#020414 0%,#060820 30%,#0a1040 60%,#1a2060 80%,#e8e0a0 98%)',
+];
+
+function enterWorld() {
+  A.world    = WORLDS[1];
+  A.progress = A.progress || {};
+  openWorld(1);
+}
+
 function openWorld(wid) {
   A.world = WORLDS[wid];
   if (!A.world) return;
-  const p    = A.progress[wid] || {};
-  const done = p.scenes_done || [];
-  const meta = WORLD_META.find(m => m.id === wid);
-
-  // Nav title
-  const titleEl = document.getElementById('wd-title');
-  if (titleEl) titleEl.textContent = 'World ' + wid;
-
-  // Cinematic hero
-  const heroEl = document.getElementById('wd-hero');
-  if (heroEl) {
-    // World colour gradients for hero background
-    const heroGrads = {
-      1:'linear-gradient(135deg,#1a0840 0%,#050a1a 60%,#0d1428 100%)',
-      2:'linear-gradient(135deg,#042518 0%,#060f18 60%,#0a0e1a 100%)',
-      3:'linear-gradient(135deg,#301800 0%,#180c04 60%,#0a0e1a 100%)',
-      4:'linear-gradient(135deg,#2a0808 0%,#120406 60%,#0a0e1a 100%)',
-      5:'linear-gradient(135deg,#040f2a 0%,#060c1a 60%,#0a0e1a 100%)',
-      6:'linear-gradient(135deg,#2a1200 0%,#140900 60%,#0a0e1a 100%)',
-      7:'linear-gradient(135deg,#001a1a 0%,#050e0e 60%,#0a0e1a 100%)',
-      8:'linear-gradient(135deg,#0f0420 0%,#080218 60%,#0a0e1a 100%)',
-      9:'linear-gradient(135deg,#1a0010 0%,#0c0008 60%,#0a0e1a 100%)',
-      10:'linear-gradient(135deg,#1a0e00 0%,#0e0700 60%,#0a0e1a 100%)',
-      11:'linear-gradient(135deg,#001a12 0%,#00100a 60%,#0a0e1a 100%)',
-      12:'linear-gradient(135deg,#1a0000 0%,#0e0000 60%,#0a0e1a 100%)',
-      13:'linear-gradient(135deg,#1a1200 0%,#100b00 60%,#0a0e1a 100%)'
-    };
-    const worldTaglines = {
-      1:'Look around. Everything is a sign.',2:'Allah placed wonders within you.',
-      3:'You were created with a purpose.',4:'Every test is a chance to grow.',
-      5:'Guidance illuminates every path.',6:'Every word is a message of light.',
-      7:'Short surahs, infinite meaning.',8:'Belief reaches beyond what is seen.',
-      9:'One message, across all of time.',10:'Stories of courage and perfect trust.',
-      11:'The greatest mercy ever sent.',12:'The past speaks to those who listen.',
-      13:'Every moment can be an act of worship.'
-    };
-    const heroBg = document.getElementById('wd-hero-bg');
-    if (heroBg) {
-      // Use uploaded hero image if available, else CSS gradient
-      const uploadedHero = A._worldHeroes?.[wid];
-      if (uploadedHero) {
-        heroBg.style.cssText = `position:absolute;inset:0;background-image:url(${uploadedHero});background-size:cover;background-position:center top`;
-      } else {
-        heroBg.style.cssText = `position:absolute;inset:0;background:${heroGrads[wid]||heroGrads[1]}`;
-      }
-    }
-    // Draw animated stars canvas inside hero
-    heroEl.style.minHeight = '200px';
-    // Draw stars on hero using canvas overlay
-    let hStars = heroEl.querySelector('canvas.hero-stars');
-    if (!hStars) {
-      hStars = document.createElement('canvas');
-      hStars.className = 'hero-stars';
-      hStars.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.7';
-      heroEl.insertBefore(hStars, heroEl.firstChild);
-    }
-    setTimeout(() => {
-      hStars.width = hStars.offsetWidth || 380;
-      hStars.height = hStars.offsetHeight || 200;
-      const ctx = hStars.getContext('2d');
-      const W = hStars.width, H = hStars.height;
-      const hs = Array.from({length:50}, () => ({x:Math.random()*W,y:Math.random()*H,r:.4+Math.random()*1.2,p:Math.random()*Math.PI*2,b:.2+Math.random()*.7}));
-      let ht=0;
-      function hDraw() {
-        ctx.clearRect(0,0,W,H);
-        hs.forEach(s=>{const a=s.b*(0.4+0.6*Math.abs(Math.sin(ht*.007+s.p)));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(220,230,255,${a})`;ctx.fill();});
-        ht++;
-        if (document.getElementById('s-wdetail')?.classList.contains('active'))
-          requestAnimationFrame(hDraw);
-      }
-      requestAnimationFrame(hDraw);
-    }, 50);
-    const wnEl = document.getElementById('wd-world-num');
-    const wtEl = document.getElementById('wd-world-title');
-    const wgEl = document.getElementById('wd-world-tagline');
-    if (wnEl) wnEl.textContent = 'World ' + wid;
-    if (wtEl) wtEl.textContent = A.world.title;
-    if (wgEl) wgEl.textContent = worldTaglines[wid] || A.world.sub;
-  }
-
-  // Progress bar
-  const scTotal = A.world.scenes.length;
-  const scDone = done.length;
-  const pct = scTotal ? Math.round(scDone/scTotal*100) : 0;
-  const fillEl = document.getElementById('wd-prog-fill');
-  const valEl = document.getElementById('wd-prog-val');
-  if (fillEl) setTimeout(() => { fillEl.style.width = pct + '%'; }, 100);
-  if (valEl) valEl.textContent = scDone + ' / ' + scTotal + ' scenes';
-
-  // Cinematic scene cards
-  const sl = document.getElementById('wd-scenes');
-
-  // Pre-load Beat A images for this world as scene thumbnails
-  A._sceneAssets = A._sceneAssets || {};
-  sb.from('admin_assets').select('tag,public_url').like('tag', 'w'+wid+'_s%_A_image').then(({data}) => {
-    if (data) data.forEach(r => { if (r.public_url) A._sceneAssets[r.tag] = r.public_url + '?v=' + Date.now(); });
-  }).catch(()=>{});
-
-  // Adventure-path scene rows (replaces flat cards)
-  const sceneHooks = {
-    "The Valley at Dawn":"A golden valley stretches forever. Nura lifts her lantern to the rising sun.",
-    "The Sky Without Pillars":"Zain tilts his head all the way back. What's actually holding it up?",
-    "The Tiny Seed":"Something smaller than a fingernail. And yet, the whole tree is hiding inside.",
-    "The River's Gifts":"Crystal clear, cold, sparkly. One gift. A thousand blessings.",
-    "The Orchard of Gifts":"Dates, pomegranates, figs. Allah didn't have to make food taste good.",
-    "Stars and Tafakkur":"A million suns above them. Sitting still. Just thinking about who made all of this."
-  };
-
-  if (sl) {
-    const sceneCount = A.world.scenes.length;
-    sl.innerHTML = A.world.scenes.map((sc, i) => {
-      const finished = done.includes(sc.id);
-      const isCurrent = !finished && done.length === i;
-      const locked = false; // All unlocked for now
-      const hook = sceneHooks[sc.title] || 'An adventure is waiting inside.';
-      const thumbTag = 'w' + wid + '_s' + sc.id + '_A_image';
-      const thumbUrl = (A._sceneAssets||{})[thumbTag] || null;
-      const dotClass = finished ? 'done' : isCurrent ? 'current' : '';
-      const cardClass = finished ? 'done' : isCurrent ? 'current' : '';
-      const statusText = finished ? '✓ Discovered' : isCurrent ? '✦ Your next adventure' : 'Not yet explored';
-      const statusClass = finished ? 'done' : isCurrent ? 'current' : 'locked';
-      const isLast = i === sceneCount - 1;
-      return `<div class="adventure-scene-row" onclick="startScene(${sc.id})">
-        <div class="asr-connector">
-          <div class="asr-dot ${dotClass}">${finished?'✓':sc.id}</div>
-          ${!isLast ? '<div class="asr-line"></div>' : ''}
-        </div>
-        <div class="asr-card ${cardClass}">
-          <div class="asr-card-inner">
-            ${thumbUrl
-              ? `<img src="${thumbUrl}" class="asr-thumb" alt="">`
-              : `<div class="asr-thumb" style="background:linear-gradient(135deg,rgba(12,20,48,.95),rgba(6,10,22,.98));display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:18px;color:rgba(245,200,66,.25)">${sc.id}</div>`}
-            <div class="asr-info">
-              <div class="asr-num">Scene ${sc.id} of ${sceneCount}</div>
-              <div class="asr-title">${sc.title}</div>
-              <div class="asr-hook">${hook}</div>
-              <div class="asr-status ${statusClass}">${statusText}</div>
-            </div>
-            <div class="asr-arrow">›</div>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // Action buttons (quiz/journal/next world — exact same logic as before)
-  const scenesAll     = A.world.scenes.length;
-  const allScenesDone = scDone >= scenesAll;
-  const quizUnlock    = scDone >= Math.ceil(scenesAll / 2);
-  const journalUnlock = !!p.quiz_done;
-  const worldComplete = p.journal_done && p.quiz_done;
-  const nextWorld     = WORLDS[wid + 1];
-
-  const actions = document.getElementById('wd-actions');
-  if (!actions) { SS('s-wdetail'); return; }
-
-  let actHtml = '';
-
-  if (worldComplete && nextWorld) {
-    actHtml += `
-      <div style="background:linear-gradient(135deg,rgba(5,150,105,.12),rgba(10,14,26,.9));border:1px solid rgba(52,211,153,.2);border-radius:20px;padding:18px 20px;text-align:center;margin-bottom:4px">
-        <div style="font-family:var(--display);font-size:14px;color:#34d399;margin-bottom:4px">World ${wid} Complete ✦</div>
-        <div style="font-family:var(--body);font-size:12px;color:rgba(253,246,227,.5);margin-bottom:14px;font-style:italic">You've earned your Noor Key.</div>
-        <button class="btn btn-green btn-full" onclick="openWorld(${wid+1})" style="font-size:15px;padding:15px">
-          Enter World ${wid+1}: ${WORLDS[wid+1].title} →
-        </button>
-      </div>`;
-  }
-  if (quizUnlock) {
-    actHtml += p.quiz_done
-      ? `<button class="btn btn-glass btn-full" onclick="startQuiz()" style="border-color:rgba(52,211,153,.3);color:#34d399">✓ Quiz Done · <span style="opacity:.6;font-size:12px">Redo</span></button>`
-      : `<button class="btn btn-gold btn-full" onclick="startQuiz()" style="font-size:15px;padding:16px">📝 Take the Quiz</button>`;
-  } else {
-    actHtml += `<button class="btn btn-glass btn-full" disabled style="opacity:.4">Complete ${Math.ceil(scenesAll/2)} scenes to unlock quiz</button>`;
-  }
-  if (journalUnlock) {
-    actHtml += p.journal_done
-      ? `<button class="btn btn-glass btn-full" onclick="openJournal()" style="border-color:rgba(52,211,153,.3);color:#34d399">✓ Journal Done · <span style="opacity:.6;font-size:12px">Redo</span></button>`
-      : `<button class="btn btn-outline btn-full" onclick="openJournal()" style="font-size:15px;padding:15px">📖 Open Reflection Journal</button>`;
-  } else {
-    actHtml += `<button class="btn btn-glass btn-full" disabled style="opacity:.4">Complete quiz to unlock journal</button>`;
-  }
-
-  actions.innerHTML = actHtml;
+  const numEl = document.getElementById('wmap-world-num');
+  const ttlEl = document.getElementById('wmap-world-title');
+  const dscEl = document.getElementById('wmap-world-desc');
+  if (numEl) numEl.textContent = 'World ' + wid;
+  if (ttlEl) ttlEl.textContent = A.world.title || 'The Wonder of Allah';
+  if (dscEl) dscEl.textContent = WORLD_DESCRIPTIONS[wid] || '';
   SS('s-wdetail');
+  const starC = document.getElementById('wmap-stars');
+  if (starC && !starC._running) initWmapStars(starC);
+
+  // Load background: try uploaded world hero first, then world-specific map image
+  const bgImg = document.getElementById('wmap-bg-img');
+  const bgFallback = document.getElementById('wmap-bg-fallback');
+  if (bgImg) {
+    // Priority 1: uploaded hero image from admin
+    const hero = A._worldHeroes && A._worldHeroes[wid];
+    // Priority 2: uploaded map background
+    const mapBg = A._mapBg;
+
+    const imgSrc = hero || mapBg || '';
+    if (imgSrc) {
+      bgImg.src = imgSrc + '?t=' + Date.now();
+      bgImg.onload = function() {
+        bgImg.style.opacity = '1';
+        if (bgFallback) bgFallback.style.opacity = '0';
+      };
+      bgImg.onerror = function() {
+        bgImg.style.opacity = '0';
+        if (bgFallback) bgFallback.style.opacity = '1';
+      };
+    } else {
+      // No image uploaded yet — show admin hint
+      if (A.profile && A.profile.is_admin && bgFallback) {
+        bgFallback.innerHTML = '<div style="position:absolute;bottom:40%;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.5);letter-spacing:1px;text-align:center">Upload world background in<br>Admin → Worlds → World ' + wid + '</div>' + bgFallback.innerHTML;
+      }
+    }
+  }
+  const charWrap = document.getElementById('wmap-nura-zain');
+  if (charWrap) {
+    const nura = A._chars && (A._chars.nura_zain_behind || A._chars.nura_standing);
+    const zain = A._chars && A._chars.zain_standing;
+    if (nura || zain) {
+      charWrap.innerHTML = (zain ? '<img src="' + zain + '" style="height:130px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.85))">' : zainSvg(120))
+        + (nura ? '<img src="' + nura + '" style="height:140px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.85))">' : nuraSvg(130));
+    } else {
+      charWrap.innerHTML = zainSvg(120) + nuraSvg(130);
+    }
+  }
+  requestAnimationFrame(function() { setTimeout(function() { renderWorldJourneyMap(wid); }, 80); });
 }
 
-// ── Start scene ─────────────────────────────────────────────
+function nuraSvg(h) {
+  var w = Math.round(h * 0.65);
+  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 65 100" fill="none" style="filter:drop-shadow(0 6px 20px rgba(0,0,0,.88));flex-shrink:0">'
+    + '<ellipse cx="32" cy="72" rx="18" ry="26" fill="#b06848" opacity=".92"/>'
+    + '<ellipse cx="32" cy="24" rx="17" ry="20" fill="#c07860"/>'
+    + '<ellipse cx="32" cy="36" rx="13" ry="10" fill="#a86050"/>'
+    + '<circle cx="32" cy="18" r="10" fill="#f0c498"/>'
+    + '<circle cx="27" cy="17" r="1.8" fill="#3a1e0e" opacity=".85"/>'
+    + '<circle cx="37" cy="17" r="1.8" fill="#3a1e0e" opacity=".85"/>'
+    + '<path d="M29 21 Q32 23 35 21" stroke="#906050" stroke-width="1.2" fill="none" stroke-linecap="round"/>'
+    + '<rect x="6" y="56" width="7" height="10" rx="2" fill="rgba(245,170,50,.65)"/>'
+    + '<ellipse cx="9.5" cy="56" rx="4" ry="2" fill="rgba(245,170,50,.45)"/>'
+    + '<ellipse cx="9.5" cy="60" rx="8" ry="8" fill="rgba(245,190,60,.1)"/>'
+    + '</svg>';
+}
+
+function zainSvg(h) {
+  var w = Math.round(h * 0.6);
+  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 60 100" fill="none" style="filter:drop-shadow(0 6px 20px rgba(0,0,0,.88));flex-shrink:0">'
+    + '<ellipse cx="30" cy="70" rx="16" ry="26" fill="#c4a870" opacity=".92"/>'
+    + '<circle cx="30" cy="20" r="11" fill="#f0c498"/>'
+    + '<ellipse cx="30" cy="13" rx="11" ry="7" fill="#3e2408"/>'
+    + '<circle cx="25" cy="19" r="1.8" fill="#2a1404" opacity=".85"/>'
+    + '<circle cx="35" cy="19" r="1.8" fill="#2a1404" opacity=".85"/>'
+    + '<path d="M27 23 Q30 25 33 23" stroke="#a07850" stroke-width="1.2" fill="none" stroke-linecap="round"/>'
+    + '<rect x="35" y="45" width="8" height="10" rx="2.5" fill="#6a3e18" opacity=".88"/>'
+    + '<rect x="12" y="55" width="8" height="10" rx="1.5" fill="#c8a060" opacity=".6" transform="rotate(-15 16 60)"/>'
+    + '</svg>';
+}
+
+function renderWorldJourneyMap(wid) {
+  var pathCanvas = document.getElementById('wmap-path-canvas');
+  var nodesWrap  = document.getElementById('wmap-nodes');
+  if (!pathCanvas || !nodesWrap) return;
+  var W = pathCanvas.offsetWidth  || 390;
+  var H = pathCanvas.offsetHeight || 844;
+  pathCanvas.width  = W;
+  pathCanvas.height = H;
+  var destinations = SCENE_DESTINATIONS[wid] || SCENE_DESTINATIONS[1];
+  var p    = A.progress[wid] || {};
+  var done = p.scenes_done || [];
+  var currentIdx = destinations.findIndex(function(d) { return !done.includes(d.id); });
+  var currentId  = currentIdx >= 0 ? destinations[currentIdx].id : -1;
+  var pts = destinations.map(function(d) { return { x: d.px*W/100, y: d.py*H/100 }; });
+  var ctx = pathCanvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  function drawSeg(from, to, alpha, width, dash) {
+    var cpx = from.x * 0.4 + to.x * 0.6;
+    var cpy = from.y * 0.6 + to.y * 0.4;
+    ctx.beginPath(); ctx.moveTo(from.x, from.y);
+    ctx.quadraticCurveTo(cpx, cpy, to.x, to.y);
+    ctx.strokeStyle = 'rgba(245,200,66,' + alpha + ')';
+    ctx.lineWidth = width; ctx.lineCap = 'round';
+    if (dash) ctx.setLineDash(dash); else ctx.setLineDash([]);
+    ctx.stroke();
+  }
+
+  for (var i = 0; i < pts.length - 1; i++) {
+    var isComp = i < currentIdx, isCur = i === currentIdx;
+    var fr = pts[i], to = pts[i+1];
+    drawSeg(fr, to, isComp ? 0.15 : 0.06, 22, []);
+    if (isComp) {
+      drawSeg(fr, to, 0.10, 14, []);
+      drawSeg(fr, to, 0.70, 4,  [8,4]);
+      drawSeg(fr, to, 0.90, 2,  []);
+    } else if (isCur) {
+      drawSeg(fr, to, 0.06, 12, []);
+      drawSeg(fr, to, 0.40, 3,  [6,5]);
+    } else {
+      drawSeg(fr, to, 0.04, 8,  []);
+      drawSeg(fr, to, 0.16, 2,  [4,6]);
+    }
+  }
+  animatePathShimmer(ctx, pts, currentIdx, W, H);
+
+  nodesWrap.innerHTML = '';
+  destinations.forEach(function(dest, i) {
+    var isDone    = done.includes(dest.id);
+    var isCurrent = dest.id === currentId;
+    var isFuture  = !isDone && !isCurrent;
+    var ns = dest.size || 70;
+    var px = dest.px * W / 100, py = dest.py * H / 100;
+    var borderColor = isDone ? 'rgba(52,211,153,.7)' : isCurrent ? 'rgba(245,200,66,.95)' : 'rgba(245,200,66,.28)';
+    var borderWidth = isCurrent ? 3 : isDone ? 2.5 : 1.5;
+    var shadow = isCurrent
+      ? '0 0 32px rgba(245,200,66,.75),0 0 60px rgba(245,200,66,.3),0 6px 20px rgba(0,0,0,.8)'
+      : isDone ? '0 0 16px rgba(52,211,153,.4),0 4px 16px rgba(0,0,0,.7)'
+      : '0 4px 16px rgba(0,0,0,.6)';
+    var uploadedNode = A._mapNodes && A._mapNodes[String(dest.id)];
+    var innerBg = uploadedNode ? 'background:url(' + uploadedNode + ') center/cover no-repeat;' : 'background:' + NODE_GRADIENTS[i] + ';';
+    var numBg    = isDone ? '#059669' : isCurrent ? 'rgba(245,200,66,.95)' : 'rgba(3,5,14,.92)';
+    var numColor = isDone ? '#fff' : isCurrent ? '#06030a' : 'rgba(245,200,66,.55)';
+    var nameLines = dest.name.split('\n');
+    var labelColor = isCurrent ? 'rgba(245,200,66,1)' : isDone ? 'rgba(52,211,153,.9)' : 'rgba(240,230,210,.55)';
+
+    var node = document.createElement('div');
+    node.style.cssText = 'position:absolute;left:' + px + 'px;top:' + py + 'px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:2;' + (isFuture ? 'opacity:.5;' : '');
+    node.innerHTML = (isCurrent
+      ? '<div style="position:absolute;width:' + (ns+24) + 'px;height:' + (ns+24) + 'px;top:' + (-(ns+24)/2 + ns/2) + 'px;left:' + (-(ns+24)/2 + ns/2) + 'px;border-radius:50%;background:radial-gradient(circle,rgba(245,200,66,.22) 0%,rgba(245,200,66,.06) 60%,transparent 100%);animation:nodeGlow 2s ease-in-out infinite;pointer-events:none"></div>'
+      : '')
+    + '<div style="position:absolute;top:-8px;left:-8px;width:24px;height:24px;border-radius:50%;background:' + numBg + ';border:2px solid rgba(3,5,14,.9);font-family:var(--display);font-size:10px;font-weight:900;color:' + numColor + ';display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.7);z-index:3">' + (i+1) + '</div>'
+    + '<div class="wmap-node-circle" style="width:' + ns + 'px;height:' + ns + 'px;border-radius:50%;' + innerBg + 'border:' + borderWidth + 'px solid ' + borderColor + ';box-shadow:' + shadow + ';overflow:hidden;position:relative;' + (isFuture ? 'filter:brightness(.5) saturate(.6);' : '') + 'transition:transform .2s">'
+    + '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,transparent 40%,rgba(0,0,0,.45) 100%)"></div>'
+    + (isDone ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,80,45,.25);border-radius:50%"><span style="font-family:var(--ui);font-size:20px;font-weight:900;color:rgba(52,211,153,.9)">✓</span></div>' : '')
+    + '</div>'
+    + '<div style="font-family:var(--display);font-size:10px;font-weight:700;text-align:center;line-height:1.3;text-shadow:0 2px 10px rgba(0,0,0,1);max-width:' + (ns+18) + 'px;color:' + labelColor + '">'
+    + nameLines.map(function(l){return '<div>'+l+'</div>';}).join('')
+    + '</div>';
+
+    node.addEventListener('click', (function(sid){ return function(){ startScene(sid); }; })(dest.id));
+    node.addEventListener('touchstart', function() {
+      var c = node.querySelector('.wmap-node-circle'); if(c) c.style.transform='scale(.9)';
+    }, {passive:true});
+    node.addEventListener('touchend', function() {
+      var c = node.querySelector('.wmap-node-circle'); if(c) c.style.transform='';
+    }, {passive:true});
+    nodesWrap.appendChild(node);
+  });
+
+  // Progress panel
+  var doneCount = done.length, total = destinations.length;
+  var progText = document.getElementById('wmap-prog-text');
+  var progBar  = document.getElementById('wmap-prog-bar');
+  if (progText) progText.textContent = doneCount + ' / ' + total + ' Scenes Completed';
+  if (progBar) setTimeout(function(){ progBar.style.width = Math.round(doneCount/total*100) + '%'; }, 200);
+
+  // CTA
+  var ctaLabel = document.getElementById('wmap-cta-label');
+  var ctaBtn   = document.getElementById('wmap-next-btn');
+  var nextDest = destinations.find(function(d){ return !done.includes(d.id); });
+  if (ctaLabel && ctaBtn) {
+    if (nextDest) {
+      ctaLabel.textContent = (doneCount === 0 ? 'Begin' : 'Continue') + ' — ' + nextDest.subName;
+      ctaBtn.onclick = (function(sid){ return function(){ startScene(sid); }; })(nextDest.id);
+    } else {
+      var wp2 = A.progress[wid] || {};
+      if (!wp2.quiz_done) { ctaLabel.textContent = 'Take the Discovery Quiz'; ctaBtn.onclick = function(){ startQuiz(); }; }
+      else { ctaLabel.textContent = 'Continue to World 2'; ctaBtn.onclick = function(){ if(WORLDS[wid+1]) openWorld(wid+1); }; }
+    }
+  }
+}
+
+function animatePathShimmer(ctx, pts, currentIdx, W, H) {
+  if (pts.length < 2 || currentIdx < 0) return;
+  var t = 0;
+  var segCount = Math.max(1, Math.min(currentIdx + 1, pts.length - 1));
+  function draw() {
+    if (!document.getElementById('s-wdetail') || !document.getElementById('s-wdetail').classList.contains('active')) return;
+    t = (t + 0.006) % 1;
+    var totalT = t * segCount;
+    var seg    = Math.min(Math.floor(totalT), segCount - 1);
+    var segT   = totalT - seg;
+    var a = pts[seg], b = pts[Math.min(seg+1, pts.length-1)];
+    var cpx = a.x * 0.4 + b.x * 0.6, cpy = a.y * 0.6 + b.y * 0.4;
+    var bx = (1-segT)*(1-segT)*a.x + 2*(1-segT)*segT*cpx + segT*segT*b.x;
+    var by = (1-segT)*(1-segT)*a.y + 2*(1-segT)*segT*cpy + segT*segT*b.y;
+    var gr = ctx.createRadialGradient(bx,by,0,bx,by,14);
+    gr.addColorStop(0,'rgba(255,248,180,.95)'); gr.addColorStop(.4,'rgba(245,200,66,.5)'); gr.addColorStop(1,'transparent');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(bx,by,14,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,220,1)'; ctx.beginPath(); ctx.arc(bx,by,3.5,0,Math.PI*2); ctx.fill();
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
+function initWmapStars(canvas) {
+  if (canvas._running) return;
+  canvas._running = true;
+  canvas.width  = canvas.offsetWidth  || 390;
+  canvas.height = canvas.offsetHeight || 844;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var stars = Array.from({length:70}, function() {
+    return { x:Math.random()*W, y:Math.random()*H*.5, r:.4+Math.random()*1.3, p:Math.random()*Math.PI*2, b:.15+Math.random()*.7 };
+  });
+  var t = 0;
+  (function draw() {
+    if (!document.getElementById('s-wdetail') || !document.getElementById('s-wdetail').classList.contains('active')) { canvas._running=false; return; }
+    ctx.clearRect(0,0,W,H);
+    stars.forEach(function(s) {
+      var a = s.b*(0.35+0.65*Math.abs(Math.sin(t*.004+s.p)));
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fillStyle='rgba(220,230,255,'+a+')'; ctx.fill();
+    });
+    t++; requestAnimationFrame(draw);
+  })();
+}
+
+function wmapStartNext() {
+  var wid  = (A.world && A.world.id) || 1;
+  var dest = SCENE_DESTINATIONS[wid] || SCENE_DESTINATIONS[1];
+  var p    = A.progress[wid] || {};
+  var done = p.scenes_done || [];
+  var next = dest.find(function(d){ return !done.includes(d.id); });
+  if (next) startScene(next.id);
+}
+
+// ── Start a scene ─────────────────────────────────────────────
 async function startScene(sceneId) {
-  A.scene = A.world.scenes.find(s => s.id === sceneId);
+  A.scene   = A.world.scenes.find(function(s){ return s.id === sceneId; });
   if (!A.scene) return;
-  A.step = 0;
+  A.step    = 0;
   A.sceneHa = 0;
-  A._ixAssets = {}; // Clear cached assets for new scene
+  A._ixAssets = {};
   SS('s-player');
-  // Scroll to top immediately
-  const sw = document.getElementById('scene-scroll-wrap');
+  var sw = document.getElementById('scene-scroll-wrap');
   if (sw) sw.scrollTop = 0;
-  // Then render (awaited so content loads before user sees stale state)
   await renderFullScene();
 }
 
+// ── Exit scene → always return to journey map ─────────────────
 function exitScene() {
-  openWorld(A.world.id);
+  openWorld((A.world && A.world.id) || 1);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CINEMATIC SCENE ENGINE
-// ═══════════════════════════════════════════════════════════════
-let _sceneBeat = 0;
-let _sceneImages = {};
 let _sceneIxAssets = {};
 
 async function renderFullScene() {
@@ -4454,8 +4553,12 @@ function showCompleteStage() {
   if(sub) sub.textContent="You uncovered one of Allah’s signs. +"+(sc.ha||5)+" Noor";
   const nextSc=A.world.scenes.find(s=>s.id===sc.id+1);
   if(btns) btns.innerHTML=nextSc
-    ?"<div style='display:flex;flex-direction:column;gap:10px'><button class='btn btn-gold btn-full' onclick='startScene("+nextSc.id+")' style='font-size:15px;padding:16px'>"+nextSc.title+" →</button><button class='btn btn-glass btn-full' onclick='exitScene()' style='font-size:13px;padding:13px'>← World Map</button></div>"
-    :"<div style='display:flex;flex-direction:column;gap:10px'><button class='btn btn-gold btn-full' onclick='exitScene()' style='font-size:15px;padding:16px'>✦ All Scenes Complete</button></div>";
+    ?`<div style='display:flex;flex-direction:column;gap:10px'>
+        <button class='btn btn-gold btn-full' onclick='exitScene()' style='font-size:15px;padding:16px'>✦ Return to Journey Map</button>
+      </div>`
+    :`<div style='display:flex;flex-direction:column;gap:10px'>
+        <button class='btn btn-gold btn-full' onclick='exitScene()' style='font-size:15px;padding:16px'>✦ Return to Journey Map</button>
+      </div>`;
   goldBurst();
 }
 
@@ -4556,15 +4659,12 @@ function skipToNext(sceneId) {
 }
 
 async function completeScene() {
-  const wid = A.world.id;
-  const sid = A.scene.id;
-  const ha = A.scene.ha || 5;
+  const wid = A.world?.id;
+  const sid = A.scene?.id;
+  const ha  = A.scene?.ha || 5;
+  if (!wid || !sid) return;
 
-  // Disable button immediately
-  const btn = document.getElementById('scene-complete-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-
-  // Update local progress FIRST — don't wait for DB
+  // Update local progress immediately
   if (!A.progress[wid]) A.progress[wid] = {scenes_done:[], hasanah:0, keys:0};
   const p = A.progress[wid];
   if (!p.scenes_done) p.scenes_done = [];
@@ -4577,111 +4677,154 @@ async function completeScene() {
   // Gold particle burst
   goldBurst();
 
-  // Show reward immediately — don't wait for DB save
+  // Show reward immediately
   showSceneReward(ha);
 
-  // Save to Supabase in background (fire and forget)
-  try {
-    sb.from('progress').upsert({
-      child_id: A.child.id,
-      world_id: wid,
-      scenes_done: p.scenes_done,
-      hasanah: p.hasanah,
-      keys: p.keys || 0,
-      quiz_done: p.quiz_done || false,
-      journal_done: p.journal_done || false
-    }, { onConflict: 'child_id,world_id' }).then(() => {
-      console.log('[NQ] Progress saved for W' + wid + 'S' + sid);
-    }).catch(e => {
-      console.warn('[NQ] Background save failed:', e.message);
-    });
-  } catch(e) {
-    console.warn('[NQ] completeScene save error:', e);
+  // Save to Supabase only if logged in with a child selected
+  if (A.child?.id) {
+    try {
+      sb.from('progress').upsert({
+        child_id: A.child.id,
+        world_id: wid,
+        scenes_done: p.scenes_done,
+        hasanah: p.hasanah,
+        keys: p.keys || 0,
+        quiz_done: p.quiz_done || false,
+        journal_done: p.journal_done || false
+      }, { onConflict: 'child_id,world_id' }).then(() => {
+        console.log('[NQ] Progress saved W' + wid + 'S' + sid);
+      }).catch(e => console.warn('[NQ] Save failed:', e.message));
+    } catch(e) { console.warn('[NQ] completeScene error:', e.message); }
   }
 }
 
 function showSceneReward(ha) {
+  const nextScene = A.world?.scenes?.find(s => s.id === A.scene.id + 1);
+  const allDone   = !nextScene;
+  const worldName = A.world?.title || 'The Wonder of Allah';
+  const sceneName = A.scene?.title || '';
+
+  // Build reward screen content
   const wrap = document.getElementById('reward-wrap');
   if (!wrap) { openWorld(A.world.id); return; }
 
-  const nextScene = A.world.scenes.find(s => s.id === A.scene.id + 1);
-  const allDone = !nextScene;
-
   wrap.innerHTML = `
-    <div class="srainwrap" id="srainwrap"></div>
-    <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:18px;padding:36px 24px;text-align:center">
-      <div style="font-size:72px;animation:keyrise .7s cubic-bezier(.34,1.56,.64,1) forwards;filter:drop-shadow(0 0 40px rgba(245,200,66,.7))">⭐</div>
-      <div style="font-family:var(--display);font-size:32px;color:var(--gold);font-weight:700;text-shadow:0 0 30px rgba(245,200,66,.4)">+${ha} Hasanah!</div>
-      <div style="font-family:var(--ui);font-size:13px;color:rgba(253,246,227,.5);letter-spacing:1px">Total: ${A.totalHasanah} ⭐</div>
-      <div style="font-family:var(--body);font-size:14px;color:var(--cream2);font-style:italic;line-height:1.7;max-width:260px">
-        ${allDone ? "You've completed all scenes in this world! Time for the quiz!" : 'Every good deed is recorded. Allah sees every moment of effort.'}
+    <!-- Animated canvas bg -->
+    <canvas id="reward-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:0"></canvas>
+
+    <!-- Content -->
+    <div style="position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;text-align:center;gap:0">
+
+      <!-- Discovery badge -->
+      <div style="margin-bottom:24px;animation:rewardBadge .7s cubic-bezier(.34,1.56,.64,1) both">
+        <div style="width:96px;height:96px;border-radius:50%;margin:0 auto;
+          background:radial-gradient(circle, rgba(245,200,66,.22) 0%, rgba(245,200,66,.06) 100%);
+          border:2px solid rgba(245,200,66,.5);
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 0 60px rgba(245,200,66,.35),0 0 120px rgba(245,200,66,.12)">
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <path d="M22 4L26.5 16H40L29.5 23.5L34 36L22 28.5L10 36L14.5 23.5L4 16H17.5Z"
+              fill="rgba(245,200,66,0.9)" filter="url(#glow)"/>
+            <defs><filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+          </svg>
+        </div>
       </div>
-      <div style="width:100%;display:flex;flex-direction:column;gap:10px;max-width:320px">
+
+      <!-- Discovery label -->
+      <div style="font-family:var(--ui);font-size:10px;color:rgba(245,200,66,.5);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;animation:fadeInUp .5s .2s ease both">
+        Discovery Made
+      </div>
+
+      <!-- Scene name -->
+      <div style="font-family:var(--display);font-size:22px;font-weight:700;color:var(--gold);line-height:1.25;margin-bottom:6px;text-shadow:0 0 30px rgba(245,200,66,.35);animation:fadeInUp .5s .3s ease both">
+        ${sceneName}
+      </div>
+
+      <!-- Noor earned -->
+      <div style="font-family:var(--body);font-size:14px;color:rgba(240,230,210,.55);font-style:italic;margin-bottom:28px;animation:fadeInUp .5s .4s ease both">
+        +${ha} Noor earned · Total: ${A.totalHasanah || ha} Noor
+      </div>
+
+      <!-- Reflection line -->
+      <div style="background:rgba(245,200,66,.05);border:1px solid rgba(245,200,66,.12);border-radius:16px;padding:16px 20px;margin-bottom:28px;max-width:300px;animation:fadeInUp .5s .5s ease both">
+        <div style="font-family:var(--body);font-size:13px;color:rgba(240,230,210,.65);font-style:italic;line-height:1.75">
+          ${allDone
+            ? 'You\'ve explored every scene in this world. SubhanAllah.'
+            : 'Every sign you discover brings you closer to understanding Allah\'s greatness.'}
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="width:100%;display:flex;flex-direction:column;gap:10px;max-width:300px;animation:fadeInUp .5s .6s ease both">
         ${nextScene
-          ? `<button class="btn btn-gold btn-full" onclick="startScene(${nextScene.id})" style="font-size:15px;padding:16px">
-               Next: ${nextScene.title} →
-             </button>
-             <button class="btn btn-glass btn-sm btn-full" onclick="openWorld(A.world.id)">↩ All Scenes</button>`
-          : `<button class="btn btn-gold btn-full" onclick="openWorld(A.world.id)" style="font-size:15px;padding:16px">
-               Continue Journey →
+          ? `<button style="width:100%;background:linear-gradient(135deg,#b8880a,#e8b830,#b8880a);border:none;border-radius:50px;padding:16px 24px;font-family:var(--display);font-size:14px;font-weight:900;color:#06030a;cursor:pointer;letter-spacing:.3px;box-shadow:0 0 30px rgba(245,200,66,.35),-webkit-tap-highlight-color:transparent" onclick="exitScene()">
+               ✦ Return to Journey Map
+             </button>`
+          : `<button style="width:100%;background:linear-gradient(135deg,#b8880a,#e8b830,#b8880a);border:none;border-radius:50px;padding:16px 24px;font-family:var(--display);font-size:14px;font-weight:900;color:#06030a;cursor:pointer;letter-spacing:.3px;box-shadow:0 0 30px rgba(245,200,66,.35)" onclick="exitScene()">
+               ✦ Return to Journey Map
              </button>`
         }
       </div>
     </div>`;
-  startStarRain();
+
+  // Animate reward canvas
+  startRewardCanvas();
   SS('s-reward');
 }
 
-// ── Gold particle burst ───────────────────────────────────────
-function goldBurst() {
-  const btn = document.getElementById('scene-complete-btn');
-  const rect = btn ? btn.getBoundingClientRect() : {left: window.innerWidth/2, top: window.innerHeight/2, width:0, height:0};
-  const cx = rect.left + rect.width/2;
-  const cy = rect.top + rect.height/2;
-  const particles = ['✦','⭐','✨','💛','🌟'];
-  for (let i = 0; i < 18; i++) {
-    const el = document.createElement('div');
-    el.className = 'particle';
-    el.textContent = particles[Math.floor(Math.random()*particles.length)];
-    el.style.cssText = `left:${cx}px;top:${cy}px;font-size:${14+Math.random()*12}px;--px:${(Math.random()-0.5)*180}px;--py:${-60-Math.random()*120}px;--pd:${.6+Math.random()*.6}s;animation-delay:${Math.random()*.2}s`;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1200);
+// Canvas-based golden particle celebration — replaces emoji star rain
+function startRewardCanvas() {
+  const canvas = document.getElementById('reward-canvas');
+  if (!canvas) return;
+  canvas.width  = canvas.offsetWidth  || 390;
+  canvas.height = canvas.offsetHeight || 844;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // Background
+  const bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#01020a'); bg.addColorStop(.5,'#04091a'); bg.addColorStop(1,'#02050f');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  // Gold glow at centre
+  const cg = ctx.createRadialGradient(W/2, H*.4, 0, W/2, H*.4, W*.7);
+  cg.addColorStop(0,'rgba(245,200,66,.14)'); cg.addColorStop(.5,'rgba(180,140,20,.05)'); cg.addColorStop(1,'transparent');
+  ctx.fillStyle = cg; ctx.fillRect(0,0,W,H);
+
+  // Floating gold particles
+  const particles = Array.from({length:55}, () => ({
+    x: Math.random()*W, y: H + Math.random()*H*.3,
+    r: 1+Math.random()*2.5,
+    vx: (Math.random()-.5)*.4, vy: -(0.4+Math.random()*.8),
+    alpha: 0.15+Math.random()*.7,
+    phase: Math.random()*Math.PI*2, life:0, maxLife: 160+Math.random()*120
+  }));
+
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = cg; ctx.fillRect(0,0,W,H);
+
+    particles.forEach(p => {
+      p.life++; p.x += p.vx + Math.sin(t*.015+p.phase)*.3; p.y += p.vy;
+      const prog = p.life/p.maxLife;
+      const a = p.alpha * Math.sin(prog*Math.PI);
+      const g2 = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*4);
+      g2.addColorStop(0,`rgba(245,200,66,${a})`); g2.addColorStop(1,'transparent');
+      ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=`rgba(255,230,100,${a*0.9})`; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+      if (p.life>=p.maxLife) { p.x=Math.random()*W; p.y=H+10; p.life=0; }
+    });
+    t++;
+    if (document.getElementById('s-reward')?.classList.contains('active'))
+      requestAnimationFrame(draw);
   }
+  requestAnimationFrame(draw);
 }
 
-// ── Reward screen ─────────────────────────────────────────────
-function showReward(ha, key) {
-  const wrap = document.getElementById('reward-wrap');
-  if (wrap) wrap.innerHTML = `
-    <div style="text-align:center;z-index:1;padding:40px 24px">
-      <div style="font-size:64px;margin-bottom:16px">🌟</div>
-      <div style="font-family:var(--display);font-size:36px;color:var(--gold2);margin-bottom:8px">+${ha} Hasanah</div>
-      <div style="font-size:15px;color:rgba(245,240,232,.6);margin-bottom:8px">Total: ${A.totalHasanah} ⭐</div>
-      ${key ? '<div style="font-size:28px;margin:12px 0">🗝️ Noor Key Earned!</div>' : ''}
-      <button class="btn btn-gold btn-full" style="margin-top:24px" onclick="rewardContinue()">Continue →</button>
-    </div>`;
-  startStarRain();
-  SS('s-reward');
-}
-
-function rewardContinue() {
-  openWorld(A.world.id);
-}
-
-function startStarRain() {
-  const container = document.getElementById('srainwrap');
-  if (!container) return;
-  container.innerHTML = '';
-  for (let i = 0; i < 30; i++) {
-    const star = document.createElement('div');
-    star.className = 'falling-star';
-    star.textContent = ['⭐','✨','💫','🌟'][Math.floor(Math.random()*4)];
-    star.style.left  = Math.random() * 100 + '%';
-    star.style.animationDelay = Math.random() * 2 + 's';
-    star.style.fontSize = (14 + Math.random() * 16) + 'px';
-    container.appendChild(star);
-  }
-}
+// Clean up old startStarRain calls (now replaced)
+function startStarRain() { /* replaced by startRewardCanvas */ }
 
 // ── Quiz ───────────────────────────────────────────────────────
 function startQuiz() {
@@ -5584,9 +5727,8 @@ function esc(str) {
 
 
 // ── Aliases called directly from HTML buttons ────────────────
-function exitScene()   { openWorld(A.world?.id); }
-function exitQuiz()    { openWorld(A.world?.id); }
-function exitJournal() { openWorld(A.world?.id); }
+function exitQuiz()    { openWorld(A.world?.id || 1); }
+function exitJournal() { openWorld(A.world?.id || 1); }
 function advScene()    { sceneNext(); }
 function advQuiz()     { quizNext(); }
 function uploadAsset() { adminUpload(); }
@@ -5811,34 +5953,35 @@ function adminTab(tab) {
 // INIT
 // ============================================================
 async function init() {
+  // Show the world gate splash first — child sees the world, not a login
   SS('s-splash');
-  authTab('login');
-  initStars();
-  initSplash(); // lantern canvas + videos (async, non-blocking)
+  initLanternCanvas();
 
-  // Restore session
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) {
-    A.user = session.user;
-    await loadProfile();
-  } else {
-    SS('s-auth');
+  // Silently check for existing session in background
+  try {
+    const { data } = await sb.auth.getSession();
+    if (data?.session?.user) {
+      A.user = data.session.user;
+      // Load profile quietly — don't interrupt the experience
+      loadProfile().then(() => loadGlobalAssets()).catch(() => {});
+    }
+  } catch(e) {
+    // Network error or no session — guest mode is fine
+    console.log('[NQ] Guest mode');
   }
 
-  // Auth state listener
+  // Listen for future auth changes
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       A.user = session.user;
-      A._fromLogin = true;
       await loadProfile();
-      // Load character images, world heroes, map nodes in background
       loadGlobalAssets();
     } else if (event === 'SIGNED_OUT') {
-      A._fromLogin = false;
-      SS('s-auth');
+      A.user = null; A.profile = null; A.children = [];
     }
   });
 }
+
 
 // Boot when DOM ready
 if (document.readyState === 'loading') {
@@ -6193,6 +6336,57 @@ async function adminSimpleUpload(tag, file, msgId) {
   }
 }
 
+// ── Quick upload from journey map (admin only) ────────────────
+async function quickUploadMapBg(inputEl) {
+  const file = inputEl.files[0]; if (!file) return;
+  const statusEl = document.getElementById('wmap-upload-status');
+  if (statusEl) statusEl.textContent = 'Uploading...';
+  const url = await adminSimpleUpload('map_background_image', file, null);
+  if (url) {
+    A._mapBg = url;
+    const bgImg = document.getElementById('wmap-bg-img');
+    const bgFall = document.getElementById('wmap-bg-fallback');
+    if (bgImg) {
+      bgImg.src = url + '?t=' + Date.now();
+      bgImg.onload = function() { bgImg.style.opacity='1'; if(bgFall) bgFall.style.opacity='0'; };
+    }
+    if (statusEl) { statusEl.textContent = '✅ Map background uploaded!'; statusEl.style.color='rgba(52,211,153,.9)'; }
+    setTimeout(function(){ if(statusEl) statusEl.textContent=''; }, 3000);
+  } else {
+    if (statusEl) { statusEl.textContent = '❌ Upload failed'; statusEl.style.color='#f87171'; }
+  }
+  inputEl.value = '';
+}
+
+async function quickUploadWorldHero(wid, inputEl) {
+  const file = inputEl.files[0]; if (!file) return;
+  const statusEl = document.getElementById('wmap-upload-status');
+  if (statusEl) statusEl.textContent = 'Uploading...';
+  const url = await adminSimpleUpload('w' + wid + '_hero_image', file, null);
+  if (url) {
+    if (!A._worldHeroes) A._worldHeroes = {};
+    A._worldHeroes[wid] = url;
+    const bgImg = document.getElementById('wmap-bg-img');
+    const bgFall = document.getElementById('wmap-bg-fallback');
+    if (bgImg) {
+      bgImg.src = url + '?t=' + Date.now();
+      bgImg.onload = function() { bgImg.style.opacity='1'; if(bgFall) bgFall.style.opacity='0'; };
+    }
+    if (statusEl) { statusEl.textContent = '✅ World ' + wid + ' hero uploaded!'; statusEl.style.color='rgba(52,211,153,.9)'; }
+    setTimeout(function(){ if(statusEl) statusEl.textContent=''; }, 3000);
+  } else {
+    if (statusEl) { statusEl.textContent = '❌ Upload failed'; statusEl.style.color='#f87171'; }
+  }
+  inputEl.value = '';
+}
+
+function updateAdminUI() {
+  const bar = document.getElementById('wmap-admin-bar');
+  if (bar) bar.style.display = (A.profile && A.profile.is_admin) ? 'block' : 'none';
+  const adminBtn = document.getElementById('admin-btn');
+  if (adminBtn) adminBtn.style.display = (A.profile && A.profile.is_admin) ? 'inline-flex' : 'none';
+}
+
 async function uploadWorldHero(wid, inputEl) {
   const file = inputEl.files[0]; if (!file) return;
   const url = await adminSimpleUpload('w' + wid + '_hero_image', file, 'world-hero-msg');
@@ -6200,9 +6394,17 @@ async function uploadWorldHero(wid, inputEl) {
     const prev = document.getElementById('world-hero-prev-' + wid);
     if (prev) prev.innerHTML = '<img src="' + url + '?t=' + Date.now() + '" style="width:100%;height:100%;object-fit:cover">';
     if (!A._worldHeroes) A._worldHeroes = {};
-    A._worldHeroes[wid] = url + '?t=' + Date.now();
+    A._worldHeroes[wid] = url;
+    // Apply immediately if this world is showing
+    const bgImg = document.getElementById('wmap-bg-img');
+    const bgFall = document.getElementById('wmap-bg-fallback');
+    if (bgImg && A.world && A.world.id === wid) {
+      bgImg.src = url + '?t=' + Date.now();
+      bgImg.onload = function() { bgImg.style.opacity='1'; if(bgFall) bgFall.style.opacity='0'; };
+    }
   }
 }
+
 
 async function uploadMapNode(wid, inputEl) {
   const file = inputEl.files[0]; if (!file) return;
