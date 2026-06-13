@@ -1441,21 +1441,21 @@ select.input option { background:#0f1628; color:#FDF6E3 }
     background:rgba(124,58,237,.25);border-bottom:1px solid rgba(124,58,237,.4);
     padding:8px 12px;backdrop-filter:blur(8px)">
     <div style="font-family:var(--ui);font-size:10px;color:#c4b5fd;letter-spacing:1px;margin-bottom:6px">
-      ⚙ ADMIN — Upload map background to replace CSS fallback
+      ⚙ ADMIN — Upload images directly
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <label style="background:rgba(124,58,237,.4);border:1px solid rgba(167,139,250,.5);border-radius:8px;
         padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
-        📷 Upload Map Background
+        Upload Map Background
         <input type="file" accept="image/*" style="display:none" onchange="quickUploadMapBg(this)">
       </label>
       <label style="background:rgba(124,58,237,.4);border:1px solid rgba(167,139,250,.5);border-radius:8px;
         padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
-        🖼 Upload World 1 Hero
+        Upload World 1 Hero
         <input type="file" accept="image/*" style="display:none" onchange="quickUploadWorldHero(1,this)">
       </label>
       <button onclick="SS('s-admin')" style="background:rgba(124,58,237,.3);border:1px solid rgba(167,139,250,.4);border-radius:8px;padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
-        Open Full Admin →
+        Full Admin →
       </button>
     </div>
     <div id="wmap-upload-status" style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.7);margin-top:4px;min-height:14px"></div>
@@ -1501,11 +1501,9 @@ select.input option { background:#0f1628; color:#FDF6E3 }
   </div>
 
   <!-- ═══ NURA & ZAIN — left side, facing journey ═══ -->
-  <div id="wmap-chars" style="position:absolute;bottom:32%;left:0;z-index:6;pointer-events:none;
-    display:flex;align-items:flex-end">
-    <!-- Loaded from admin assets if uploaded, otherwise CSS characters -->
-    <div id="wmap-nura-zain" style="display:flex;align-items:flex-end;gap:0;
-      filter:drop-shadow(0 4px 20px rgba(0,0,0,.8))"></div>
+  <div id="wmap-chars" style="position:absolute;bottom:28%;left:-4px;z-index:6;pointer-events:none">
+    <div id="wmap-nura-zain" style="display:flex;align-items:flex-end;gap:2px;
+      filter:drop-shadow(0 6px 24px rgba(0,0,0,.9))"></div>
   </div>
 
   <!-- ═══ WORLD PROGRESS PANEL ═══ -->
@@ -3285,7 +3283,11 @@ function SS(id) {
     const sc = document.getElementById('scene-sky-canvas');
     if (sc) sc._running = false;
   }
-  if (id === 's-map') setTimeout(() => renderWorldMap && renderWorldMap(), 50);
+  if (id === 's-map') {
+    // s-map is the old 13-world overview — redirect to World 1 journey map instead
+    setTimeout(() => openWorld(A.world?.id || 1), 50);
+    return;
+  }
   if (id === 's-auth') { setTimeout(initAuthCanvas, 50); setTimeout(() => authTab('login'), 60); }
   if (id === 's-dash') {
     // Restart the dash canvas if it stopped
@@ -3293,9 +3295,14 @@ function SS(id) {
     if (dc) dc._running = false;
     setTimeout(renderDashboard, 50);
   }
-  if (id === 's-wdetail') { const wsc = document.getElementById('wmap-sky-canvas'); if (wsc) wsc._running = false; }
-  // Show home FAB on all inner screens except splash/auth/setup
-  const hideFab = ['s-splash','s-auth','s-setup'].includes(id);
+  if (id === 's-wdetail') {
+    // Stop star canvas so it restarts fresh — but do NOT call renderWorldJourneyMap here.
+    // openWorld() already calls it via requestAnimationFrame to avoid double-render.
+    const wsc = document.getElementById('wmap-stars');
+    if (wsc) wsc._running = false;
+  }
+  // Hide home FAB on screens that have their own navigation
+  const hideFab = ['s-splash','s-auth','s-setup','s-wdetail','s-player','s-reward'].includes(id);
   const fab = document.getElementById('home-fab');
   if (fab) fab.classList.toggle('visible', !hideFab);
 }
@@ -4199,32 +4206,48 @@ function openWorld(wid) {
 }
 
 function nuraSvg(h) {
-  var w = Math.round(h * 0.65);
-  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 65 100" fill="none" style="filter:drop-shadow(0 6px 20px rgba(0,0,0,.88));flex-shrink:0">'
-    + '<ellipse cx="32" cy="72" rx="18" ry="26" fill="#b06848" opacity=".92"/>'
-    + '<ellipse cx="32" cy="24" rx="17" ry="20" fill="#c07860"/>'
-    + '<ellipse cx="32" cy="36" rx="13" ry="10" fill="#a86050"/>'
-    + '<circle cx="32" cy="18" r="10" fill="#f0c498"/>'
-    + '<circle cx="27" cy="17" r="1.8" fill="#3a1e0e" opacity=".85"/>'
-    + '<circle cx="37" cy="17" r="1.8" fill="#3a1e0e" opacity=".85"/>'
-    + '<path d="M29 21 Q32 23 35 21" stroke="#906050" stroke-width="1.2" fill="none" stroke-linecap="round"/>'
-    + '<rect x="6" y="56" width="7" height="10" rx="2" fill="rgba(245,170,50,.65)"/>'
-    + '<ellipse cx="9.5" cy="56" rx="4" ry="2" fill="rgba(245,170,50,.45)"/>'
-    + '<ellipse cx="9.5" cy="60" rx="8" ry="8" fill="rgba(245,190,60,.1)"/>'
+  // Nura from behind — hijab, dress, lantern
+  return '<svg width="' + Math.round(h*0.55) + '" height="' + h + '" viewBox="0 0 55 100" fill="none">'
+    // Dress/body
+    + '<path d="M10 55 Q8 80 6 100 L49 100 Q47 80 45 55 Q27 50 10 55Z" fill="#c07860" opacity=".95"/>'
+    // Hijab - from behind, wraps around head
+    + '<ellipse cx="27" cy="28" rx="19" ry="22" fill="#d4826a"/>'
+    + '<path d="M8 30 Q8 52 12 56 Q27 60 42 56 Q46 52 46 30 Q36 18 27 16 Q18 18 8 30Z" fill="#c47060"/>'
+    // Head underneath
+    + '<circle cx="27" cy="22" r="12" fill="#f0c090"/>'
+    // Hijab tail draping left
+    + '<path d="M8 30 Q2 40 4 60 Q8 65 12 58" fill="#c07060" opacity=".8"/>'
+    // Lantern — held at side
+    + '<rect x="2" y="68" width="7" height="10" rx="2" fill="#8a6020" opacity=".9"/>'
+    + '<rect x="3" y="66" width="5" height="3" rx="1" fill="#6a4010"/>'
+    + '<ellipse cx="5.5" cy="78" rx="4" ry="2.5" fill="#8a6020" opacity=".7"/>'
+    // Lantern warm glow
+    + '<ellipse cx="5.5" cy="73" rx="9" ry="10" fill="rgba(245,180,40,.18)"/>'
     + '</svg>';
 }
 
 function zainSvg(h) {
-  var w = Math.round(h * 0.6);
-  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 60 100" fill="none" style="filter:drop-shadow(0 6px 20px rgba(0,0,0,.88));flex-shrink:0">'
-    + '<ellipse cx="30" cy="70" rx="16" ry="26" fill="#c4a870" opacity=".92"/>'
-    + '<circle cx="30" cy="20" r="11" fill="#f0c498"/>'
-    + '<ellipse cx="30" cy="13" rx="11" ry="7" fill="#3e2408"/>'
-    + '<circle cx="25" cy="19" r="1.8" fill="#2a1404" opacity=".85"/>'
-    + '<circle cx="35" cy="19" r="1.8" fill="#2a1404" opacity=".85"/>'
-    + '<path d="M27 23 Q30 25 33 23" stroke="#a07850" stroke-width="1.2" fill="none" stroke-linecap="round"/>'
-    + '<rect x="35" y="45" width="8" height="10" rx="2.5" fill="#6a3e18" opacity=".88"/>'
-    + '<rect x="12" y="55" width="8" height="10" rx="1.5" fill="#c8a060" opacity=".6" transform="rotate(-15 16 60)"/>'
+  // Zain from behind — explorer outfit, satchel, holding map
+  return '<svg width="' + Math.round(h*0.52) + '" height="' + h + '" viewBox="0 0 52 100" fill="none">'
+    // Trousers
+    + '<path d="M16 72 Q13 86 12 100 L24 100 L26 80 L28 100 L40 100 Q39 86 36 72Z" fill="#5a4020" opacity=".9"/>'
+    // Jacket/body
+    + '<path d="M12 45 Q10 60 12 72 L40 72 Q42 60 40 45 Q26 40 12 45Z" fill="#d4b870" opacity=".95"/>'
+    // Belt strap across back
+    + '<path d="M14 50 Q26 47 38 50" stroke="#8a6030" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+    // Head + hair (from behind)
+    + '<circle cx="26" cy="22" r="12" fill="#f0c090"/>'
+    + '<path d="M14 16 Q16 8 26 7 Q36 8 38 16 Q36 12 26 11 Q16 12 14 16Z" fill="#3a2008"/>'
+    + '<ellipse cx="26" cy="10" rx="12" ry="5" fill="#3a2008"/>'
+    // Collar
+    + '<path d="M15 34 Q26 38 37 34 L37 44 Q26 42 15 44Z" fill="#c4a860" opacity=".9"/>'
+    // Satchel on side
+    + '<rect x="36" y="52" width="10" height="13" rx="3" fill="#7a4a18" opacity=".9"/>'
+    + '<rect x="37" y="50" width="8" height="4" rx="2" fill="#6a3e10"/>'
+    + '<path d="M40 52 L40 46 Q42 44 42 52" stroke="#6a3e10" stroke-width="1.5" fill="none"/>'
+    // Map held out — right hand
+    + '<path d="M37 55 L50 48 L52 52 L40 60Z" fill="#d4b060" opacity=".85"/>'
+    + '<path d="M40 50 L50 45" stroke="#a08040" stroke-width="1" opacity=".6"/>'
     + '</svg>';
 }
 
@@ -4402,6 +4425,8 @@ async function startScene(sceneId) {
   A.step    = 0;
   A.sceneHa = 0;
   A._ixAssets = {};
+  _sceneImages = {};
+  _sceneIxAssets = {};
   SS('s-player');
   var sw = document.getElementById('scene-scroll-wrap');
   if (sw) sw.scrollTop = 0;
@@ -4489,31 +4514,66 @@ function nextBeat() { showBeat(_sceneBeat+1); }
 
 function formatSceneText(text) {
   if (!text) return '';
+  // Only style quotes that are genuine speech — 
+  // must be at least 10 chars, start at word boundary or start of string
+  // Use curly quotes from the data when present, straight quotes otherwise
   return text
-    .replace(/"([^"]{8,}?)"/g, function(m, s) { return '<span class="dialogue">\u201c' + s + '\u201d</span>'; })
-    .replace(/"([^"]{1,7}?)"/g, function(m, s) { return '<em>' + s + '</em>'; });
+    .replace(/\u201c([^\u201d]{10,}?)\u201d/g, function(m, s) {
+      return '<span class="dialogue">\u201c' + s + '\u201d</span>';
+    })
+    .replace(/"([^"]{12,}?)"/g, function(m, s) {
+      // Skip if it looks like an inline action (contains action verbs mid-fragment)
+      if (/^(he|she|they|zain|nura)\s/i.test(s)) return m;
+      return '<span class="dialogue">\u201c' + s + '\u201d</span>';
+    });
 }
 
 function showWonderStage() {
-  const sc=A.scene; if(!sc) return;
-  _sceneBeat=3;
-  ["dot-0","dot-1","dot-2"].forEach(id=>{const d=document.getElementById(id);if(d)d.className="stage-dot done";});
-  const lbl=document.getElementById("story-scene-label"); if(lbl) lbl.textContent="What Nura & Zain Discovered";
-  const ttl=document.getElementById("story-scene-title"); if(ttl) ttl.style.display="none";
-  const txt=document.getElementById("story-text");
-  if(txt){txt.classList.add("entering");txt.innerHTML="<span style='font-style:italic;color:rgba(240,234,220,.75);font-size:14px;line-height:1.85'>"+sc.lesson+"</span>";requestAnimationFrame(()=>requestAnimationFrame(()=>txt.classList.remove("entering")));}
-  goldBurst();
-  const ixEl=document.getElementById("ix-container");
-  if(ixEl){
-    if(sc.ix){
-      const fresh={}; Object.entries(_sceneIxAssets).forEach(([k,v])=>{fresh[k]=v+"?t="+Date.now();}); 
-      A._ixAssets=fresh; ixEl.style.display="block"; renderInteractive(ixEl,sc.ix,fresh);
-    } else { ixEl.style.display="none"; }
+  const sc = A.scene; if (!sc) return;
+  _sceneBeat = 3;
+
+  // All three beat dots → done
+  ['dot-0','dot-1','dot-2'].forEach(id => {
+    const d = document.getElementById(id); if (d) d.className = 'stage-dot done';
+  });
+
+  const lbl = document.getElementById('story-scene-label');
+  const ttl = document.getElementById('story-scene-title');
+  const txt = document.getElementById('story-text');
+  if (lbl) lbl.textContent = 'What Nura & Zain Discovered';
+  if (ttl) ttl.style.display = 'none';
+  if (txt) {
+    txt.classList.add('entering');
+    txt.innerHTML = '<span style="font-style:italic;color:rgba(240,234,220,.78);font-size:15px;line-height:1.85">' + sc.lesson + '</span>';
+    requestAnimationFrame(() => requestAnimationFrame(() => txt.classList.remove('entering')));
   }
-  const btn=document.getElementById("story-next-btn");
-  const btnLbl=document.getElementById("story-btn-label");
-  if(btn){btn.onclick=()=>showDuaStage();btn.style.display="flex";}
-  if(btnLbl) btnLbl.textContent="A Gift from Allah ›";
+
+  goldBurst();
+
+  // Render interactive section — wrapped in try/catch so any crash doesn't block the flow
+  const ixEl = document.getElementById('ix-container');
+  if (ixEl) {
+    if (sc.ix) {
+      try {
+        const fresh = {};
+        Object.entries(_sceneIxAssets || {}).forEach(([k,v]) => { fresh[k] = v + '?t=' + Date.now(); });
+        A._ixAssets = fresh;
+        ixEl.style.display = 'block';
+        renderInteractive(ixEl, sc.ix, fresh);
+      } catch(e) {
+        console.warn('[NQ] Interactive render failed:', e.message);
+        ixEl.style.display = 'none';
+      }
+    } else {
+      ixEl.style.display = 'none';
+    }
+  }
+
+  // Button advances to dua
+  const btn    = document.getElementById('story-next-btn');
+  const btnLbl = document.getElementById('story-btn-label');
+  if (btn)    { btn.onclick = () => showDuaStage(); btn.style.display = 'flex'; }
+  if (btnLbl) btnLbl.textContent = 'A Gift from Allah ›';
 }
 
 function showDuaStage() {
