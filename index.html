@@ -1500,10 +1500,9 @@ select.input option { background:#0f1628; color:#FDF6E3 }
       Home</button>
   </div>
 
-  <!-- ═══ NURA & ZAIN — left side, facing journey ═══ -->
-  <div id="wmap-chars" style="position:absolute;bottom:28%;left:-4px;z-index:6;pointer-events:none">
-    <div id="wmap-nura-zain" style="display:flex;align-items:flex-end;gap:2px;
-      filter:drop-shadow(0 6px 24px rgba(0,0,0,.9))"></div>
+  <!-- Characters shown via uploaded images only — no SVG fallback -->
+  <div id="wmap-chars" style="position:absolute;bottom:28%;left:0;z-index:6;pointer-events:none;display:none">
+    <div id="wmap-nura-zain" style="display:flex;align-items:flex-end"></div>
   </div>
 
   <!-- ═══ WORLD PROGRESS PANEL ═══ -->
@@ -3284,8 +3283,9 @@ function SS(id) {
     if (sc) sc._running = false;
   }
   if (id === 's-map') {
-    // s-map is the old 13-world overview — redirect to World 1 journey map instead
-    setTimeout(() => openWorld(A.world?.id || 1), 50);
+    // Old 13-world map — redirect silently to journey map without blanking screen
+    setTimeout(() => openWorld(A.world?.id || 1), 10);
+    // Don't return — let the current screen stay visible during redirect
     return;
   }
   if (id === 's-auth') { setTimeout(initAuthCanvas, 50); setTimeout(() => authTab('login'), 60); }
@@ -3779,7 +3779,7 @@ async function selectChild(childId) {
     console.warn('loadProgress error:', e);
   } finally {
     setLoading(false);
-    SS('s-map');
+    openWorld(A.world?.id || 1);
   }
 }
 
@@ -3794,8 +3794,7 @@ async function loadProgress() {
     A.totalHasanah += row.hasanah || 0;
     if (row.keys) A.totalKeys += row.keys;
   });
-  renderWorldMap();
-  SS('s-map');
+  openWorld(A.world?.id || 1);
 }
 
 // ── World Map — Living Journey Map ───────────────────────────
@@ -4191,15 +4190,19 @@ function openWorld(wid) {
       }
     }
   }
+  // Characters: only show if real images uploaded — no SVG blobs
+  const charContainer = document.getElementById('wmap-chars');
   const charWrap = document.getElementById('wmap-nura-zain');
-  if (charWrap) {
+  if (charContainer && charWrap) {
     const nura = A._chars && (A._chars.nura_zain_behind || A._chars.nura_standing);
     const zain = A._chars && A._chars.zain_standing;
     if (nura || zain) {
-      charWrap.innerHTML = (zain ? '<img src="' + zain + '" style="height:130px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.85))">' : zainSvg(120))
-        + (nura ? '<img src="' + nura + '" style="height:140px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(0,0,0,.85))">' : nuraSvg(130));
+      charWrap.innerHTML =
+        (zain ? '<img src="' + zain + '" style="height:160px;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(0,0,0,.9))">' : '')
+        + (nura ? '<img src="' + nura + '" style="height:170px;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(0,0,0,.9))">' : '');
+      charContainer.style.display = 'block';
     } else {
-      charWrap.innerHTML = zainSvg(120) + nuraSvg(130);
+      charContainer.style.display = 'none'; // hide completely until images uploaded
     }
   }
   requestAnimationFrame(function() { setTimeout(function() { renderWorldJourneyMap(wid); }, 80); });
@@ -6880,7 +6883,7 @@ function updateSplashForLoggedIn() {
 function goHome() {
   if (A.child) {
     // In child mode — go to world map
-    SS('s-map');
+    openWorld(A.world?.id || 1);
   } else if (A.profile) {
     // Logged in but no child selected — go to dash
     SS('s-dash');
