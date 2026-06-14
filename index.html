@@ -317,198 +317,159 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 /* ═══════════════════════════════════════
    CINEMATIC SCENE PLAYER
 ═══════════════════════════════════════ */
-#s-player { background:#03050f; overflow:hidden }
+#s-player {
+  background:#03050f; overflow:hidden;
+  display:flex; flex-direction:column;
+}
 
-/* Fullscreen media stage — image fills screen */
+/* Image zone — fixed height, shows full image without cropping */
 .stage-wrap {
-  position:relative; width:100%; height:100vh; max-height:100%;
-  flex-shrink:0; overflow:hidden;
+  position:relative; width:100%;
+  height:52vw; min-height:220px; max-height:52vh;
+  flex-shrink:0; overflow:hidden; background:#03050f;
 }
 .stage-img {
   position:absolute; inset:0; width:100%; height:100%;
-  object-fit:cover; object-position:center; display:block;
-  transition:opacity 1.2s ease, transform 8s ease;
-  transform:scale(1.04);
+  object-fit:contain; object-position:center top; display:block;
+  transition:opacity .8s ease;
+  background:#03050f;
 }
-.stage-img.active { transform:scale(1) }
+.stage-img.active { opacity:1 !important }
 .stage-grad-overlay {
   position:absolute; inset:0; z-index:2; pointer-events:none;
   background:linear-gradient(
     180deg,
-    rgba(3,5,15,.45) 0%,
-    rgba(3,5,15,.1) 25%,
-    rgba(3,5,15,.05) 50%,
-    rgba(3,5,15,.5) 75%,
-    rgba(3,5,15,.92) 100%
+    rgba(3,5,15,.3) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(3,5,15,.5) 100%
   );
 }
 .stage-top-nav {
   position:absolute; top:0; left:0; right:0; z-index:10;
-  padding:env(safe-area-inset-top, 14px) 16px 14px;
-  padding-top:max(env(safe-area-inset-top, 14px), 14px);
+  padding:max(env(safe-area-inset-top,12px),12px) 14px 10px;
   display:flex; align-items:center; gap:10px;
-  background:linear-gradient(180deg,rgba(3,5,15,.7) 0%,transparent 100%);
+  background:linear-gradient(180deg,rgba(3,5,15,.75) 0%,transparent 100%);
 }
 .stage-back-btn {
   width:36px; height:36px; border-radius:50%;
-  background:rgba(3,5,15,.6); border:1px solid rgba(255,255,255,.15);
+  background:rgba(3,5,15,.65); border:1px solid rgba(255,255,255,.18);
   backdrop-filter:blur(12px); display:flex; align-items:center;
   justify-content:center; color:var(--cream); font-size:18px;
   cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent;
 }
 .stage-world-chip {
-  font-family:var(--ui); font-size:10px; color:rgba(245,200,66,.7);
-  letter-spacing:2px; text-transform:uppercase; flex:1;
-  text-shadow:0 1px 8px rgba(0,0,0,.8);
+  font-family:var(--ui); font-size:10px; color:rgba(245,200,66,.75);
+  letter-spacing:1.5px; text-transform:uppercase; flex:1;
+  text-shadow:0 1px 8px rgba(0,0,0,.9);
 }
 .stage-noor-chip {
-  background:rgba(3,5,15,.6); border:1px solid rgba(245,200,66,.25);
+  background:rgba(3,5,15,.65); border:1px solid rgba(245,200,66,.3);
   border-radius:50px; padding:5px 11px; font-size:11px; font-weight:700;
   font-family:var(--ui); color:var(--gold); backdrop-filter:blur(12px);
 }
 
-/* Beat dots progress indicator */
+/* Beat dots — inside image zone at bottom */
 .stage-dots {
-  position:absolute; bottom:220px; left:0; right:0; z-index:5;
+  position:absolute; bottom:8px; left:0; right:0; z-index:5;
   display:flex; align-items:center; justify-content:center; gap:8px;
   pointer-events:none;
 }
-.stage-dot {
-  width:6px; height:6px; border-radius:50%;
-  background:rgba(255,255,255,.25); transition:all .4s ease;
-}
-.stage-dot.active {
-  width:20px; border-radius:4px;
-  background:var(--gold); box-shadow:0 0 8px rgba(245,200,66,.6);
-}
+.stage-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.3); transition:all .4s ease }
+.stage-dot.active { width:20px; border-radius:4px; background:var(--gold); box-shadow:0 0 8px rgba(245,200,66,.6) }
 .stage-dot.done { background:rgba(52,211,153,.6) }
 
-/* Glass story panel — slides up from bottom */
+/* Scrollable text area — sits below image, NOT overlapping */
+.scene-scroll {
+  flex:1; overflow-y:scroll; -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain; touch-action:pan-y;
+  background:linear-gradient(180deg,#060912 0%,#03050f 100%);
+}
+
+/* Story panel — lives inside scroll, not absolute */
 .story-panel {
-  position:absolute; bottom:0; left:0; right:0; z-index:6;
-  background:linear-gradient(180deg,rgba(3,5,15,.0) 0%,rgba(3,5,15,.88) 18%,rgba(3,5,15,.97) 40%,rgba(3,5,15,1) 100%);
-  padding:0 0 20px;
-  transform:translateY(0);
+  padding:16px 20px 0;
 }
-.story-panel-inner {
-  padding:20px 20px 0;
-}
+.story-panel-inner { padding:0 }
 .story-scene-label {
   font-family:var(--ui); font-size:10px; color:rgba(245,200,66,.5);
-  letter-spacing:2.5px; text-transform:uppercase; margin-bottom:10px;
+  letter-spacing:2.5px; text-transform:uppercase; margin-bottom:8px;
   display:flex; align-items:center; gap:10px;
 }
-.story-scene-label::after {
-  content:''; flex:1; height:1px;
-  background:linear-gradient(90deg,rgba(245,200,66,.2),transparent);
-}
+.story-scene-label::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(245,200,66,.2),transparent) }
 .story-scene-title {
-  font-family:var(--display); font-size:20px; font-weight:700;
-  color:var(--gold); line-height:1.25; margin-bottom:14px;
-  text-shadow:0 0 30px rgba(245,200,66,.3);
+  font-family:var(--display); font-size:19px; font-weight:700;
+  color:var(--gold); line-height:1.25; margin-bottom:10px;
+  text-shadow:0 0 20px rgba(245,200,66,.25);
 }
 .story-text {
   font-family:var(--body); font-size:15px; line-height:1.85;
   color:rgba(240,234,220,.88); font-style:italic;
-  transition:opacity .6s ease, transform .6s ease;
+  transition:opacity .5s ease;
 }
-.story-text.entering { opacity:0; transform:translateY(10px) }
+.story-text.entering { opacity:0 }
 .story-text .dialogue {
   color:var(--gold3); display:block;
-  border-left:2px solid rgba(245,200,66,.35);
+  border-left:2px solid rgba(245,200,66,.4);
   padding:6px 12px; margin:8px 0;
   background:rgba(245,200,66,.05); border-radius:0 8px 8px 0;
+  font-style:italic;
 }
 
 /* Story action row */
-.story-actions {
-  display:flex; align-items:center; gap:10px; padding:16px 20px 0;
-}
+.story-actions { display:flex; align-items:center; gap:10px; padding:14px 0 0 }
 .story-next-btn {
-  flex:1; background:linear-gradient(135deg,rgba(245,200,66,.18),rgba(245,200,66,.08));
-  border:1.5px solid rgba(245,200,66,.4); border-radius:50px;
-  padding:13px 20px; font-family:var(--display); font-size:13px; font-weight:700;
+  flex:1;
+  background:linear-gradient(135deg,rgba(180,130,10,.2),rgba(245,200,66,.1));
+  border:1.5px solid rgba(245,200,66,.45); border-radius:50px;
+  padding:14px 20px; font-family:var(--display); font-size:13px; font-weight:700;
   color:var(--gold); cursor:pointer; letter-spacing:.5px;
   display:flex; align-items:center; justify-content:center; gap:8px;
-  backdrop-filter:blur(8px); transition:all .2s;
-  -webkit-tap-highlight-color:transparent;
+  transition:all .2s; -webkit-tap-highlight-color:transparent;
 }
-.story-next-btn:active { transform:scale(.97); background:rgba(245,200,66,.25) }
-.story-skip-btn {
-  width:42px; height:42px; border-radius:50%;
-  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
-  color:rgba(253,246,227,.4); font-size:11px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  font-family:var(--ui); letter-spacing:.3px;
-  -webkit-tap-highlight-color:transparent;
-}
+.story-next-btn:active { transform:scale(.97) }
 
-/* Wonder/discovery section — expands below story */
+/* Wonder/discovery section */
 .wonder-panel {
-  margin:16px 20px 0; padding:18px;
-  background:rgba(245,200,66,.05); border:1px solid rgba(245,200,66,.15);
-  border-radius:18px; backdrop-filter:blur(16px);
-  animation:fadeInUp .5s ease;
+  margin:14px 0 0; padding:16px 18px;
+  background:rgba(245,200,66,.05); border:1px solid rgba(245,200,66,.18);
+  border-radius:16px; animation:fadeInUp .4s ease;
 }
 .wonder-label {
   font-family:var(--ui); font-size:9px; color:rgba(245,200,66,.55);
-  letter-spacing:2px; text-transform:uppercase; margin-bottom:10px;
-  display:flex; align-items:center; gap:8px;
+  letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;
 }
-.wonder-label::after { content:''; flex:1; height:1px; background:rgba(245,200,66,.15) }
-.wonder-text {
-  font-family:var(--body); font-size:14px; color:rgba(240,234,220,.8);
-  font-style:italic; line-height:1.8;
-}
+.wonder-text { font-family:var(--body); font-size:14px; color:rgba(240,234,220,.8); font-style:italic; line-height:1.8 }
 
-/* Dua panel in scene player */
+/* Dua panel */
 .scene-dua-panel {
-  margin:14px 20px 0; padding:22px 20px;
+  margin:14px 0 0; padding:20px 18px;
   background:linear-gradient(160deg,rgba(10,8,30,.95),rgba(3,5,15,.98));
-  border:1px solid rgba(245,200,66,.12); border-radius:20px;
-  text-align:center; animation:fadeInUp .5s ease;
-  position:relative; overflow:hidden;
+  border:1px solid rgba(245,200,66,.14); border-radius:18px;
+  text-align:center; animation:fadeInUp .4s ease; position:relative; overflow:hidden;
 }
-.scene-dua-panel::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:1px;
-  background:linear-gradient(90deg,transparent,rgba(245,200,66,.4),transparent);
-}
-.scene-dua-arabic {
-  font-family:var(--arabic); font-size:24px; color:var(--gold);
-  direction:rtl; line-height:2; margin-bottom:12px;
-  text-shadow:0 0 30px rgba(245,200,66,.4);
-}
-.scene-dua-latin { font-family:var(--ui); font-size:12px; color:rgba(245,200,66,.5); margin-bottom:6px; font-style:italic }
+.scene-dua-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(245,200,66,.4),transparent) }
+.scene-dua-arabic { font-family:var(--arabic); font-size:22px; color:var(--gold); direction:rtl; line-height:2; margin-bottom:10px; text-shadow:0 0 30px rgba(245,200,66,.4) }
+.scene-dua-latin { font-family:var(--ui); font-size:12px; color:rgba(245,200,66,.5); margin-bottom:5px; font-style:italic }
 .scene-dua-english { font-family:var(--body); font-size:13px; color:rgba(240,234,220,.7); font-style:italic; line-height:1.7 }
 
 /* Complete panel */
 .complete-panel {
-  margin:14px 20px 28px; padding:22px 20px;
-  background:linear-gradient(135deg,rgba(5,90,50,.2),rgba(3,5,15,.9));
-  border:1px solid rgba(52,211,153,.2); border-radius:20px;
-  text-align:center; animation:fadeInUp .5s ease;
+  margin:14px 0 24px; padding:20px 18px;
+  background:linear-gradient(135deg,rgba(5,60,35,.2),rgba(3,5,15,.9));
+  border:1px solid rgba(52,211,153,.2); border-radius:18px;
+  text-align:center; animation:fadeInUp .4s ease;
 }
-.complete-title { font-family:var(--display); font-size:18px; color:#34d399; margin-bottom:6px; font-weight:700 }
-.complete-sub { font-family:var(--body); font-size:13px; color:rgba(253,246,227,.5); font-style:italic; margin-bottom:16px }
-
-/* Scene player scroll container — only for later stages */
-.scene-scroll {
-  flex:1; overflow-y:scroll; -webkit-overflow-scrolling:touch;
-  overscroll-behavior-y:contain; height:0; touch-action:pan-y;
-}
+.complete-title { font-family:var(--display); font-size:17px; color:#34d399; margin-bottom:5px; font-weight:700 }
+.complete-sub { font-family:var(--body); font-size:13px; color:rgba(253,246,227,.5); font-style:italic; margin-bottom:14px }
 
 /* Fade in animation */
-@keyframes fadeInUp {
-  0%{opacity:0;transform:translateY(12px)} 100%{opacity:1;transform:translateY(0)}
-}
-.fade-in { animation:fadeInUp .5s ease both }
+@keyframes fadeInUp { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+.fade-in { animation:fadeInUp .4s ease both }
 
-/* Gold particles burst */
+/* Gold particles */
 .particle { position:fixed; pointer-events:none; z-index:9999; animation:particle-fly var(--pd,.8s) ease-out forwards }
-@keyframes particle-fly {
-  0%{opacity:1;transform:translate(0,0) scale(1)}
-  100%{opacity:0;transform:translate(var(--px,0px),var(--py,-60px)) scale(0)}
-}
+@keyframes particle-fly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--px,0px),var(--py,-60px)) scale(0)} }
 
 /* World overview — adventure map style scene rows */
 .adventure-scene-row {
@@ -1361,29 +1322,17 @@ select.input option { background:#0f1628; color:#FDF6E3 }
     background:linear-gradient(0deg,rgba(3,5,15,.92) 0%,rgba(3,5,15,.4) 60%,transparent 100%)"></div>
 
 
-  <!-- ═══ QUICK ADMIN UPLOAD (admin only, shown after login) ═══ -->
-  <div id="wmap-admin-bar" style="display:none;position:absolute;top:0;left:0;right:0;z-index:20;
-    background:rgba(124,58,237,.25);border-bottom:1px solid rgba(124,58,237,.4);
-    padding:8px 12px;backdrop-filter:blur(8px)">
-    <div style="font-family:var(--ui);font-size:10px;color:#c4b5fd;letter-spacing:1px;margin-bottom:6px">
-      ⚙ ADMIN — Upload images directly
+  <!-- ═══ QUICK ADMIN UPLOAD — compact floating chip, admin only ═══ -->
+  <div id="wmap-admin-bar" style="display:none;position:absolute;bottom:130px;left:12px;z-index:20">
+    <div style="background:rgba(80,30,180,.9);border:1px solid rgba(167,139,250,.5);border-radius:12px;padding:8px 10px;backdrop-filter:blur(12px)">
+      <div style="font-family:var(--ui);font-size:9px;color:#ddd6fe;letter-spacing:1.5px;margin-bottom:5px">⚙ ADMIN</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="background:rgba(167,139,250,.2);border:1px solid rgba(167,139,250,.35);border-radius:6px;padding:4px 8px;font-family:var(--ui);font-size:10px;color:#e9d5ff;cursor:pointer">📷 Map BG<input type="file" accept="image/*" style="display:none" onchange="quickUploadMapBg(this)"></label>
+        <label style="background:rgba(167,139,250,.2);border:1px solid rgba(167,139,250,.35);border-radius:6px;padding:4px 8px;font-family:var(--ui);font-size:10px;color:#e9d5ff;cursor:pointer">🖼 W1 Hero<input type="file" accept="image/*" style="display:none" onchange="quickUploadWorldHero(1,this)"></label>
+        <button onclick="SS('s-admin')" style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:6px;padding:4px 8px;font-family:var(--ui);font-size:10px;color:#e9d5ff;cursor:pointer">Admin →</button>
+      </div>
+      <div id="wmap-upload-status" style="font-family:var(--ui);font-size:9px;color:rgba(245,200,66,.8);margin-top:4px;min-height:10px"></div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <label style="background:rgba(124,58,237,.4);border:1px solid rgba(167,139,250,.5);border-radius:8px;
-        padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
-        Upload Map Background
-        <input type="file" accept="image/*" style="display:none" onchange="quickUploadMapBg(this)">
-      </label>
-      <label style="background:rgba(124,58,237,.4);border:1px solid rgba(167,139,250,.5);border-radius:8px;
-        padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
-        Upload World 1 Hero
-        <input type="file" accept="image/*" style="display:none" onchange="quickUploadWorldHero(1,this)">
-      </label>
-      <button onclick="SS('s-admin')" style="background:rgba(124,58,237,.3);border:1px solid rgba(167,139,250,.4);border-radius:8px;padding:6px 12px;font-family:var(--ui);font-size:11px;color:#e9d5ff;cursor:pointer">
-        Full Admin →
-      </button>
-    </div>
-    <div id="wmap-upload-status" style="font-family:var(--ui);font-size:11px;color:rgba(245,200,66,.7);margin-top:4px;min-height:14px"></div>
   </div>
   <canvas id="wmap-path-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none"></canvas>
   <div id="wmap-nodes" style="position:absolute;inset:0;z-index:5"></div>
@@ -1482,60 +1431,60 @@ select.input option { background:#0f1628; color:#FDF6E3 }
 
 </div>
 
-<!-- SCENE PLAYER — Cinematic Stage -->
-<div id="s-player" class="screen" style="background:#03050f;overflow:hidden">
+<!-- SCENE PLAYER — image fixed on top, text scrolls below, no overlap -->
+<div id="s-player" class="screen">
 
-  <!-- Fullscreen image stage -->
-  <div class="stage-wrap" id="stage-wrap">
-    <!-- Background canvas (sky animation fallback) -->
-    <canvas id="scene-sky-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.7"></canvas>
-    <!-- Uploaded scene image -->
-    <img id="stage-img" class="stage-img" src="" alt="" style="opacity:0;z-index:1;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
-    <!-- Gradient overlay -->
-    <div class="stage-grad-overlay" style="z-index:2"></div>
-    <!-- Particles canvas -->
-    <canvas id="stage-particles" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;opacity:0"></canvas>
+  <!-- Sky canvas fallback behind everything -->
+  <canvas id="scene-sky-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.4"></canvas>
 
-    <!-- Top nav -->
-    <div class="stage-top-nav" style="z-index:10">
+  <!-- ── Fixed image area ── -->
+  <div class="stage-wrap" id="stage-wrap" style="position:relative;z-index:1">
+    <img id="stage-img" class="stage-img" src="" alt="" style="opacity:0">
+    <div class="stage-grad-overlay"></div>
+    <!-- Top nav lives inside image zone -->
+    <div class="stage-top-nav">
       <button class="stage-back-btn" onclick="exitScene()">←</button>
       <div id="stage-world-chip" class="stage-world-chip">World 1 · The Wonder of Allah</div>
       <div id="p-ha" class="stage-noor-chip">⭐ 0</div>
     </div>
-
-    <!-- Beat progress dots -->
+    <!-- Beat dots inside image zone -->
     <div class="stage-dots" id="stage-dots">
       <div class="stage-dot active" id="dot-0"></div>
       <div class="stage-dot" id="dot-1"></div>
       <div class="stage-dot" id="dot-2"></div>
     </div>
+  </div>
 
-    <!-- Glass story panel -->
+  <!-- ── Scrollable text area below image ── -->
+  <div class="scene-scroll" id="scene-scroll-wrap" style="position:relative;z-index:2">
     <div class="story-panel" id="story-panel">
+
+      <!-- Scene label + title + story text -->
       <div class="story-panel-inner">
         <div class="story-scene-label" id="story-scene-label">Scene 1</div>
         <div class="story-scene-title" id="story-scene-title">The Valley at Dawn</div>
         <div class="story-text" id="story-text">Loading...</div>
       </div>
-      <!-- Action row -->
+
+      <!-- Action button -->
       <div class="story-actions" id="story-actions">
         <button class="story-next-btn" id="story-next-btn" onclick="nextBeat()">
           <span id="story-btn-label">Continue ›</span>
         </button>
       </div>
 
-      <!-- Wonder / discovery panel (hidden until beat C done) -->
+      <!-- Wonder / discovery panel -->
       <div class="wonder-panel" id="wonder-panel" style="display:none">
-        <div class="wonder-label">What Nura & Zain Discovered</div>
+        <div class="wonder-label">What Nura &amp; Zain Discovered</div>
         <div class="wonder-text" id="wonder-text"></div>
       </div>
 
-      <!-- Interactive section (injected here) -->
-      <div id="ix-container" style="margin:14px 20px 0;display:none"></div>
+      <!-- Interactive section -->
+      <div id="ix-container" style="margin:14px 0 0;display:none"></div>
 
       <!-- Dua panel -->
       <div class="scene-dua-panel" id="dua-panel" style="display:none">
-        <div style="font-family:var(--ui);font-size:9px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:14px">✦ A Gift — A Beautiful Du'a ✦</div>
+        <div style="font-family:var(--ui);font-size:9px;color:rgba(245,200,66,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px">✦ A Beautiful Du'a ✦</div>
         <div class="scene-dua-arabic" id="dua-ar"></div>
         <div class="scene-dua-latin" id="dua-lat"></div>
         <div class="scene-dua-english" id="dua-en"></div>
@@ -1544,12 +1493,13 @@ select.input option { background:#0f1628; color:#FDF6E3 }
       <!-- Complete panel -->
       <div class="complete-panel" id="complete-panel" style="display:none">
         <div class="complete-title">✦ Discovery Made</div>
-        <div class="complete-sub" id="complete-sub">You uncovered one of Allah's signs.</div>
+        <div class="complete-sub" id="complete-sub">You uncovered a sign of Allah.</div>
         <div id="complete-btns"></div>
       </div>
 
-    </div><!-- end story-panel -->
-  </div><!-- end stage-wrap -->
+      <div style="height:32px"></div>
+    </div>
+  </div>
 
 </div>
 <!-- QUIZ -->
@@ -2491,21 +2441,10 @@ function openWorld(wid) {
       }
     }
   }
-  // Characters: only show if real images uploaded — no SVG blobs
+  // Characters: only show real uploaded images, never SVG blobs
+  // The painted background already has Nura & Zain in it
   const charContainer = document.getElementById('wmap-chars');
-  const charWrap = document.getElementById('wmap-nura-zain');
-  if (charContainer && charWrap) {
-    const nura = A._chars && (A._chars.nura_zain_behind || A._chars.nura_standing);
-    const zain = A._chars && A._chars.zain_standing;
-    if (nura || zain) {
-      charWrap.innerHTML =
-        (zain ? '<img src="' + zain + '" style="height:160px;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(0,0,0,.9))">' : '')
-        + (nura ? '<img src="' + nura + '" style="height:170px;object-fit:contain;filter:drop-shadow(0 6px 24px rgba(0,0,0,.9))">' : '');
-      charContainer.style.display = 'block';
-    } else {
-      charContainer.style.display = 'none'; // hide completely until images uploaded
-    }
-  }
+  if (charContainer) charContainer.style.display = 'none';
   requestAnimationFrame(function() { setTimeout(function() { renderWorldJourneyMap(wid); }, 80); });
 }
 
@@ -2878,6 +2817,9 @@ function showWonderStage() {
   const btnLbl = document.getElementById('story-btn-label');
   if (btn)    { btn.onclick = () => showDuaStage(); btn.style.display = 'flex'; }
   if (btnLbl) btnLbl.textContent = 'A Gift from Allah ›';
+  // Scroll text area to top so discovery is visible immediately
+  const scrollEl = document.getElementById('scene-scroll-wrap');
+  if (scrollEl) scrollEl.scrollTop = 0;
 }
 
 function showDuaStage() {
